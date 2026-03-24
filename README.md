@@ -5,7 +5,7 @@ Aplicación web tipo PWA para gestionar el acceso de proveedores en planta, con 
 ---
 
 ## 🚀 Demo
-👉 https://TU_USUARIO.github.io/control-proveedores/
+👉 https://meredeitor.github.io/control-acceso/
 
 ---
 
@@ -36,5 +36,5 @@ Aplicación web tipo PWA para gestionar el acceso de proveedores en planta, con 
 ## 📦 Instalación local
 
 ```bash
-git clone https://github.com/TU_USUARIO/control-proveedores.git
+git clone https://github.com/meredeitor/control-acceso.git
 cd control-proveedores
