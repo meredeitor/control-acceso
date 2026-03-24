@@ -1,6 +1,6 @@
 {
   "name": "Control de Acceso Proveedores",
-  "short_name": "Proveedores",
+  "short_name": "Control Acceso",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0b1220",
