@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Control Proveedores</title>
+  <title>Control de Acceso Proveedores</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#0f172a" />
 
@@ -79,17 +79,8 @@
       font-weight:800;
       letter-spacing:.5px;
     }
-    .title h1{
-      font-size: 16px;
-      margin:0;
-      line-height:1.1;
-    }
-    .title small{
-      display:block;
-      color:var(--muted);
-      font-size:12px;
-      margin-top:2px;
-    }
+    .title h1{ font-size: 16px; margin:0; line-height:1.1; }
+    .title small{ display:block; color:var(--muted); font-size:12px; margin-top:2px; }
     .actions{
       display:flex;
       gap:10px;
@@ -267,6 +258,7 @@
       color: var(--muted);
       font-size: 12px;
     }
+
     .two{
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -339,7 +331,6 @@
       button{ display:none !important; }
       header{ display:none !important; }
     }
-
     .big{ font-size:34px; font-weight:700; margin-top:6px; }
   </style>
 </head>
@@ -354,15 +345,12 @@
         <small>Recepción • QR • Sin foto • Dictamen/Incidencias • Excel • Offline-first</small>
       </div>
     </div>
-
     <div class="actions" id="actionsBar">
       <span class="pill" title="Estado de conexión">
         <span class="dot info" id="netDot"></span>
         <span id="netText">En línea</span>
       </span>
-
       <span class="pill" id="userPill" style="display:none;"></span>
-
       <input id="qSearch" placeholder="Buscar proveedor / empresa..." style="max-width:260px;" />
       <!-- Botones dinámicos por perfil -->
     </div>
@@ -375,10 +363,60 @@
 
 <div class="toast-wrap" id="toasts"></div>
 
-<script>
+<!-- ✅ SCRIPT PRINCIPAL (AHORA ES MODULE PARA FIREBASE) -->
+<script type="module">
+/* =========================
+   ✅ Firebase + Firestore
+   ========================= */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import {
+  getFirestore, collection, doc, getDocs, setDoc, deleteDoc,
+  query, orderBy, limit, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDmdS1mt12tyWOE48U2As-53vtdQT7esPg",
+  authDomain: "control-acceso-cd3db.firebaseapp.com",
+  projectId: "control-acceso-cd3db",
+  storageBucket: "control-acceso-cd3db.firebasestorage.app",
+  messagingSenderId: "98995699294",
+  appId: "1:98995699294:web:dd1b6b639525fd06a5fecf"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const COL = "visitas";
+
+async function cloudFetchVisitas(max = 500){
+  const q = query(collection(db, COL), orderBy("createdTs", "desc"), limit(max));
+  const snap = await getDocs(q);
+  const arr = [];
+  snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+  return arr;
+}
+
+async function cloudUpsertVisita(v){
+  if(!v?.id) throw new Error("Visita sin id");
+  const ref = doc(db, COL, String(v.id));
+  const payload = {
+    ...v,
+    updatedTs: Date.now(),
+    updatedAt: serverTimestamp()
+  };
+  await setDoc(ref, payload, { merge: true });
+  return true;
+}
+
+async function cloudDeleteVisita(id){
+  await deleteDoc(doc(db, COL, String(id)));
+  return true;
+}
+
+/* =========================
+   ✅ App original (tu lógica)
+   ========================= */
 (() => {
   "use strict";
-
   const $ = (sel, root=document) => root.querySelector(sel);
   const app = $("#app");
   const toasts = $("#toasts");
@@ -413,7 +451,7 @@
 
   function esc(s=""){
     return String(s).replace(/[&<>"']/g, m => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
     }[m]));
   }
 
@@ -433,7 +471,7 @@
   }
 
   // =========================
-  // ✅ ROLES + LOGIN
+  // ✅ ROLES + LOGIN (como lo traías)
   // =========================
   const ROLES = {
     ADMIN: "admin",
@@ -446,12 +484,11 @@
 
   // ⚠️ CAMBIA ESTAS CONTRASEÑAS
   const USERS = [
-    { user: "admin",    pass: "Admin#2026",   role: ROLES.ADMIN,       nombre: "Administrador" },
-    { user: "compras1", pass: "Compras123",   role: ROLES.COMPRAS,     nombre: "Compras" },
-    { user: "guardia1", pass: "Guardia123",   role: ROLES.GUARDIA,     nombre: "Guardia Acceso" },
-    { user: "calidad1", pass: "Calidad123",   role: ROLES.CALIDAD,     nombre: "Calidad" },
-    { user: "contra1",  pass: "Contra123",    role: ROLES.CONTRALORIA, nombre: "Contraloría" },
-    // { user:"prov1", pass:"Prov123", role: ROLES.PROVEEDOR, nombre:"Proveedor" }
+    { user: "admin", pass: "Admin#2026", role: ROLES.ADMIN, nombre: "Administrador" },
+    { user: "compras1", pass: "Compras123", role: ROLES.COMPRAS, nombre: "Compras" },
+    { user: "guardia1", pass: "Guardia123", role: ROLES.GUARDIA, nombre: "Guardia Acceso" },
+    { user: "calidad1", pass: "Calidad123", role: ROLES.CALIDAD, nombre: "Calidad" },
+    { user: "contra1", pass: "Contra123", role: ROLES.CONTRALORIA, nombre: "Contraloría" },
   ];
 
   const ALL_PERMS = [
@@ -484,7 +521,6 @@
     paintHeader();
     renderLogin();
   }
-
   function hasPerm(perm){
     if(!currentUser) return false;
     const perms = PERMISOS[currentUser.role] || [];
@@ -501,54 +537,62 @@
     qSearch.value = "";
     qSearch.style.display = "none";
     userPill.style.display = "none";
-
     app.innerHTML = `
       <div class="card" style="max-width:420px;margin:40px auto;">
         <h2 style="margin:0 0 6px;">Inicio de sesión</h2>
         <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
           Acceso por perfil (Admin / Compras / Guardia / Calidad / Contraloría).
         </p>
-
         <label>Usuario</label>
         <input id="loginUser" placeholder="usuario" autocomplete="username">
-
         <label>Contraseña</label>
         <input id="loginPass" type="password" placeholder="••••••" autocomplete="current-password">
-
         <div class="divider"></div>
         <div class="row">
           <button id="btnLogin">Entrar</button>
         </div>
       </div>
     `;
+   $("#btnLogin").onclick = async () => {
+  const email = ($("#loginUser").value || "").trim();
+  const pass = ($("#loginPass").value || "").trim();
 
-    $("#btnLogin").onclick = () => {
-      const u = ($("#loginUser").value || "").trim();
-      const p = ($("#loginPass").value || "").trim();
-      const found = USERS.find(x => x.user === u && x.pass === p);
+  try {
+    const res = await window.fb.signInWithEmailAndPassword(
+      window.auth,
+      email,
+      pass
+    );
 
-      if(!found){
-        toast("Acceso denegado", "Usuario o contraseña incorrectos.", "bad", 3200);
-        return;
-      }
-      currentUser = { user: found.user, role: found.role, nombre: found.nombre };
-      saveUser();
-      toast("Bienvenido", `${found.nombre} (${found.role.toUpperCase()})`, "ok", 2200);
-      paintHeader();
-      renderHome();
+    const user = res.user;
+
+    currentUser = {
+      user: user.email,
+      role: "admin", // temporal
+      nombre: user.email
     };
+
+    saveUser();
+    paintHeader();
+    renderHome();
+
+    toast("Bienvenido", user.email, "ok");
+
+  } catch (err) {
+    console.error(err);
+    toast("Error", "Credenciales incorrectas", "bad");
+  }
+};
+  
   }
 
   function paintHeader(){
-    // limpia botones dinámicos
     [...actionsBar.querySelectorAll("button[data-top], button[data-action]")].forEach(b => b.remove());
-
     if(!currentUser){
       userPill.style.display = "none";
       qSearch.style.display = "none";
       return;
     }
-
     userPill.style.display = "";
     const dot = currentUser.role === ROLES.ADMIN ? "bad" : "ok";
     userPill.innerHTML = `<span class="dot ${dot}"></span>${esc(currentUser.nombre)} • ${esc(currentUser.role.toUpperCase())}`;
@@ -564,46 +608,90 @@
       actionsBar.appendChild(d.firstChild);
     };
 
-    if(hasPerm("crear_cita")){
-      addBtn(`<button data-action="nuevo">Nueva Cita</button>`);
-    }
-    if(hasPerm("escanear_qr")){
-      addBtn(`<button class="secondary" data-action="scan">Escanear QR</button>`);
-    }
+    if(hasPerm("crear_cita")) addBtn(`<button data-action="nuevo">Nueva Cita</button>`);
+    if(hasPerm("escanear_qr")) addBtn(`<button class="secondary" data-action="scan">Escanear QR</button>`);
 
+    // ✅ botón sync manual
+    addBtn(`<button class="secondary" data-action="sync">Sincronizar</button>`);
     addBtn(`<button class="secondary" data-top="logout">Cerrar sesión</button>`);
   }
 
   // =========================
-  // Persistencia (visitas)
+  // ✅ Persistencia (visitas) Local + Firestore (offline-first)
   // =========================
-  const LS_KEY = "visitas_v3"; // nueva clave para evitar mezcla con versiones anteriores
-  let visitas = loadVisitas();
+  const LS_KEY = "visitas_v3"; // tu misma clave
+  let visitas = [];
 
-  function loadVisitas(){
+  async function loadVisitas(){
+    // 1) local primero
+    let local = [];
     try{
       const raw = localStorage.getItem(LS_KEY);
-      if(!raw) return [];
-      const arr = JSON.parse(raw);
-      return Array.isArray(arr) ? arr : [];
+      if(raw){
+        const arr = JSON.parse(raw);
+        local = Array.isArray(arr) ? arr : [];
+      }
     }catch(e){
       console.warn("Error leyendo localStorage", e);
-      return [];
+    }
+
+    // 2) sin internet -> local
+    if(!navigator.onLine) return local;
+
+    // 3) con internet -> nube y merge
+    try{
+      const cloud = await cloudFetchVisitas(500);
+
+      // merge por id: gana el que tenga updatedTs mayor
+      const map = new Map();
+      for(const v of local) map.set(String(v.id), v);
+      for(const v of cloud){
+        const id = String(v.id);
+        const prev = map.get(id);
+        const prevU = prev?.updatedTs || prev?.createdTs || 0;
+        const curU  = v?.updatedTs || v?.createdTs || 0;
+        if(!prev || curU >= prevU) map.set(id, v);
+      }
+
+      const merged = Array.from(map.values())
+        .sort((a,b) => (b.createdTs || 0) - (a.createdTs || 0));
+
+      localStorage.setItem(LS_KEY, JSON.stringify(merged));
+      return merged;
+    }catch(e){
+      console.warn("No se pudo cargar desde Firestore, usando local.", e);
+      return local;
     }
   }
-  function saveVisitas(){
+
+  async function saveVisitas(){
+    // 1) guardar local
     try{
       localStorage.setItem(LS_KEY, JSON.stringify(visitas));
-      return true;
     }catch(e){
       console.warn("Error guardando localStorage", e);
       toast("Almacenamiento lleno", "No se pudo guardar. Borra registros antiguos.", "warn", 4200);
       return false;
     }
+
+    // 2) sin internet, listo
+    if(!navigator.onLine) return true;
+
+    // 3) con internet, sube los más recientes (top 10)
+    try{
+      const sorted = [...visitas].sort((a,b) => ((b.updatedTs||b.createdTs||0) - (a.updatedTs||a.createdTs||0)));
+      const top = sorted.slice(0, 10);
+      await Promise.all(top.map(v => cloudUpsertVisita(v)));
+      return true;
+    }catch(e){
+      console.warn("No se pudo sincronizar con Firestore (se guardó local).", e);
+      toast("Sincronización", "Guardado local. No se pudo subir a la nube.", "warn", 2800);
+      return true; // no bloquea
+    }
   }
 
   // =========================
-  // IndexedDB SOLO documentos (OC/Factura)
+  // ✅ IndexedDB SOLO documentos (OC/Factura)
   // =========================
   const DB_NAME = "proveedores_db";
   const DB_VER = 2;
@@ -613,9 +701,9 @@
     return new Promise((resolve, reject) => {
       const req = indexedDB.open(DB_NAME, DB_VER);
       req.onupgradeneeded = () => {
-        const db = req.result;
-        if(!db.objectStoreNames.contains(STORE_DOCS)){
-          db.createObjectStore(STORE_DOCS);
+        const dbx = req.result;
+        if(!dbx.objectStoreNames.contains(STORE_DOCS)){
+          dbx.createObjectStore(STORE_DOCS);
         }
       };
       req.onsuccess = () => resolve(req.result);
@@ -624,29 +712,27 @@
   }
 
   async function idbSetDoc(key, blob){
-    const db = await idbOpen();
+    const dbx = await idbOpen();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_DOCS, "readwrite");
+      const tx = dbx.transaction(STORE_DOCS, "readwrite");
       tx.objectStore(STORE_DOCS).put(blob, key);
       tx.oncomplete = () => resolve(true);
       tx.onerror = () => reject(tx.error);
     });
   }
-
   async function idbGetDoc(key){
-    const db = await idbOpen();
+    const dbx = await idbOpen();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_DOCS, "readonly");
+      const tx = dbx.transaction(STORE_DOCS, "readonly");
       const req = tx.objectStore(STORE_DOCS).get(key);
       req.onsuccess = () => resolve(req.result || null);
       req.onerror = () => reject(req.error);
     });
   }
-
   async function idbDelDoc(key){
-    const db = await idbOpen();
+    const dbx = await idbOpen();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_DOCS, "readwrite");
+      const tx = dbx.transaction(STORE_DOCS, "readwrite");
       tx.objectStore(STORE_DOCS).delete(key);
       tx.oncomplete = () => resolve(true);
       tx.onerror = () => reject(tx.error);
@@ -706,7 +792,6 @@
   // =========================
   function renderDashboard(){
     if(!requirePerm("ver_dashboard","Tu perfil no puede ver el dashboard.")) return;
-
     cleanup();
     const term = (qSearch.value || "").trim().toLowerCase();
     const filtered = !term ? visitas : visitas.filter(v =>
@@ -741,11 +826,9 @@
       const cita = v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-";
       const dict = (v.dictamen?.estado || "pendiente").toLowerCase();
       const dictLabel = (v.dictamen?.estado || "pendiente").toUpperCase();
-
       let docColor="bad";
       if(v.ocNo && v.facturaNo) docColor="ok";
       else if(v.ocNo || v.facturaNo) docColor="warn";
-
       return `
         <div class="tarjeta" data-action="ficha" data-id="${esc(v.id)}">
           <strong>${esc(v.proveedor)}</strong>
@@ -771,7 +854,6 @@
         ${col("Despachados","brand",despachados)}
         ${col("Finalizados","muted",finalizados)}
       </div>
-
       <div class="divider"></div>
       <div class="row">
         ${hasPerm("exportar_excel") ? `<button class="secondary" data-action="exportExcel">Exportar Excel</button>` : ""}
@@ -788,7 +870,6 @@
   // =========================
   function renderProveedor(){
     if(!requirePerm("buscar_proveedor","Tu perfil no puede usar el portal de proveedor.")) return;
-
     cleanup();
     const term = (qSearch.value || "").trim().toLowerCase();
     const results = !term ? [] : visitas.filter(v =>
@@ -828,7 +909,6 @@
   // =========================
   function renderNuevo(){
     if(!requirePerm("crear_cita","Solo COMPRAS o ADMIN pueden crear citas.")) return;
-
     cleanup();
     app.innerHTML = `
       <div class="card">
@@ -836,7 +916,6 @@
         <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
           Captura los datos mínimos para generar el QR y controlar el acceso.
         </p>
-
         <div class="two">
           <div>
             <label>Proveedor *</label>
@@ -870,7 +949,6 @@
             <label>Fecha y hora *</label>
             <input type="datetime-local" id="fechaHora" />
           </div>
-
           <div>
             <label>No. Orden de Compra</label>
             <input id="ocNo" placeholder="OC-12345">
@@ -888,7 +966,6 @@
             <input type="file" id="facturaFile" accept="image/*,.pdf">
           </div>
         </div>
-
         <div class="divider"></div>
         <div class="row">
           <button data-action="guardar">Guardar y Generar QR</button>
@@ -922,6 +999,7 @@
 
     const ocNo = ($("#ocNo")?.value || "").trim();
     const facturaNo = ($("#facturaNo")?.value || "").trim();
+
     const ocFile = $("#ocFile")?.files?.[0] || null;
     const facturaFile = $("#facturaFile")?.files?.[0] || null;
 
@@ -957,21 +1035,24 @@
       fechaHora,
       fechaHoraTs,
       createdTs: Date.now(),
+      updatedTs: Date.now(),
+
       llegadaTs: null,
       entradaTs: null,
       salidaTs: null,
+
       status: Status.PROGRAMADO,
       qrActivo: true,
+
       guardNombre: null,
       gafeteNo: null,
 
-      // ✅ DATOS PARA ANÁLISIS
       dictamen: { estado: "pendiente", notas: "", ts: null, por: null },
       incidenciasSalida: "",
       salidaPor: ""
     };
 
-    // Guardado asíncrono de adjuntos
+    // Guardado asíncrono de adjuntos en IndexedDB (igual que tu lógica)
     setTimeout(async () => {
       try{
         const v = visitas.find(x => x.id === id);
@@ -989,7 +1070,9 @@
           await idbSetDoc(key, blob);
           v.facturaFileKey = key;
         }
-        saveVisitas();
+
+        v.updatedTs = Date.now();
+        await saveVisitas();
       }catch(e){
         console.warn("No se pudieron guardar adjuntos", e);
       }
@@ -1005,7 +1088,6 @@
     cleanup();
     const v = visitas.find(x => x.id == id);
     if(!v) return renderHome();
-
     if(!hasPerm("ver_qr") && currentUser.role !== ROLES.PROVEEDOR){
       toast("Acceso denegado", "Tu perfil no puede ver QR.", "bad");
       return renderHome();
@@ -1017,7 +1099,6 @@
         <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">
           Escanea este código en recepción para abrir la ficha.
         </p>
-
         <div class="row" style="align-items:flex-start;">
           <div style="flex:0 0 280px;">
             <div id="qrcode" style="background:white; padding:10px; border-radius:14px; display:inline-block;"></div>
@@ -1027,7 +1108,6 @@
               <span class="dot info"></span>
               ID: <b style="color:var(--text); margin-left:6px;">${esc(String(v.id))}</b>
             </div>
-
             <div class="card" style="box-shadow:none;">
               <div style="color:var(--muted);font-size:12px;">Proveedor</div>
               <div style="font-weight:800;">${esc(v.proveedor)}</div>
@@ -1038,7 +1118,6 @@
               <div style="color:var(--muted);font-size:12px;">Cita</div>
               <div style="font-weight:700;"><b>${esc(v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-")}</b></div>
             </div>
-
             <div class="row" style="margin-top:12px;">
               <button class="secondary" data-action="print">Imprimir</button>
               <button class="secondary" data-action="home">Volver</button>
@@ -1069,7 +1148,6 @@
   // =========================
   function renderScanner(){
     if(!requirePerm("escanear_qr","Solo GUARDIA o ADMIN pueden escanear QR.")) return;
-
     cleanup();
     app.innerHTML = `
       <div class="card">
@@ -1084,7 +1162,6 @@
         </div>
       </div>
     `;
-
     try{
       qrScanner = new Html5Qrcode("reader");
     }catch(e){
@@ -1095,9 +1172,9 @@
     qrScanner.start(
       { facingMode: "environment" },
       { fps: 10, qrbox: 250 },
-      (decodedText) => {
+      async (decodedText) => {
         stopScanner();
-        abrirFichaDesdeQR(String(decodedText).trim());
+        await abrirFichaDesdeQR(String(decodedText).trim());
       },
       () => {}
     ).catch(err => {
@@ -1107,25 +1184,23 @@
   }
 
   // ✅ Programado -> Llegado (y regresa al dashboard)
-  function abrirFichaDesdeQR(id){
+  async function abrirFichaDesdeQR(id){
     const v = visitas.find(x => x.id == id);
     if(!v || !v.qrActivo){
       toast("QR inválido", "QR no encontrado o desactivado.", "bad", 3600);
       return renderDashboard();
     }
-
     if(v.status === Status.PROGRAMADO){
       v.status = Status.LLEGADO;
       v.llegadaTs = Date.now();
-      saveVisitas();
+      v.updatedTs = Date.now();
+      await saveVisitas();
+      // sube este registro inmediato (mejor UX)
+      if(navigator.onLine){ try{ await cloudUpsertVisita(v);}catch{} }
       toast("Llegada registrada", "Se movió a 'Llegaron'.", "ok", 2200);
-
-      // ✅ auto-dashboard
       renderDashboard();
       return;
     }
-
-    // si ya estaba llegado/dentro/despachado, abrimos ficha
     renderFicha(v.id);
   }
 
@@ -1136,16 +1211,13 @@
     cleanup();
     const v = visitas.find(x => x.id == id);
     if(!v) return renderDashboard();
-
     if(!requirePerm("ver_ficha","Tu perfil no puede ver fichas.")) return;
 
-    // si está dentro y rol es CALIDAD/ADMIN -> vista de calidad
     if(v.status === Status.DENTRO && (currentUser.role === ROLES.CALIDAD || currentUser.role === ROLES.ADMIN)){
       return renderFichaCalidad(v);
     }
 
     const dur = calcDuration(v);
-
     const statusLabel =
       v.status === Status.PROGRAMADO ? "Programado" :
       v.status === Status.LLEGADO ? "Llegó" :
@@ -1167,7 +1239,6 @@
           <div>
             <h2 style="margin:0;">${esc(v.proveedor)}</h2>
             <div style="color:var(--muted); margin-top:2px;">${esc(v.empresa)}</div>
-
             <div class="meta" style="margin-top:10px;">
               <span class="pill"><span class="dot ${statusDot}"></span>${esc(statusLabel)}</span>
               <span class="pill"><span class="dot info"></span>ID: ${esc(v.id)}</span>
@@ -1181,7 +1252,6 @@
               ${v.incidenciasSalida ? `<span class="pill"><span class="dot warn"></span>Incidencias</span>` : ""}
             </div>
           </div>
-
           <div class="row">
             <button class="secondary" data-action="verQR" data-id="${esc(v.id)}">Ver QR</button>
             <button class="secondary" data-action="home">Volver</button>
@@ -1228,7 +1298,6 @@
               <span style="color:var(--muted)">Salida</span>
               <b style="color:var(--text)">${esc(fmt(v.salidaTs))}</b>
             </div>
-
             ${dur ? `
               <div style="height:8px;"></div>
               <div class="pill" style="display:flex; justify-content:space-between;">
@@ -1266,15 +1335,14 @@
         ` : ""}
 
         <div class="divider"></div>
+
         <div class="row">
           ${(v.status === Status.PROGRAMADO || v.status === Status.LLEGADO) && hasPerm("registrar_entrada") ? `
             <button class="ok" data-action="entrada" data-id="${esc(v.id)}">Registrar Entrada</button>
           ` : ""}
-
           ${v.status === Status.DESPACHADO && hasPerm("registrar_salida") ? `
             <button class="danger" data-action="salida" data-id="${esc(v.id)}">Registrar Salida</button>
           ` : ""}
-
           <button class="secondary" data-action="print">Imprimir</button>
 
           ${v.status === Status.FINALIZADO && hasPerm("reactivar_qr") ? `
@@ -1290,28 +1358,23 @@
   }
 
   // =========================
-  // Entrada (sin foto) - Llegado -> Dentro (y auto-dashboard)
+  // Entrada (sin foto) - Llegado -> Dentro
   // =========================
   function renderEntrada(id){
     if(!requirePerm("registrar_entrada","Solo GUARDIA o ADMIN pueden registrar entrada.")) return;
-
     cleanup();
     const v = visitas.find(x => x.id == id);
     if(!v) return renderDashboard();
-
     app.innerHTML = `
       <div class="card">
         <h2 style="margin:0 0 6px;">Registrar Entrada</h2>
         <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
           Por confidencialidad, <b>no se toma foto</b>. Captura responsable y gafete.
         </p>
-
         <label>Nombre del guardia *</label>
         <input id="guardia" placeholder="Ej. Juan Pérez" value="${esc(v.guardNombre || currentUser.nombre || "")}" autocomplete="off" />
-
         <label>No. de Gafete *</label>
         <input id="gafeteNo" placeholder="Ej. 12, 25, A-03" value="${esc(v.gafeteNo || "")}" />
-
         <div class="divider"></div>
         <div class="row">
           <button class="ok" data-action="confirmarEntrada" data-id="${esc(id)}">Confirmar Entrada</button>
@@ -1321,50 +1384,43 @@
     `;
   }
 
-  function confirmarEntrada(id){
+  async function confirmarEntrada(id){
     const v = visitas.find(x => x.id == id);
     if(!v) return renderDashboard();
-
     const guard = ($("#guardia").value || "").trim();
     const gafete = ($("#gafeteNo").value || "").trim();
     if(!guard || !gafete){
       toast("Datos requeridos", "Captura el nombre del guardia y el No. de gafete.", "warn", 3200);
       return;
     }
-
     v.guardNombre = guard;
     v.gafeteNo = gafete;
     v.status = Status.DENTRO;
     v.entradaTs = Date.now();
-
-    saveVisitas();
+    v.updatedTs = Date.now();
+    await saveVisitas();
+    if(navigator.onLine){ try{ await cloudUpsertVisita(v);}catch{} }
     toast("Entrada registrada", "Se movió a 'Dentro'.", "ok", 2200);
-
-    // ✅ auto-dashboard
     renderDashboard();
   }
 
   // =========================
-  // Calidad (Dentro) - Dictamen (dato) + Despachar (flujo)
+  // Calidad (Dentro) - Dictamen + Despachar
   // =========================
   function renderFichaCalidad(v){
     if(!requirePerm("dictaminar","Solo CALIDAD o ADMIN pueden dictaminar.")) return;
-
     cleanup();
-
     const dictSel = (v.dictamen?.estado || "pendiente").toLowerCase();
-
     app.innerHTML = `
       <div class="card printable">
         <h2 style="margin:0;">Revisión de Calidad</h2>
         <div style="color:var(--muted); margin-bottom:10px;">
           ${esc(v.proveedor)} — ${esc(v.empresa)}
         </div>
-
         <div class="pill" style="margin-bottom:10px;">
           <span class="dot ok"></span>
           Entrada registrada por: <b style="color:var(--text)">${esc(v.guardNombre || "-")}</b>
-          ${v.gafeteNo ? ` | Gafete: <b style="color:var(--text)">${esc(v.gafeteNo)}</b>` : ""}
+          ${v.gafeteNo ? ` Gafete: <b style="color:var(--text)">${esc(v.gafeteNo)}</b>` : ""}
         </div>
 
         <div class="divider"></div>
@@ -1385,7 +1441,6 @@
             <span style="color:var(--muted)">Factura</span>
             <b>${esc(v.facturaNo || "-")}</b>
           </div>
-
           <div class="row" style="margin-top:8px;">
             ${v.ocFileKey ? `<button class="secondary" data-action="verOC" data-id="${esc(v.id)}">Ver OC</button>` : ""}
             ${v.facturaFileKey ? `<button class="secondary" data-action="verFactura" data-id="${esc(v.id)}">Ver Factura</button>` : ""}
@@ -1395,7 +1450,6 @@
         <div class="divider"></div>
 
         <h3 style="margin:0 0 6px;">Dictamen (para estadístico)</h3>
-
         <label>Dictamen *</label>
         <select id="dictamenEstado">
           <option value="pendiente">Pendiente</option>
@@ -1404,8 +1458,7 @@
         </select>
 
         <label>Observaciones del dictamen</label>
-        <textarea id="dictamenNotas" rows="3"
-          placeholder="Daños, faltantes, observaciones...">${esc(v.dictamen?.notas || "")}</textarea>
+        <textarea id="dictamenNotas" rows="3" placeholder="Daños, faltantes, observaciones...">${esc(v.dictamen?.notas || "")}</textarea>
 
         <div class="divider"></div>
 
@@ -1420,23 +1473,19 @@
         </div>
       </div>
     `;
-
-    // set default select after render
     setTimeout(() => {
       const sel = document.getElementById("dictamenEstado");
       if(sel) sel.value = dictSel;
     }, 0);
   }
 
-  // Guardar dictamen (solo dato) y regresar al dashboard
-  function guardarDictamen(id){
-    if(!requirePerm("dictaminar","No tienes permiso para dictaminar.")) return;
-
+  async function despachar(id){
+    if(!requirePerm("despachar","Solo CALIDAD o ADMIN pueden despachar.")) return;
     const v = visitas.find(x => x.id == id);
     if(!v) return renderDashboard();
 
-    const estado = ($("#dictamenEstado").value || "pendiente").trim();
-    const notas = ($("#dictamenNotas").value || "").trim();
+    const estado = ($("#dictamenEstado")?.value || "pendiente").trim();
+    const notas = ($("#dictamenNotas")?.value || "").trim();
 
     v.dictamen = v.dictamen || {};
     v.dictamen.estado = estado;
@@ -1444,72 +1493,32 @@
     v.dictamen.ts = Date.now();
     v.dictamen.por = currentUser?.nombre || "";
 
-    saveVisitas();
-    toast("Dictamen guardado", `Estado: ${estado.toUpperCase()}`, estado==="aceptado" ? "ok" : (estado==="rechazado" ? "warn" : "info"), 2200);
+    v.status = Status.DESPACHADO;
+    v.updatedTs = Date.now();
 
-    // ✅ auto-dashboard (como pediste)
+    await saveVisitas();
+    if(navigator.onLine){ try{ await cloudUpsertVisita(v);}catch{} }
+
+    toast("Despachado", `Se movió a 'Despachados'. Dictamen: ${String(estado).toUpperCase()}`, "ok", 2200);
     renderDashboard();
   }
 
-  // Dentro -> Despachado (y auto-dashboard)
-  function despachar(id){
-  if(!requirePerm("despachar","Solo CALIDAD o ADMIN pueden despachar.")) return;
-
-  const v = visitas.find(x => x.id == id);
-  if(!v) return renderDashboard();
-
-  // ✅ Guardar dictamen AUTOMÁTICO al despachar (solo dato estadístico)
-  const estado = ($("#dictamenEstado")?.value || "pendiente").trim();
-  const notas  = ($("#dictamenNotas")?.value || "").trim();
-
-  // Puedes decidir si lo haces obligatorio o no. Por defecto: no obligatorio.
-  // Si quieres obligarlo: descomenta esto:
-  // if(!estado || estado === "pendiente"){
-  //   toast("Dictamen","Selecciona Aceptado o Rechazado antes de despachar.","warn",3000);
-  //   return;
-  // }
-
-  v.dictamen = v.dictamen || {};
-  v.dictamen.estado = estado;
-  v.dictamen.notas = notas;
-  v.dictamen.ts = Date.now();
-  v.dictamen.por = currentUser?.nombre || "";
-
-  // ✅ Flujo operativo (estado)
-  v.status = Status.DESPACHADO;
-  saveVisitas();
-
-  toast(
-    "Despachado",
-    `Se movió a 'Despachados'. Dictamen: ${String(estado).toUpperCase()}`,
-    "ok",
-    2200
-  );
-
-  // ✅ Auto-dashboard (como pediste)
-  renderDashboard();
-}
   // =========================
-  // Salida (Despachado -> Finalizado) con incidencias (dato) y auto-dashboard
+  // Salida (Despachado -> Finalizado)
   // =========================
   function renderSalida(id){
     if(!requirePerm("registrar_salida","No tienes permiso para registrar salida.")) return;
-
     cleanup();
     const v = visitas.find(x => x.id == id);
     if(!v) return renderDashboard();
-
     app.innerHTML = `
       <div class="card">
         <h2 style="margin:0 0 6px;">Registrar Salida</h2>
         <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
           Registra incidencias si existieron (solo para medición y retroalimentación).
         </p>
-
         <label>Incidencias (opcional)</label>
-        <textarea id="incidenciasSalida" rows="4"
-          placeholder="Ej. Documentación incompleta, daños, discrepancias, retraso...">${esc(v.incidenciasSalida || "")}</textarea>
-
+        <textarea id="incidenciasSalida" rows="4" placeholder="Ej. Documentación incompleta, daños, discrepancias, retraso...">${esc(v.incidenciasSalida || "")}</textarea>
         <div class="divider"></div>
         <div class="row">
           <button class="danger" data-action="confirmarSalida" data-id="${esc(id)}">Confirmar Salida</button>
@@ -1519,9 +1528,8 @@
     `;
   }
 
-  function confirmarSalida(id){
+  async function confirmarSalida(id){
     if(!requirePerm("registrar_salida","No tienes permiso para registrar salida.")) return;
-
     const v = visitas.find(x => x.id == id);
     if(!v) return renderDashboard();
 
@@ -1530,11 +1538,12 @@
     v.salidaTs = Date.now();
     v.status = Status.FINALIZADO;
     v.qrActivo = false;
+    v.updatedTs = Date.now();
 
-    saveVisitas();
+    await saveVisitas();
+    if(navigator.onLine){ try{ await cloudUpsertVisita(v);}catch{} }
+
     toast("Salida registrada", v.incidenciasSalida ? "Finalizado con incidencias." : "Finalizado (sin incidencias).", "ok", 2200);
-
-    // ✅ auto-dashboard
     renderDashboard();
   }
 
@@ -1543,7 +1552,6 @@
   // =========================
   async function verDocumento(key){
     if(!requirePerm("ver_documentos","Tu perfil no puede ver documentos.")) return;
-
     const blob = await idbGetDoc(key);
     if(!blob){
       toast("Archivo", "No encontrado.", "warn");
@@ -1556,36 +1564,40 @@
   // =========================
   // Reactivar / Eliminar / Limpiar
   // =========================
-  function reactivarQR(id){
+  async function reactivarQR(id){
     if(!requirePerm("reactivar_qr","Solo ADMIN puede reactivar QR.")) return;
-
     const v = visitas.find(x => x.id == id);
     if(!v) return;
     v.qrActivo = true;
-    saveVisitas();
+    v.updatedTs = Date.now();
+    await saveVisitas();
+    if(navigator.onLine){ try{ await cloudUpsertVisita(v);}catch{} }
     toast("QR reactivado", "El QR volvió a estar activo.", "ok", 2200);
     renderDashboard();
   }
 
   async function eliminarVisita(id){
     if(!requirePerm("eliminar","Solo ADMIN puede eliminar registros.")) return;
-
     const idx = visitas.findIndex(x => x.id == id);
     if(idx < 0) return;
-
     const v = visitas[idx];
+
     if(v.ocFileKey){ try{ await idbDelDoc(v.ocFileKey); }catch{} }
     if(v.facturaFileKey){ try{ await idbDelDoc(v.facturaFileKey); }catch{} }
 
     visitas.splice(idx, 1);
-    saveVisitas();
+    await saveVisitas();
+
+    if(navigator.onLine){
+      try{ await cloudDeleteVisita(id); }catch(e){ console.warn("No se pudo borrar en Firestore", e); }
+    }
+
     toast("Eliminado", "Se eliminó el registro.", "ok", 2000);
     renderDashboard();
   }
 
   function limpiarFinalizados(){
     if(!requirePerm("limpiar_finalizados","Solo ADMIN puede borrar finalizados.")) return;
-
     const antes = visitas.length;
     const finalizados = visitas.filter(v => v.status === Status.FINALIZADO);
     if(!finalizados.length){
@@ -1598,25 +1610,29 @@
       if(v.ocFileKey) ops.push(idbDelDoc(v.ocFileKey).catch(()=>{}));
       if(v.facturaFileKey) ops.push(idbDelDoc(v.facturaFileKey).catch(()=>{}));
       return Promise.all(ops);
-    })).finally(() => {
+    })).finally(async () => {
+      // borra en nube (best effort)
+      if(navigator.onLine){
+        await Promise.all(finalizados.map(v => cloudDeleteVisita(v.id).catch(()=>{})));
+      }
+
       visitas = visitas.filter(v => v.status !== Status.FINALIZADO);
-      saveVisitas();
+      await saveVisitas();
+
       toast("Limpieza", `Se borraron ${antes - visitas.length} finalizados.`, "ok", 2200);
       renderDashboard();
     });
   }
 
   // =========================
-  // Excel
+  // Excel (igual que lo traías)
   // =========================
   function exportExcel(){
     if(!requirePerm("exportar_excel","Tu perfil no puede exportar Excel.")) return;
-
     if(!window.XLSX){
       toast("Excel", "No se cargó XLSX. Revisa xlsx-js-style.", "bad", 4200);
       return;
     }
-
     const headers = [
       "ID","Proveedor","Empresa","Persona a visitar","Área","Motivo",
       "Teléfono","Correo","Fecha Cita","Estado","QR Activo",
@@ -1709,7 +1725,6 @@
 
     const range = XLSX.utils.decode_range(ws["!ref"]);
     const dictamenCol = headers.indexOf("Dictamen");
-
     for(let R = range.s.r; R <= range.e.r; R++){
       for(let C = range.s.c; C <= range.e.c; C++){
         const addr = XLSX.utils.encode_cell({ r: R, c: C });
@@ -1744,15 +1759,18 @@
 
     switch(action){
       case "home": renderHome(); break;
-
       case "nuevo": renderNuevo(); break;
 
       case "guardar": {
         if(!requirePerm("crear_cita","Solo COMPRAS o ADMIN pueden crear citas.")) return;
         const v = createVisitaFromForm();
         if(!v) return;
+
         visitas.unshift(v);
-        if(saveVisitas()){
+
+        // guarda local + nube
+        if(await saveVisitas()){
+          if(navigator.onLine){ try{ await cloudUpsertVisita(v);}catch{} }
           toast("Guardado", "Cita creada y QR generado.", "ok", 2200);
           renderQR(v.id);
         }
@@ -1760,18 +1778,13 @@
       }
 
       case "scan": renderScanner(); break;
-
       case "ficha": renderFicha(id); break;
       case "verQR": renderQR(id); break;
-
       case "entrada": renderEntrada(id); break;
-      case "confirmarEntrada": confirmarEntrada(id); break;
-
-      case "guardarDictamen": guardarDictamen(id); break;
-      case "despachar": despachar(id); break;
-
+      case "confirmarEntrada": await confirmarEntrada(id); break;
+      case "despachar": await despachar(id); break;
       case "salida": renderSalida(id); break;
-      case "confirmarSalida": confirmarSalida(id); break;
+      case "confirmarSalida": await confirmarSalida(id); break;
 
       case "verOC": {
         const v = visitas.find(x => x.id == id);
@@ -1784,13 +1797,13 @@
         break;
       }
 
-      case "reactivar": reactivarQR(id); break;
+      case "reactivar": await reactivarQR(id); break;
 
       case "eliminar": {
         const v = visitas.find(x => x.id == id);
         if(!v) return;
         if(confirm(`¿Eliminar el registro de "${v.proveedor}"?`)){
-          eliminarVisita(id);
+          await eliminarVisita(id);
         }
         break;
       }
@@ -1804,6 +1817,16 @@
 
       case "exportExcel": exportExcel(); break;
       case "print": window.print(); break;
+
+      case "sync": {
+        if(!currentUser) return;
+        toast("Sincronizando", "Actualizando datos desde la nube...", "info", 1600);
+        visitas = await loadVisitas();
+        await saveVisitas();
+        toast("Listo", "Datos sincronizados.", "ok", 1600);
+        renderHome();
+        break;
+      }
     }
   });
 
@@ -1817,24 +1840,51 @@
     netDot.className = "dot " + (on ? "ok" : "bad");
     netText.textContent = on ? "En línea" : "Sin conexión";
   }
-  window.addEventListener("online", updateNet);
+  window.addEventListener("online", async () => {
+    updateNet();
+    // al volver internet, intenta sync suave
+    if(currentUser){
+      visitas = await loadVisitas();
+      await saveVisitas();
+      renderHome();
+    }
+  });
   window.addEventListener("offline", updateNet);
   updateNet();
 
- if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("./service-worker.js")
-    .then(() => console.log("SW registrado 🔥"))
-    .catch(err => console.error("SW error", err));
-}
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./service-worker.js")
+      .then(() => console.log("SW registrado 🔥"))
+      .catch(err => console.error("SW error", err));
+  }
 
   // =========================
   // Inicio
   // =========================
-  loadUser();
-  paintHeader();
+  (async () => {
+    // carga visitas lo antes posible (sin depender del login)
+    visitas = await loadVisitas();
 
-  if(!currentUser) renderLogin();
-  else renderHome();
+    loadUser();
+    paintHeader();
+    if(!currentUser) renderLogin();
+    else renderHome();
+  })();
+window.fb.onAuthStateChanged(window.auth, (user) => {
+  if(user){
+    currentUser = {
+      user: user.email,
+      role: "admin",
+      nombre: user.email
+    };
+
+    saveUser();
+    paintHeader();
+    renderHome();
+  } else {
+    renderLogin();
+  }
+});
 
 })();
 </script>
