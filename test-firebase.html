@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prueba de Conexión Firebase</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #0b1220;
+      color: #e5e7eb;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .container {
+      background: #111c33;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px;
+      padding: 20px;
+    }
+    h1 {
+      color: #3b82f6;
+      margin-top: 0;
+    }
+    .test {
+      margin: 15px 0;
+      padding: 12px;
+      border-left: 3px solid #94a3b8;
+      background: rgba(148,163,184,.05);
+      border-radius: 4px;
+    }
+    .test.success {
+      border-left-color: #22c55e;
+      background: rgba(34,197,94,.05);
+    }
+    .test.error {
+      border-left-color: #ef4444;
+      background: rgba(239,68,68,.05);
+    }
+    .test.loading {
+      border-left-color: #facc15;
+      background: rgba(250,204,21,.05);
+    }
+    .status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      margin-right: 8px;
+    }
+    .status.ok {
+      background: #22c55e;
+      color: white;
+    }
+    .status.error {
+      background: #ef4444;
+      color: white;
+    }
+    .status.loading {
+      background: #facc15;
+      color: #000;
+    }
+    .log {
+      background: #0b1220;
+      border: 1px solid rgba(255,255,255,.08);
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      color: #22c55e;
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 20px;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 Prueba de Conexión Firebase</h1>
+    
+    <div id="test-init" class="test">
+      <span class="status loading">PRUEBA</span>
+      <strong>1. Inicializar Firebase</strong>
+      <div class="log" id="log-init">Esperando...</div>
+    </div>
+
+    <div id="test-firestore" class="test">
+      <span class="status loading">PRUEBA</span>
+      <strong>2. Conectar a Firestore</strong>
+      <div class="log" id="log-firestore">Esperando...</div>
+    </div>
+
+    <div id="test-read" class="test">
+      <span class="status loading">PRUEBA</span>
+      <strong>3. Leer datos (colección "visitas")</strong>
+      <div class="log" id="log-read">Esperando...</div>
+    </div>
+
+    <div id="test-write" class="test">
+      <span class="status loading">PRUEBA</span>
+      <strong>4. Escribir datos (test)</strong>
+      <div class="log" id="log-write">Esperando...</div>
+    </div>
+
+    <div id="test-delete" class="test">
+      <span class="status loading">PRUEBA</span>
+      <strong>5. Limpiar datos de prueba</strong>
+      <div class="log" id="log-delete">Esperando...</div>
+    </div>
+
+    <button onclick="location.reload()">🔄 Reintentar</button>
+  </div>
+
+  <script type="module">
+    const updateTest = (testId, logId, status, message) => {
+      const testEl = document.getElementById(testId);
+      const logEl = document.getElementById(logId);
+      const statusEl = testEl.querySelector('.status');
+      
+      statusEl.className = `status ${status}`;
+      statusEl.textContent = status === 'ok' ? '✓ OK' : status === 'error' ? '✗ ERROR' : '⏳ CARGANDO';
+      logEl.textContent = message;
+      
+      testEl.className = `test ${status === 'error' ? 'error' : status === 'ok' ? 'success' : 'loading'}`;
+    };
+
+    try {
+      // Paso 1: Importar Firebase
+      updateTest('test-init', 'log-init', 'loading', 'Importando Firebase...');
+      
+      const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js");
+      const { getFirestore, collection, getDocs, query, limit, setDoc, doc, deleteDoc } = 
+        await import("https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js");
+
+      updateTest('test-init', 'log-init', 'ok', 'Firebase SDK cargado correctamente ✓');
+
+      // Paso 2: Configurar Firebase
+      updateTest('test-firestore', 'log-firestore', 'loading', 'Inicializando Firebase...');
+      
+      const firebaseConfig = {
+        apiKey: "AIzaSyDmdS1mt12tyWOE48U2As-53vtdQT7esPg",
+        authDomain: "control-acceso-cd3db.firebaseapp.com",
+        projectId: "control-acceso-cd3db",
+        storageBucket: "control-acceso-cd3db.firebasestorage.app",
+        messagingSenderId: "98995699294",
+        appId: "1:98995699294:web:dd1b6b639525fd06a5fecf"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      updateTest('test-firestore', 'log-firestore', 'ok', 
+        `Conectado a Firestore\nProyecto: ${firebaseConfig.projectId}`);
+
+      // Paso 3: Leer datos
+      updateTest('test-read', 'log-read', 'loading', 'Leyendo colección "visitas"...');
+      
+      const q = query(collection(db, "visitas"), limit(5));
+      const snapshot = await getDocs(q);
+      const count = snapshot.size;
+
+      let msg = `Documentos encontrados: ${count}`;
+      if (count > 0) {
+        msg += '\n\nÚltimos registros:\n';
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          msg += `\n• ${doc.id}\n`;
+          msg += `  Proveedor: ${data.proveedor || '?'}\n`;
+          msg += `  Creado: ${new Date(data.createdTs).toLocaleString()}\n`;
+        });
+      }
+      
+      updateTest('test-read', 'log-read', 'ok', msg);
+
+      // Paso 4: Escribir test
+      updateTest('test-write', 'log-write', 'loading', 'Escribiendo documento de prueba...');
+      
+      const testId = `test_${Date.now()}`;
+      const testDoc = {
+        proveedor: "TEST - Prueba de Conexión",
+        persona: "Sistema",
+        empresa: "Test",
+        createdTs: Date.now(),
+        test: true,
+        nota: "Documento de prueba - Se eliminará automáticamente"
+      };
+
+      await setDoc(doc(db, "visitas", testId), testDoc);
+      updateTest('test-write', 'log-write', 'ok', 
+        `Documento escrito correctamente\nID: ${testId}`);
+
+      // Paso 5: Limpiar
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      updateTest('test-delete', 'log-delete', 'loading', 'Limpiando documento de prueba...');
+      
+      await deleteDoc(doc(db, "visitas", testId));
+      updateTest('test-delete', 'log-delete', 'ok', 
+        `Documento de prueba eliminado ✓\nTodos los tests pasaron correctamente`);
+
+    } catch (error) {
+      console.error('Error en prueba:', error);
+      const msg = error.message || String(error);
+      
+      if (!document.getElementById('test-init').querySelector('.status').textContent.includes('OK')) {
+        updateTest('test-init', 'log-init', 'error', msg);
+      } else if (!document.getElementById('test-firestore').querySelector('.status').textContent.includes('OK')) {
+        updateTest('test-firestore', 'log-firestore', 'error', msg);
+      } else if (!document.getElementById('test-read').querySelector('.status').textContent.includes('OK')) {
+        updateTest('test-read', 'log-read', 'error', msg);
+      } else if (!document.getElementById('test-write').querySelector('.status').textContent.includes('OK')) {
+        updateTest('test-write', 'log-write', 'error', msg);
+      } else {
+        updateTest('test-delete', 'log-delete', 'error', msg);
+      }
+    }
+  </script>
+</body>
+</html>
