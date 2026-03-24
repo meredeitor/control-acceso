@@ -553,23 +553,37 @@ async function cloudDeleteVisita(id){
         </div>
       </div>
     `;
-    $("#btnLogin").onclick = async () => {
-      const u = ($("#loginUser").value || "").trim();
-      const p = ($("#loginPass").value || "").trim();
-      const found = USERS.find(x => x.user === u && x.pass === p);
-      if(!found){
-        toast("Acceso denegado", "Usuario o contraseña incorrectos.", "bad", 3200);
-        return;
-      }
-      currentUser = { user: found.user, role: found.role, nombre: found.nombre };
-      saveUser();
-      toast("Bienvenido", `${found.nombre} (${found.role.toUpperCase()})`, "ok", 2200);
+   $("#btnLogin").onclick = async () => {
+  const email = ($("#loginUser").value || "").trim();
+  const pass = ($("#loginPass").value || "").trim();
 
-      // ✅ al iniciar sesión, intentamos refrescar desde nube (si hay)
-      visitas = await loadVisitas();
-      paintHeader();
-      renderHome();
+  try {
+    const res = await window.fb.signInWithEmailAndPassword(
+      window.auth,
+      email,
+      pass
+    );
+
+    const user = res.user;
+
+    currentUser = {
+      user: user.email,
+      role: "admin", // temporal
+      nombre: user.email
     };
+
+    saveUser();
+    paintHeader();
+    renderHome();
+
+    toast("Bienvenido", user.email, "ok");
+
+  } catch (err) {
+    console.error(err);
+    toast("Error", "Credenciales incorrectas", "bad");
+  }
+};
+  
   }
 
   function paintHeader(){
@@ -1856,6 +1870,21 @@ async function cloudDeleteVisita(id){
     if(!currentUser) renderLogin();
     else renderHome();
   })();
+window.fb.onAuthStateChanged(window.auth, (user) => {
+  if(user){
+    currentUser = {
+      user: user.email,
+      role: "admin",
+      nombre: user.email
+    };
+
+    saveUser();
+    paintHeader();
+    renderHome();
+  } else {
+    renderLogin();
+  }
+});
 
 })();
 </script>
