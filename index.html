@@ -179,7 +179,7 @@
       <div class="logo">PV</div>
       <div>
         <h1>Control de Acceso Proveedores</h1>
-        <small>Dashboard HOY • Historial por día • Admin Roles • Offline-first</small>
+        <small>Dashboard • Historial por día • Admin Roles • Offline-first</small>
       </div>
     </div>
     <div class="actions" id="actionsBar">
@@ -641,7 +641,7 @@
     }
 
     // -------------------------
-    // Views: Pendiente / Dashboard HOY / Historial
+    // Views: Pendiente / Dashboard / Historial
     // -------------------------
     function getCounts(list){
       return {
@@ -730,7 +730,7 @@
 
       appEl.innerHTML = `
         <div class="pill" style="margin-bottom:10px;">
-          <span class="dot brand"></span> Vista HOY: <b style="color:var(--text);">${new Date().toLocaleDateString()}</b>
+          <span class="dot brand"></span> Vista: <b style="color:var(--text);">${new Date().toLocaleDateString()}</b>
         </div>
         ${resumen}
         <div class="grid cols-5">
@@ -742,9 +742,9 @@
         </div>
         <div class="divider"></div>
         <div class="row">
-          ${hasPerm("exportar_excel") ? `<button class="secondary" data-action="exportExcel">Exportar Excel (HOY)</button>` : ""}
-          ${hasPerm("limpiar_finalizados") ? `<button class="secondary danger" data-action="limpiarFinalizadosHoy">Borrar Finalizados (HOY)</button>` : ""}
-          <span class="pill" style="margin-left:auto;">Total HOY: <b style="color:var(--text); margin-left:6px;">${filtered.length}</b></span>
+          ${hasPerm("exportar_excel") ? `<button class="secondary" data-action="exportExcel">Exportar Excel</button>` : ""}
+          ${hasPerm("limpiar_finalizados") ? `<button class="secondary danger" data-action="limpiarFinalizadosHoy">Borrar Finalizados</button>` : ""}
+          <span class="pill" style="margin-left:auto;">Total: <b style="color:var(--text); margin-left:6px;">${filtered.length}</b></span>
         </div>
       `;
     }
@@ -762,7 +762,7 @@
               <div style="color:var(--muted); font-size:12px;">Selecciona un día para ver sus registros.</div>
             </div>
             <div class="row">
-              <button class="secondary" data-action="home">Volver a HOY</button>
+              <button class="secondary" data-action="home">Volver</button>
             </div>
           </div>
 
@@ -869,7 +869,7 @@
               </div>
             </div>
             <div class="row">
-              <button class="secondary" data-action="home">Volver a HOY</button>
+              <button class="secondary" data-action="home">Volver</button>
             </div>
           </div>
 
@@ -1616,7 +1616,7 @@
 
       const toDelete = visitas.filter(v => v.status === Status.FINALIZADO && typeof v.fechaHoraTs==="number" && isSameDay(v.fechaHoraTs, today));
       if(!toDelete.length){
-        toast("Sin cambios","No hay finalizados HOY para borrar.","info",2200);
+        toast("Sin cambios","No hay finalizados para borrar.","info",2200);
         return;
       }
 
@@ -1632,7 +1632,7 @@
         }
         visitas = visitas.filter(v => !(v.status === Status.FINALIZADO && typeof v.fechaHoraTs==="number" && isSameDay(v.fechaHoraTs, today)));
         saveVisitasLocal();
-        toast("Limpieza", `Se borraron ${antes - visitas.length} finalizados HOY.`, "ok", 2200);
+        toast("Limpieza", `Se borraron ${antes - visitas.length} finalizados.`, "ok", 2200);
         renderDashboardHoy();
       });
     }
@@ -1787,7 +1787,7 @@
         }
 
         case "sync":
-          toast("Sincronizando","Actualizando HOY desde la nube...","info",1600);
+          toast("Sincronizando","Actualizando desde la nube...","info",1600);
           await syncDay(new Date());
           await pushRecentToCloud();
           toast("Listo","Datos sincronizados.","ok",1600);
@@ -1819,7 +1819,7 @@
         }
 
         case "limpiarFinalizadosHoy":
-          if(confirm("¿Borrar FINALIZADOS de HOY?")) limpiarFinalizadosHoy();
+          if(confirm("¿Borrar FINALIZADOS?")) limpiarFinalizadosHoy();
           break;
 
         case "print": window.print(); break;
