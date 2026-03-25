@@ -179,7 +179,7 @@
       <div class="logo">PV</div>
       <div>
         <h1>Control de Acceso Proveedores</h1>
-        <small>Dashboard • Historial por día • Admin Roles • Offline-first</small>
+        <small>Dashboard  • Historial por día • Admin Roles • Offline-first</small>
       </div>
     </div>
     <div class="actions" id="actionsBar">
@@ -266,6 +266,14 @@
     [ROLES.PENDIENTE]: []
   };
 
+// =========================
+// Seguridad: PIN Admin
+// =========================
+const ADMIN_PIN = "2580";          // 🔐 CAMBIA ESTE PIN
+const PIN_TTL_MS = 5 * 60 * 1000;  // 5 minutos
+const PIN_SESSION_KEY = "adminPinOkTs";
+
+
   // =========================
   // App UI + lógica
   // =========================
@@ -298,12 +306,16 @@
     // Helpers
     // -------------------------
     function esc(s=""){
-      return String(s).replace(/[&<>"']/g, ch => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-      }[ch]));
-    }
+  return String(s).replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#039;"
+  }[ch]));
+}
 
-    function toast(title, msg, type="info", ttl=2600){
+function toast(title, msg, type="info", ttl=2600){
       const badgeColor =
         type==="ok" ? "var(--ok)" :
         type==="warn" ? "var(--warn)" :
@@ -330,7 +342,29 @@
       return false;
     }
 
-    function fmt(ts){
+    
+// -------------------------
+// PIN Admin (sesión)
+// -------------------------
+function requireAdminPin(actionLabel = "esta acción"){
+  if(!currentUser || currentUser.role !== ROLES.ADMIN){
+    toast("Acceso denegado", "Solo ADMIN puede realizar esta acción.", "bad", 3200);
+    return false;
+  }
+  const now = Date.now();
+  const lastOk = Number(sessionStorage.getItem(PIN_SESSION_KEY) || 0);
+  if(now - lastOk < PIN_TTL_MS) return true;
+  const pin = prompt(`🔐 Ingresa el PIN de administrador para ${actionLabel}:`);
+  if(!pin) return false;
+  if(pin === ADMIN_PIN){
+    sessionStorage.setItem(PIN_SESSION_KEY, String(now));
+    toast("PIN validado", "Acción autorizada.", "ok", 1800);
+    return true;
+  }
+  toast("PIN incorrecto", "Acción cancelada.", "bad", 3000);
+  return false;
+}
+function fmt(ts){
       if(!ts) return "-";
       return new Date(ts).toLocaleString();
     }
@@ -543,7 +577,8 @@
     async function doLogout(){
       try{ await signOut(auth); }catch{}
       localStorage.removeItem(LS_USER);
-      currentUser = null;
+ sessionStorage.removeItem(PIN_SESSION_KEY);
+ currentUser = null;
       paintHeader();
       renderLogin();
     }
@@ -563,7 +598,7 @@
 
       qSearch.style.display = "";
       qSearch.placeholder = (currentUser.role === ROLES.PROVEEDOR)
-        ? "Ingresa ID (del QR) o empresa..."
+        ? "Ingresa ID (del QR)..."
         : "Buscar proveedor / empresa...";
 
       const addBtn = (html) => {
@@ -641,7 +676,7 @@
     }
 
     // -------------------------
-    // Views: Pendiente / Dashboard / Historial
+    // Views: Pendiente / Dashboard  / Historial
     // -------------------------
     function getCounts(list){
       return {
@@ -978,17 +1013,13 @@
     function renderProveedor(){
       if(!requirePerm("buscar_proveedor","Tu rol no puede usar el portal.")) return;
       const term = (qSearch.value || "").trim().toLowerCase();
-      const results = !term ? [] : visitas.filter(v =>
-        String(v.id).toLowerCase() === term ||
-        (v.empresa||"").toLowerCase().includes(term) ||
-        (v.proveedor||"").toLowerCase().includes(term)
-      ).slice(0, 10);
+      const results = !term ? [] : visitas.filter(v => String(v.id).toLowerCase() === term).slice(0, 10);
 
       appEl.innerHTML = `
         <div class="card">
           <h2 style="margin:0 0 6px;">Portal Proveedor</h2>
           <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
-            Escribe tu <b>ID</b> (del QR) o tu empresa/proveedor para ver tu QR.
+            Escribe tu <b>ID</b> (del QR) para ver tu QR.
           </p>
           <div class="divider"></div>
           ${results.length ? results.map(v => `
@@ -1610,7 +1641,8 @@
     }
 
     function limpiarFinalizadosHoy(){
-      if(!requirePerm("limpiar_finalizados","Solo ADMIN puede borrar finalizados.")) return;
+ if(!requirePerm("limpiar_finalizados","Solo ADMIN puede borrar finalizados.")) return;
+ if(!requireAdminPin("limpiar FINALIZADOS del día")) return;
       const today = new Date();
       const antes = visitas.length;
 
@@ -1780,6 +1812,7 @@
         case "eliminar": {
           const v = visitas.find(x => x.id == id);
           if(!v) return;
+          if(!requireAdminPin("eliminar este registro")) return;
           if(confirm(`¿Eliminar el registro de "${v.proveedor}"?`)){
             await eliminarVisita(id);
           }
@@ -1819,15 +1852,29 @@
         }
 
         case "limpiarFinalizadosHoy":
-          if(confirm("¿Borrar FINALIZADOS?")) limpiarFinalizadosHoy();
+ if(!requireAdminPin("limpiar FINALIZADOS del día")) break;
+ if(confirm("¿Borrar FINALIZADOS?")) limpiarFinalizadosHoy();
           break;
 
         case "print": window.print(); break;
       }
     });
 
-    qSearch.addEventListener("input", () => async ()=>{ updateNet(); await syncDay(new Date()); renderHome(); });
-    window.addEventListener("offline", updateNet);
+    // Buscar (local inmediato + sync con debounce)
+let _searchTimer = null;
+qSearch.addEventListener("input", () => {
+  if(!currentUser) return;
+  renderHome();
+  if(_searchTimer) clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(async () => {
+    updateNet();
+    await syncDay(new Date());
+    renderHome();
+  }, 600);
+});
+
+window.addEventListener("online", () => { updateNet(); if(currentUser) syncDay(new Date()).catch(()=>{}); });
+window.addEventListener("offline",updateNet);
     updateNet();
 
     if ("serviceWorker" in navigator) {
