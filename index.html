@@ -169,10 +169,39 @@
       button, header{ display:none !important; }
     }
     .big{ font-size:34px; font-weight:700; margin-top:6px; }
-  </style>
+  
+/* ===== Sidebar ===== */
+.layout{display:flex;min-height:100vh}
+.sidebar{width:260px;background:linear-gradient(180deg,rgba(15,23,42,.98),rgba(15,23,42,.94));border-right:1px solid var(--border);position:sticky;top:0;height:100vh}
+.sidebar .brand{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid var(--border)}
+.sidebar .brand .logo{width:32px;height:32px;border-radius:10px}
+.sidebar nav{padding:10px}
+.sidebar button{width:100%;margin-bottom:8px;justify-content:flex-start}
+.sidebar .spacer{height:8px}
+.content{flex:1}
+@media(max-width:900px){.sidebar{position:fixed;left:-260px;transition:left .2s}.sidebar.open{left:0}.content{margin-left:0}}
+
+</style>
 </head>
 
 <body>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">PV</div>
+      <div><b>Proveedores</b><br><small class="muted">Menú</small></div>
+    </div>
+    <nav>
+      <button class="secondary" data-action="home">Dashboard</button>
+      <button class="secondary" data-action="nuevo">Nueva cita</button>
+      <button class="secondary" data-action="scan">Escanear QR</button>
+      <button class="secondary" data-action="historial">Historial</button>
+      <div class="spacer"></div>
+      <button class="secondary" data-action="adminRoles">Admin Roles</button>
+      <button class="secondary" data-top="logout">Cerrar sesión</button>
+    </nav>
+  </aside>
+  <div class="content">
 <header>
   <div class="topbar">
     <div class="title">
@@ -1610,17 +1639,24 @@ function fmt(ts){
       renderDashboardHoy();
     }
 
-    async function reactivarQR(id){
-      if(!requirePerm("reactivar_qr","Solo ADMIN puede reactivar QR.")) return;
-      const v = visitas.find(x => x.id == id);
-      if(!v) return;
-      v.qrActivo = true;
-      v.updatedTs = Date.now();
-      await saveVisitas();
-      if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE) await cloudUpsertVisita(v);
-      toast("QR reactivado","El QR volvió a estar activo.","ok",2200);
-      renderDashboardHoy();
-    }
+   async function reactivarQR(id){
+  if(!requirePerm("reactivar_qr","Solo ADMIN puede reactivar QR.")) return;
+  if(!requireAdminPin("reactivar el código QR")) return;
+
+  const v = visitas.find(x => x.id == id);
+  if(!v) return;
+
+  v.qrActivo = true;
+  v.updatedTs = Date.now();
+
+  await saveVisitas();
+  if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE){
+    await cloudUpsertVisita(v);
+  }
+
+  toast("QR reactivado","El QR volvió a estar activo.","ok",2200);
+  renderDashboardHoy();
+}
 
     async function eliminarVisita(id){
       if(!requirePerm("eliminar","Solo ADMIN puede eliminar registros.")) return;
@@ -1807,7 +1843,10 @@ function fmt(ts){
           break;
         }
 
-        case "reactivar": await reactivarQR(id); break;
+        case "reactivar":
+          if(!requireAdminPin("reactivar el código QR")) break;
+           await reactivarQR(id);
+           break;
 
         case "eliminar": {
           const v = visitas.find(x => x.id == id);
@@ -1919,5 +1958,5 @@ window.addEventListener("offline",updateNet);
     renderLogin();
   })();
 </script>
-</body>
+</div></div></body>
 </html>
