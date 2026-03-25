@@ -7,329 +7,166 @@
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#0f172a" />
 
-  <!-- QR -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
-
-  <!-- ✅ Excel con estilos: xlsx-js-style -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
+  <!-- Cargar librerías pesadas sin bloquear render -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script defer src="https://unpkg.com/html5-qrcode"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
 
   <style>
     :root{
-      --bg: #0b1220;
-      --panel: #111c33;
-      --panel2:#0f172a;
-      --text: #e5e7eb;
-      --muted:#94a3b8;
-      --brand:#3b82f6;
-      --ok:#22c55e;
-      --warn:#facc15;
-      --info:#38bdf8;
-      --bad:#ef4444;
-      --border: rgba(255,255,255,.08);
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --radius: 14px;
-      --pad: 14px;
-      --focus: 0 0 0 3px rgba(59,130,246,.35);
+      --bg:#0b1220; --panel:#111c33; --panel2:#0f172a; --text:#e5e7eb; --muted:#94a3b8;
+      --brand:#3b82f6; --ok:#22c55e; --warn:#facc15; --info:#38bdf8; --bad:#ef4444;
+      --border:rgba(255,255,255,.08); --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:14px; --pad:14px; --focus:0 0 0 3px rgba(59,130,246,.35);
       --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
     *{ box-sizing:border-box; }
     body{
-      margin:0;
-      font-family: var(--font);
-      background: radial-gradient(900px 500px at 20% 0%, rgba(59,130,246,.15), transparent 60%),
-                  radial-gradient(700px 400px at 90% 20%, rgba(34,197,94,.10), transparent 55%),
-                  var(--bg);
-      color:var(--text);
-      min-height:100vh;
+      margin:0; font-family:var(--font); color:var(--text); min-height:100vh;
+      background:
+        radial-gradient(900px 500px at 20% 0%, rgba(59,130,246,.15), transparent 60%),
+        radial-gradient(700px 400px at 90% 20%, rgba(34,197,94,.10), transparent 55%),
+        var(--bg);
     }
     header{
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      position:sticky; top:0; z-index:10;
       background: linear-gradient(180deg, rgba(17,28,51,.96), rgba(17,28,51,.86));
       backdrop-filter: blur(8px);
-      border-bottom: 1px solid var(--border);
+      border-bottom:1px solid var(--border);
     }
     .topbar{
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 14px 14px 10px;
-      display:flex;
-      gap:12px;
-      align-items:center;
-      justify-content:space-between;
-      flex-wrap:wrap;
+      max-width:1100px; margin:0 auto; padding:14px 14px 10px;
+      display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;
     }
-    .title{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      min-width: 240px;
-    }
+    .title{ display:flex; gap:10px; align-items:center; min-width:240px; }
     .logo{
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
+      width:36px; height:36px; border-radius:10px;
       background: linear-gradient(135deg, var(--brand), #60a5fa);
-      box-shadow: 0 10px 25px rgba(59,130,246,.25);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-weight:800;
-      letter-spacing:.5px;
+      box-shadow:0 10px 25px rgba(59,130,246,.25);
+      display:flex; align-items:center; justify-content:center;
+      font-weight:800; letter-spacing:.5px;
     }
-    .title h1{ font-size: 16px; margin:0; line-height:1.1; }
+    .title h1{ font-size:16px; margin:0; line-height:1.1; }
     .title small{ display:block; color:var(--muted); font-size:12px; margin-top:2px; }
-    .actions{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-    .container{
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 16px 14px 80px;
-    }
+    .actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+    .container{ max-width:1100px; margin:0 auto; padding:16px 14px 80px; }
     .card{
       background: linear-gradient(180deg, rgba(17,28,51,.95), rgba(15,23,42,.92));
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: var(--pad);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:var(--pad);
     }
-    .row{
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
+    .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
     .grid{ display:grid; gap:12px; }
-    .grid.cols-5 { grid-template-columns: repeat(5, minmax(220px, 1fr)); }
-    @media (max-width: 1100px){ .grid.cols-5 { grid-template-columns: repeat(3, minmax(220px, 1fr)); } }
-    @media (max-width: 720px){ .grid.cols-5 { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 500px){ .grid.cols-5 { grid-template-columns: 1fr; } }
+    .grid.cols-5{ grid-template-columns: repeat(5, minmax(220px, 1fr)); }
+    @media (max-width:1100px){ .grid.cols-5{ grid-template-columns: repeat(3, minmax(220px, 1fr)); } }
+    @media (max-width:720px){ .grid.cols-5{ grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width:500px){ .grid.cols-5{ grid-template-columns: 1fr; } }
 
     input, textarea, select{
-      width:100%;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.10);
+      width:100%; padding:10px 12px; border-radius:12px;
+      border:1px solid rgba(255,255,255,.10);
       background: rgba(2,6,23,.35);
-      color: var(--text);
+      color:var(--text);
       outline:none;
     }
-    input:focus, textarea:focus, select:focus{
-      box-shadow: var(--focus);
-      border-color: rgba(59,130,246,.6);
-    }
+    input:focus, textarea:focus, select:focus{ box-shadow:var(--focus); border-color:rgba(59,130,246,.6); }
     input::placeholder, textarea::placeholder{ color: rgba(148,163,184,.8); }
-    label{ font-size: 12px; color: var(--muted); display:block; margin: 8px 0 6px; }
+    label{ font-size:12px; color:var(--muted); display:block; margin:8px 0 6px; }
 
     button{
-      appearance:none;
-      border:0;
-      border-radius: 12px;
-      padding: 10px 12px;
-      background: var(--brand);
-      color: white;
-      font-weight: 700;
-      cursor:pointer;
-      transition: transform .06s ease, opacity .15s ease, filter .15s ease;
-      box-shadow: 0 10px 22px rgba(59,130,246,.18);
+      border:0; border-radius:12px; padding:10px 12px;
+      background:var(--brand); color:white; font-weight:700; cursor:pointer;
+      transition: transform .06s ease, filter .15s ease, opacity .15s ease;
+      box-shadow:0 10px 22px rgba(59,130,246,.18);
     }
-    button:hover{ filter: brightness(1.05); }
-    button:active{ transform: translateY(1px); }
+    button:hover{ filter:brightness(1.05); }
+    button:active{ transform:translateY(1px); }
     button.secondary{
       background: rgba(148,163,184,.15);
       color: var(--text);
       box-shadow:none;
-      border: 1px solid rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.10);
     }
-    button.danger{
-      background: rgba(239,68,68,.92);
-      box-shadow: 0 10px 22px rgba(239,68,68,.18);
-    }
-    button.ok{
-      background: rgba(34,197,94,.92);
-      box-shadow: 0 10px 22px rgba(34,197,94,.18);
-    }
-    button:disabled{
-      opacity:.6;
-      cursor:not-allowed;
-      filter:none;
-      transform:none;
-    }
+    button.danger{ background: rgba(239,68,68,.92); box-shadow:0 10px 22px rgba(239,68,68,.18); }
+    button.ok{ background: rgba(34,197,94,.92); box-shadow:0 10px 22px rgba(34,197,94,.18); }
+    button:disabled{ opacity:.6; cursor:not-allowed; filter:none; transform:none; }
 
     .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.10);
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
       background: rgba(2,6,23,.25);
-      color: var(--muted);
-      font-size: 12px;
-      white-space: nowrap;
+      color: var(--muted); font-size:12px; white-space:nowrap;
     }
     .dot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
-    .dot.warn{ background: var(--warn); }
-    .dot.info{ background: var(--info); }
-    .dot.ok{ background: var(--ok); }
-    .dot.bad{ background: var(--bad); }
-    .dot.brand{ background: var(--brand); }
-    .dot.muted{ background: var(--muted); }
+    .dot.warn{ background:var(--warn); }
+    .dot.info{ background:var(--info); }
+    .dot.ok{ background:var(--ok); }
+    .dot.bad{ background:var(--bad); }
+    .dot.brand{ background:var(--brand); }
+    .dot.muted{ background:var(--muted); }
 
     .badge-dictamen{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 800;
-      border: 1px solid rgba(255,255,255,.12);
+      display:inline-flex; align-items:center; gap:6px;
+      padding:4px 8px; border-radius:999px;
+      font-size:11px; font-weight:800;
+      border:1px solid rgba(255,255,255,.12);
       background: rgba(2,6,23,.25);
       letter-spacing:.2px;
     }
     .badge-dictamen .bdot{ width:8px; height:8px; border-radius:50%; display:inline-block; }
-    .badge-dictamen.pendiente{
-      background: rgba(250,204,21,.12);
-      border-color: rgba(250,204,21,.35);
-      color: #fde68a;
-    }
+    .badge-dictamen.pendiente{ background: rgba(250,204,21,.12); border-color: rgba(250,204,21,.35); color:#fde68a; }
     .badge-dictamen.pendiente .bdot{ background: var(--warn); }
-    .badge-dictamen.aceptado{
-      background: rgba(34,197,94,.12);
-      border-color: rgba(34,197,94,.35);
-      color: #86efac;
-    }
+    .badge-dictamen.aceptado{ background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.35); color:#86efac; }
     .badge-dictamen.aceptado .bdot{ background: var(--ok); }
-    .badge-dictamen.rechazado{
-      background: rgba(239,68,68,.12);
-      border-color: rgba(239,68,68,.35);
-      color: #fca5a5;
-    }
+    .badge-dictamen.rechazado{ background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.35); color:#fca5a5; }
     .badge-dictamen.rechazado .bdot{ background: var(--bad); }
 
-    .col{
-      background: rgba(2,6,23,.20);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px;
-      min-height: 120px;
-    }
-    .col h3{
-      margin: 0 0 10px;
-      font-size: 13px;
-      letter-spacing:.2px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      color: var(--text);
-    }
-    .col h3 span{ color: var(--muted); font-weight:600; font-size: 12px; }
+    .col{ background: rgba(2,6,23,.20); border:1px solid var(--border); border-radius:var(--radius); padding:12px; min-height:120px; }
+    .col h3{ margin:0 0 10px; font-size:13px; letter-spacing:.2px; display:flex; align-items:center; justify-content:space-between; }
 
     .tarjeta{
       background: rgba(15,23,42,.75);
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 12px;
-      padding: 10px 10px;
-      margin-bottom: 10px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:12px;
+      padding:10px;
+      margin-bottom:10px;
       cursor:pointer;
       transition: transform .06s ease, background .15s ease, border-color .15s ease;
     }
-    .tarjeta:hover{
-      transform: translateY(-1px);
-      background: rgba(15,23,42,.92);
-      border-color: rgba(59,130,246,.25);
-    }
-    .tarjeta strong{ display:block; font-size: 14px; }
-    .tarjeta small{ color: var(--muted); display:block; margin-top: 2px; }
+    .tarjeta:hover{ transform:translateY(-1px); background: rgba(15,23,42,.92); border-color: rgba(59,130,246,.25); }
+    .tarjeta strong{ display:block; font-size:14px; }
+    .tarjeta small{ color:var(--muted); display:block; margin-top:2px; }
+    .meta{ margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; color:var(--muted); font-size:12px; }
 
-    .meta{
-      margin-top: 8px;
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      color: var(--muted);
-      font-size: 12px;
-    }
+    .two{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media (max-width:760px){ .two{ grid-template-columns:1fr; } }
+    .divider{ height:1px; background: rgba(255,255,255,.08); margin:12px 0; }
 
-    .two{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    @media (max-width: 760px){ .two{ grid-template-columns: 1fr; } }
+    #reader{ width:100%; border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,.10); background: rgba(2,6,23,.35); }
 
-    .divider{
-      height:1px;
-      background: rgba(255,255,255,.08);
-      margin: 12px 0;
-    }
+    .toast-wrap{ position:fixed; right:14px; bottom:14px; z-index:9999; display:flex; flex-direction:column; gap:10px; max-width:360px; }
+    .toast{ border-radius:14px; border:1px solid rgba(255,255,255,.10); background: rgba(17,28,51,.96);
+      box-shadow:0 18px 40px rgba(0,0,0,.40); padding:10px 12px; display:flex; gap:10px; align-items:flex-start; }
+    .toast b{ display:block; font-size:13px; margin-bottom:2px; }
+    .toast p{ margin:0; font-size:12px; color:var(--muted); }
+    .toast .badge{ width:10px; height:10px; border-radius:999px; margin-top:4px; flex:0 0 auto; }
 
-    #reader{
-      width:100%;
-      border-radius: 14px;
-      overflow:hidden;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(2,6,23,.35);
-    }
-
-    .toast-wrap{
-      position: fixed;
-      right: 14px;
-      bottom: 14px;
-      z-index: 9999;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      max-width: 360px;
-    }
-    .toast{
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(17,28,51,.96);
-      box-shadow: 0 18px 40px rgba(0,0,0,.40);
-      padding: 10px 12px;
-      display:flex;
-      gap:10px;
-      align-items:flex-start;
-      animation: pop .15s ease-out;
-    }
-    @keyframes pop{ from { transform: translateY(6px); opacity:0 } to { transform: translateY(0); opacity:1 } }
-    .toast b{ display:block; font-size: 13px; margin-bottom: 2px; }
-    .toast p{ margin:0; font-size: 12px; color: var(--muted); }
-    .toast .badge{
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      margin-top: 4px;
-      flex: 0 0 auto;
-    }
+    /* Admin tabla */
+    .table{ width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border:1px solid rgba(255,255,255,.10); border-radius:12px; }
+    .table th, .table td{ padding:10px; font-size:12px; border-bottom:1px solid rgba(255,255,255,.08); }
+    .table th{ text-align:left; color:var(--muted); background: rgba(2,6,23,.20); }
+    .table tr:hover td{ background: rgba(2,6,23,.18); }
+    .table td code{ color:#93c5fd; }
 
     @media print{
-      body * { visibility: hidden !important; }
-      .printable, .printable * { visibility: visible !important; }
-      .printable{
-        position:absolute;
-        left:0; top:0;
-        width:100%;
-        padding: 0 !important;
-        background: white !important;
-        color: black !important;
-      }
-      .printable .card{
-        box-shadow:none !important;
-        border:none !important;
-        background: white !important;
-      }
-      button{ display:none !important; }
-      header{ display:none !important; }
+      body * { visibility:hidden !important; }
+      .printable, .printable * { visibility:visible !important; }
+      .printable{ position:absolute; left:0; top:0; width:100%; padding:0 !important; background:white !important; color:black !important; }
+      .printable .card{ box-shadow:none !important; border:none !important; background:white !important; }
+      button, header{ display:none !important; }
     }
     .big{ font-size:34px; font-weight:700; margin-top:6px; }
   </style>
@@ -342,7 +179,7 @@
       <div class="logo">PV</div>
       <div>
         <h1>Control de Acceso Proveedores</h1>
-        <small>Recepción • QR • Sin foto • Dictamen/Incidencias • Excel • Offline-first</small>
+        <small>Dashboard  • Historial por día • Admin Roles • Offline-first</small>
       </div>
     </div>
     <div class="actions" id="actionsBar">
@@ -352,7 +189,6 @@
       </span>
       <span class="pill" id="userPill" style="display:none;"></span>
       <input id="qSearch" placeholder="Buscar proveedor / empresa..." style="max-width:260px;" />
-      <!-- Botones dinámicos por perfil -->
     </div>
   </div>
 </header>
@@ -363,1530 +199,1735 @@
 
 <div class="toast-wrap" id="toasts"></div>
 
-<!-- ✅ SCRIPT PRINCIPAL (AHORA ES MODULE PARA FIREBASE) -->
 <script type="module">
-/* =========================
-   ✅ Firebase + Firestore
-   ========================= */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-import {
-  getFirestore, collection, doc, getDocs, setDoc, deleteDoc,
-  query, orderBy, limit, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+  // =========================
+  // Firebase (CDN modular)
+  // =========================
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDmdS1mt12tyWOE48U2As-53vtdQT7esPg",
-  authDomain: "control-acceso-cd3db.firebaseapp.com",
-  projectId: "control-acceso-cd3db",
-  storageBucket: "control-acceso-cd3db.firebasestorage.app",
-  messagingSenderId: "98995699294",
-  appId: "1:98995699294:web:dd1b6b639525fd06a5fecf"
-};
+  import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js"; // Email/Password [1](https://modularfirebase.web.app/get-started/quick-start)[2](https://dev.to/patricklusaya/how-to-migrate-to-modular-firebase-sdk-a-quick-guide-10ac)
 
-const fbApp = initializeApp(firebaseConfig);
-const db = getFirestore(fbApp);
-const COL = "visitas";
+  import {
+    getFirestore,
+    collection, doc, getDoc, getDocs,
+    setDoc, updateDoc, deleteDoc,
+    query, orderBy, limit, where,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-async function cloudFetchVisitas(max = 500){
-  const q = query(collection(db, COL), orderBy("createdTs", "desc"), limit(max));
-  const snap = await getDocs(q);
-  const arr = [];
-  snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
-  return arr;
-}
-
-async function cloudUpsertVisita(v){
-  if(!v?.id) throw new Error("Visita sin id");
-  const ref = doc(db, COL, String(v.id));
-  const payload = {
-    ...v,
-    updatedTs: Date.now(),
-    updatedAt: serverTimestamp()
+  const firebaseConfig = {
+    apiKey: "AIzaSyDmdS1mt12tyWOE48U2As-53vtdQT7esPg",
+    authDomain: "control-acceso-cd3db.firebaseapp.com",
+    projectId: "control-acceso-cd3db",
+    storageBucket: "control-acceso-cd3db.firebasestorage.app",
+    messagingSenderId: "98995699294",
+    appId: "1:98995699294:web:dd1b6b639525fd06a5fecf"
   };
-  await setDoc(ref, payload, { merge: true });
-  return true;
-}
 
-async function cloudDeleteVisita(id){
-  await deleteDoc(doc(db, COL, String(id)));
-  return true;
-}
+  const fbApp = initializeApp(firebaseConfig);
+  const auth = getAuth(fbApp);
+  const db = getFirestore(fbApp);
 
-/* =========================
-   ✅ App original (tu lógica)
-   ========================= */
-(() => {
-  "use strict";
-  const $ = (sel, root=document) => root.querySelector(sel);
-  const app = $("#app");
-  const toasts = $("#toasts");
-  const qSearch = $("#qSearch");
-  const netDot = $("#netDot");
-  const netText = $("#netText");
-  const actionsBar = $("#actionsBar");
-  const userPill = $("#userPill");
+  const COL_VISITAS = "visitas";
+  const COL_USERS = "users";
 
-  function toast(title, msg, type="info", ttl=2600){
-    const badgeColor =
-      type==="ok" ? "var(--ok)" :
-      type==="warn" ? "var(--warn)" :
-      type==="bad" ? "var(--bad)" :
-      "var(--info)";
-    const el = document.createElement("div");
-    el.className = "toast";
-    el.innerHTML = `
-      <span class="badge" style="background:${badgeColor}"></span>
-      <div>
-        <b>${esc(title)}</b>
-        <p>${esc(msg)}</p>
-      </div>
-    `;
-    toasts.appendChild(el);
-    setTimeout(() => {
-      el.style.opacity = "0";
-      el.style.transform = "translateY(6px)";
-      setTimeout(() => el.remove(), 180);
-    }, ttl);
-  }
-
-  function esc(s=""){
-    return String(s).replace(/[&<>"']/g, m => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-    }[m]));
-  }
-
-  function fmt(ts){
-    if(!ts) return "-";
-    return new Date(ts).toLocaleString();
-  }
-
-  function calcDuration(v){
-    if(!v.entradaTs || !v.salidaTs) return null;
-    const diff = v.salidaTs - v.entradaTs;
-    if(diff < 0) return null;
-    const mins = Math.floor(diff / 60000);
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return `${h}h ${m}m`;
-  }
-
-  // =========================
-  // ✅ ROLES + LOGIN (como lo traías)
-  // =========================
   const ROLES = {
+    PENDIENTE: "pendiente",
     ADMIN: "admin",
     COMPRAS: "compras",
     GUARDIA: "guardia",
-    PROVEEDOR: "proveedor",
     CALIDAD: "calidad",
-    CONTRALORIA: "contraloria"
+    CONTRALORIA: "contraloria",
+    PROVEEDOR: "proveedor",
   };
-
-  // ⚠️ CAMBIA ESTAS CONTRASEÑAS
-  const USERS = [
-    { user: "admin", pass: "Admin#2026", role: ROLES.ADMIN, nombre: "Administrador" },
-    { user: "compras1", pass: "Compras123", role: ROLES.COMPRAS, nombre: "Compras" },
-    { user: "guardia1", pass: "Guardia123", role: ROLES.GUARDIA, nombre: "Guardia Acceso" },
-    { user: "calidad1", pass: "Calidad123", role: ROLES.CALIDAD, nombre: "Calidad" },
-    { user: "contra1", pass: "Contra123", role: ROLES.CONTRALORIA, nombre: "Contraloría" },
-  ];
+  const ALL_ROLES = Object.values(ROLES);
 
   const ALL_PERMS = [
-    "ver_dashboard","ver_ficha","crear_cita","escanear_qr",
+    "ver_dashboard","ver_historial","ver_ficha","crear_cita","escanear_qr",
     "registrar_entrada","ver_documentos","dictaminar","despachar",
     "registrar_salida","exportar_excel","limpiar_finalizados",
-    "reactivar_qr","eliminar","ver_qr","buscar_proveedor"
+    "reactivar_qr","eliminar","ver_qr","buscar_proveedor",
+    "admin_roles"
   ];
 
   const PERMISOS = {
     [ROLES.ADMIN]: ALL_PERMS,
-    [ROLES.COMPRAS]: ["ver_dashboard","ver_ficha","crear_cita","exportar_excel","ver_documentos","ver_qr"],
-    [ROLES.GUARDIA]: ["ver_dashboard","ver_ficha","escanear_qr","registrar_entrada","registrar_salida","ver_qr"],
-    [ROLES.CALIDAD]: ["ver_dashboard","ver_ficha","ver_documentos","dictaminar","despachar","ver_qr"],
-    [ROLES.CONTRALORIA]: ["ver_dashboard","ver_ficha","exportar_excel","ver_documentos","ver_qr"],
-    [ROLES.PROVEEDOR]: ["ver_qr","buscar_proveedor"]
+    [ROLES.COMPRAS]: ["ver_dashboard","ver_historial","ver_ficha","crear_cita","exportar_excel","ver_documentos","ver_qr"],
+    [ROLES.GUARDIA]: ["ver_dashboard","ver_historial","ver_ficha","escanear_qr","registrar_entrada","registrar_salida","ver_qr"],
+    [ROLES.CALIDAD]: ["ver_dashboard","ver_historial","ver_ficha","ver_documentos","dictaminar","despachar","ver_qr"],
+    [ROLES.CONTRALORIA]: ["ver_dashboard","ver_historial","ver_ficha","exportar_excel","ver_documentos","ver_qr"],
+    [ROLES.PROVEEDOR]: ["ver_qr","buscar_proveedor"],
+    [ROLES.PENDIENTE]: []
   };
 
-  const LS_USER = "pv_usuario_actual";
-  let currentUser = null;
+// =========================
+// Seguridad: PIN Admin
+// =========================
+const ADMIN_PIN = "2580";          // 🔐 CAMBIA ESTE PIN
+const PIN_TTL_MS = 5 * 60 * 1000;  // 5 minutos
+const PIN_SESSION_KEY = "adminPinOkTs";
 
-  function loadUser(){
-    try{ currentUser = JSON.parse(localStorage.getItem(LS_USER)) || null; }
-    catch{ currentUser = null; }
-  }
-  function saveUser(){ localStorage.setItem(LS_USER, JSON.stringify(currentUser)); }
-  function logout(){
-    localStorage.removeItem(LS_USER);
-    currentUser = null;
-    paintHeader();
-    renderLogin();
-  }
-  function hasPerm(perm){
-    if(!currentUser) return false;
-    const perms = PERMISOS[currentUser.role] || [];
-    return perms.includes(perm);
-  }
-  function requirePerm(perm, msg){
-    if(hasPerm(perm)) return true;
-    toast("Acceso denegado", msg || "No tienes permiso para esta acción.", "bad", 3200);
+
+  // =========================
+  // App UI + lógica
+  // =========================
+  (() => {
+    "use strict";
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const appEl = $("#app");
+    const toasts = $("#toasts");
+    const qSearch = $("#qSearch");
+    const netDot = $("#netDot");
+    const netText = $("#netText");
+    const actionsBar = $("#actionsBar");
+    const userPill = $("#userPill");
+
+    const LS_USER = "pv_usuario_actual";
+    const LS_KEY = "visitas_v3";
+
+    const Status = {
+      PROGRAMADO:"programado",
+      LLEGADO:"llegado",
+      DENTRO:"dentro",
+      DESPACHADO:"despachado",
+      FINALIZADO:"finalizado"
+    };
+
+    let currentUser = null; // {uid,email,role,nombre}
+    let visitas = loadVisitasLocal();
+
+    // -------------------------
+    // Helpers
+    // -------------------------
+    function esc(s=""){
+  return String(s).replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#039;"
+  }[ch]));
+}
+
+function toast(title, msg, type="info", ttl=2600){
+      const badgeColor =
+        type==="ok" ? "var(--ok)" :
+        type==="warn" ? "var(--warn)" :
+        type==="bad" ? "var(--bad)" : "var(--info)";
+      const el = document.createElement("div");
+      el.className = "toast";
+      el.innerHTML = `
+        <span class="badge" style="background:${badgeColor}"></span>
+        <div><b>${esc(title)}</b><p>${esc(msg)}</p></div>
+      `;
+      toasts.appendChild(el);
+      setTimeout(()=>el.remove(), ttl);
+    }
+
+    function hasPerm(perm){
+      if(!currentUser) return false;
+      const perms = PERMISOS[currentUser.role] || [];
+      return perms.includes(perm);
+    }
+
+    function requirePerm(perm, msg){
+      if(hasPerm(perm)) return true;
+      toast("Acceso denegado", msg || "No tienes permiso.", "bad", 3200);
+      return false;
+    }
+
+    
+// -------------------------
+// PIN Admin (sesión)
+// -------------------------
+function requireAdminPin(actionLabel = "esta acción"){
+  if(!currentUser || currentUser.role !== ROLES.ADMIN){
+    toast("Acceso denegado", "Solo ADMIN puede realizar esta acción.", "bad", 3200);
     return false;
   }
-
-  function renderLogin(){
-    cleanup();
-    qSearch.value = "";
-    qSearch.style.display = "none";
-    userPill.style.display = "none";
-    app.innerHTML = `
-      <div class="card" style="max-width:420px;margin:40px auto;">
-        <h2 style="margin:0 0 6px;">Inicio de sesión</h2>
-        <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
-          Acceso por perfil (Admin / Compras / Guardia / Calidad / Contraloría).
-        </p>
-        <label>Usuario</label>
-        <input id="loginUser" placeholder="usuario" autocomplete="username">
-        <label>Contraseña</label>
-        <input id="loginPass" type="password" placeholder="••••••" autocomplete="current-password">
-        <div class="divider"></div>
-        <div class="row">
-          <button id="btnLogin">Entrar</button>
-        </div>
-      </div>
-    `;
-   $("#btnLogin").onclick = async () => {
-  const email = ($("#loginUser").value || "").trim();
-  const pass = ($("#loginPass").value || "").trim();
-
-  try {
-    const res = await window.fb.signInWithEmailAndPassword(
-      window.auth,
-      email,
-      pass
-    );
-
-    const user = res.user;
-
-    currentUser = {
-      user: user.email,
-      role: "admin", // temporal
-      nombre: user.email
-    };
-
-    saveUser();
-    paintHeader();
-    renderHome();
-
-    toast("Bienvenido", user.email, "ok");
-
-  } catch (err) {
-    console.error(err);
-    toast("Error", "Credenciales incorrectas", "bad");
+  const now = Date.now();
+  const lastOk = Number(sessionStorage.getItem(PIN_SESSION_KEY) || 0);
+  if(now - lastOk < PIN_TTL_MS) return true;
+  const pin = prompt(`🔐 Ingresa el PIN de administrador para ${actionLabel}:`);
+  if(!pin) return false;
+  if(pin === ADMIN_PIN){
+    sessionStorage.setItem(PIN_SESSION_KEY, String(now));
+    toast("PIN validado", "Acción autorizada.", "ok", 1800);
+    return true;
   }
-};
-  
-  }
-
-  function paintHeader(){
-    [...actionsBar.querySelectorAll("button[data-top], button[data-action]")].forEach(b => b.remove());
-    if(!currentUser){
-      userPill.style.display = "none";
-      qSearch.style.display = "none";
-      return;
+  toast("PIN incorrecto", "Acción cancelada.", "bad", 3000);
+  return false;
+}
+function fmt(ts){
+      if(!ts) return "-";
+      return new Date(ts).toLocaleString();
     }
-    userPill.style.display = "";
-    const dot = currentUser.role === ROLES.ADMIN ? "bad" : "ok";
-    userPill.innerHTML = `<span class="dot ${dot}"></span>${esc(currentUser.nombre)} • ${esc(currentUser.role.toUpperCase())}`;
 
-    qSearch.style.display = "";
-    qSearch.placeholder = (currentUser.role === ROLES.PROVEEDOR)
-      ? "Ingresa ID (del QR) o empresa..."
-      : "Buscar proveedor / empresa...";
+    function calcDuration(v){
+      if(!v.entradaTs || !v.salidaTs) return null;
+      const diff = v.salidaTs - v.entradaTs;
+      if(diff < 0) return null;
+      const mins = Math.floor(diff / 60000);
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return `${h}h ${m}m`;
+    }
 
-    const addBtn = (html) => {
-      const d = document.createElement("div");
-      d.innerHTML = html.trim();
-      actionsBar.appendChild(d.firstChild);
-    };
+    function updateNet(){
+      const on = navigator.onLine;
+      netDot.className = "dot " + (on ? "ok" : "bad");
+      netText.textContent = on ? "En línea" : "Sin conexión";
+    }
 
-    if(hasPerm("crear_cita")) addBtn(`<button data-action="nuevo">Nueva Cita</button>`);
-    if(hasPerm("escanear_qr")) addBtn(`<button class="secondary" data-action="scan">Escanear QR</button>`);
+    function dayBounds(dateObj){
+      const d = new Date(dateObj);
+      d.setHours(0,0,0,0);
+      const start = d.getTime();
+      const end = start + 24*60*60*1000;
+      return { start, end };
+    }
 
-    // ✅ botón sync manual
-    addBtn(`<button class="secondary" data-action="sync">Sincronizar</button>`);
-    addBtn(`<button class="secondary" data-top="logout">Cerrar sesión</button>`);
-  }
+    function isSameDay(ts, dateObj){
+      const { start, end } = dayBounds(dateObj);
+      return ts >= start && ts < end;
+    }
 
-  // =========================
-  // ✅ Persistencia (visitas) Local + Firestore (offline-first)
-  // =========================
-  const LS_KEY = "visitas_v3"; // tu misma clave
-  let visitas = [];
-
-  async function loadVisitas(){
-    // 1) local primero
-    let local = [];
-    try{
-      const raw = localStorage.getItem(LS_KEY);
-      if(raw){
+    // -------------------------
+    // Local persistence
+    // -------------------------
+    function loadVisitasLocal(){
+      try{
+        const raw = localStorage.getItem(LS_KEY);
+        if(!raw) return [];
         const arr = JSON.parse(raw);
-        local = Array.isArray(arr) ? arr : [];
-      }
-    }catch(e){
-      console.warn("Error leyendo localStorage", e);
+        return Array.isArray(arr) ? arr : [];
+      }catch{ return []; }
     }
 
-    // 2) sin internet -> local
-    if(!navigator.onLine) return local;
+    function saveVisitasLocal(){
+      try{
+        localStorage.setItem(LS_KEY, JSON.stringify(visitas));
+        return true;
+      }catch(e){
+        console.warn(e);
+        toast("Almacenamiento", "No se pudo guardar local.", "warn", 3600);
+        return false;
+      }
+    }
 
-    // 3) con internet -> nube y merge
-    try{
-      const cloud = await cloudFetchVisitas(500);
-
-      // merge por id: gana el que tenga updatedTs mayor
+    function mergeById(localArr, cloudArr){
       const map = new Map();
-      for(const v of local) map.set(String(v.id), v);
-      for(const v of cloud){
+      for(const v of localArr) map.set(String(v.id), v);
+      for(const v of cloudArr){
         const id = String(v.id);
         const prev = map.get(id);
         const prevU = prev?.updatedTs || prev?.createdTs || 0;
         const curU  = v?.updatedTs || v?.createdTs || 0;
         if(!prev || curU >= prevU) map.set(id, v);
       }
-
-      const merged = Array.from(map.values())
-        .sort((a,b) => (b.createdTs || 0) - (a.createdTs || 0));
-
-      localStorage.setItem(LS_KEY, JSON.stringify(merged));
-      return merged;
-    }catch(e){
-      console.warn("No se pudo cargar desde Firestore, usando local.", e);
-      return local;
-    }
-  }
-
-  async function saveVisitas(){
-    // 1) guardar local
-    try{
-      localStorage.setItem(LS_KEY, JSON.stringify(visitas));
-    }catch(e){
-      console.warn("Error guardando localStorage", e);
-      toast("Almacenamiento lleno", "No se pudo guardar. Borra registros antiguos.", "warn", 4200);
-      return false;
+      return Array.from(map.values()).sort((a,b)=> (b.createdTs||0) - (a.createdTs||0));
     }
 
-    // 2) sin internet, listo
-    if(!navigator.onLine) return true;
+    // -------------------------
+    // IndexedDB (docs OC/Factura)
+    // -------------------------
+    const DB_NAME = "proveedores_db";
+    const DB_VER = 2;
+    const STORE_DOCS = "docs";
 
-    // 3) con internet, sube los más recientes (top 10)
-    try{
-      const sorted = [...visitas].sort((a,b) => ((b.updatedTs||b.createdTs||0) - (a.updatedTs||a.createdTs||0)));
-      const top = sorted.slice(0, 10);
-      await Promise.all(top.map(v => cloudUpsertVisita(v)));
+    function idbOpen(){
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VER);
+        req.onupgradeneeded = () => {
+          const dbx = req.result;
+          if(!dbx.objectStoreNames.contains(STORE_DOCS)){
+            dbx.createObjectStore(STORE_DOCS);
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function idbSetDoc(key, blob){
+      const dbx = await idbOpen();
+      return new Promise((resolve, reject) => {
+        const tx = dbx.transaction(STORE_DOCS, "readwrite");
+        tx.objectStore(STORE_DOCS).put(blob, key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    async function idbGetDoc(key){
+      const dbx = await idbOpen();
+      return new Promise((resolve, reject) => {
+        const tx = dbx.transaction(STORE_DOCS, "readonly");
+        const req = tx.objectStore(STORE_DOCS).get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function idbDelDoc(key){
+      const dbx = await idbOpen();
+      return new Promise((resolve, reject) => {
+        const tx = dbx.transaction(STORE_DOCS, "readwrite");
+        tx.objectStore(STORE_DOCS).delete(key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    // -------------------------
+    // Firebase: user profile
+    // -------------------------
+    async function ensureUserProfile(user){
+      const ref = doc(db, COL_USERS, user.uid);
+      const snap = await getDoc(ref);
+      if(!snap.exists()){
+        await setDoc(ref, {
+          uid: user.uid,
+          email: user.email || "",
+          role: ROLES.PENDIENTE,      // ✅ rol por defecto
+          createdTs: Date.now(),
+          createdAt: serverTimestamp()
+        }, { merge: true });
+        return { uid:user.uid, email:user.email||"", role: ROLES.PENDIENTE };
+      }
+      const data = snap.data() || {};
+      return { uid:user.uid, email:user.email||"", role: data.role || ROLES.PENDIENTE };
+    }
+
+    // -------------------------
+    // Firebase: visitas CRUD
+    // -------------------------
+    async function cloudUpsertVisita(v){
+      const ref = doc(db, COL_VISITAS, String(v.id));
+      await setDoc(ref, {
+        ...v,
+        updatedTs: Date.now(),
+        updatedAt: serverTimestamp(),
+        updatedByUid: currentUser?.uid || "",
+        updatedByEmail: currentUser?.email || ""
+      }, { merge: true });
+    }
+
+    async function cloudDeleteVisita(id){
+      await deleteDoc(doc(db, COL_VISITAS, String(id)));
+    }
+
+    async function cloudFetchByDay(dateObj){
+      const { start, end } = dayBounds(dateObj);
+      // Query por rango en fechaHoraTs (misma field), sin pedir índices compuestos
+      const q = query(
+        collection(db, COL_VISITAS),
+        where("fechaHoraTs", ">=", start),
+        where("fechaHoraTs", "<", end),
+        orderBy("fechaHoraTs", "desc"),
+        limit(500)
+      );
+      const snap = await getDocs(q);
+      const arr = [];
+      snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+      return arr;
+    }
+
+    async function syncDay(dateObj){
+      if(!navigator.onLine) return;
+      try{
+        const cloud = await cloudFetchByDay(dateObj);
+        visitas = mergeById(visitas, cloud);
+        saveVisitasLocal();
+      }catch(e){
+        console.warn(e);
+        toast("Sync", "No se pudo leer del día (revisa Rules/Internet).", "warn", 3200);
+      }
+    }
+
+    async function pushRecentToCloud(){
+      if(!navigator.onLine) return;
+      if(!currentUser || currentUser.role === ROLES.PENDIENTE) return;
+      try{
+        const sorted = [...visitas].sort((a,b)=>((b.updatedTs||b.createdTs||0)-(a.updatedTs||a.createdTs||0)));
+        const top = sorted.slice(0, 10);
+        await Promise.all(top.map(v => cloudUpsertVisita(v)));
+      }catch(e){
+        console.warn(e);
+        toast("Sync", "No se pudo guardar en Firestore (revisa Rules).", "warn", 3200);
+      }
+    }
+
+    async function saveVisitas(){
+      if(!saveVisitasLocal()) return false;
+      // nube best effort
+      pushRecentToCloud();
       return true;
-    }catch(e){
-      console.warn("No se pudo sincronizar con Firestore (se guardó local).", e);
-      toast("Sincronización", "Guardado local. No se pudo subir a la nube.", "warn", 2800);
-      return true; // no bloquea
     }
-  }
 
-  // =========================
-  // ✅ IndexedDB SOLO documentos (OC/Factura)
-  // =========================
-  const DB_NAME = "proveedores_db";
-  const DB_VER = 2;
-  const STORE_DOCS = "docs";
+    // -------------------------
+    // Login / Logout UI
+    // -------------------------
+    async function doLogout(){
+      try{ await signOut(auth); }catch{}
+      localStorage.removeItem(LS_USER);
+ sessionStorage.removeItem(PIN_SESSION_KEY);
+ currentUser = null;
+      paintHeader();
+      renderLogin();
+    }
 
-  function idbOpen(){
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, DB_VER);
-      req.onupgradeneeded = () => {
-        const dbx = req.result;
-        if(!dbx.objectStoreNames.contains(STORE_DOCS)){
-          dbx.createObjectStore(STORE_DOCS);
+    function paintHeader(){
+      [...actionsBar.querySelectorAll("button[data-top], button[data-action]")].forEach(b => b.remove());
+
+      if(!currentUser){
+        userPill.style.display = "none";
+        qSearch.style.display = "none";
+        return;
+      }
+
+      userPill.style.display = "";
+      const dot = currentUser.role === ROLES.ADMIN ? "bad" : (currentUser.role === ROLES.PENDIENTE ? "warn" : "ok");
+      userPill.innerHTML = `<span class="dot ${dot}"></span>${esc(currentUser.nombre)} • ${esc(currentUser.role.toUpperCase())}`;
+
+      qSearch.style.display = "";
+      qSearch.placeholder = (currentUser.role === ROLES.PROVEEDOR)
+        ? "Ingresa ID (del QR)..."
+        : "Buscar proveedor / empresa...";
+
+      const addBtn = (html) => {
+        const d = document.createElement("div");
+        d.innerHTML = html.trim();
+        actionsBar.appendChild(d.firstChild);
+      };
+
+      if(hasPerm("crear_cita")) addBtn(`<button data-action="nuevo">Nueva Cita</button>`);
+      if(hasPerm("escanear_qr")) addBtn(`<button class="secondary" data-action="scan">Escanear QR</button>`);
+      if(hasPerm("ver_historial")) addBtn(`<button class="secondary" data-action="historial">Historial</button>`);
+      addBtn(`<button class="secondary" data-action="sync">Sincronizar</button>`);
+      if(hasPerm("admin_roles")) addBtn(`<button class="secondary" data-action="adminRoles">Admin: Roles</button>`);
+      addBtn(`<button class="secondary" data-top="logout">Cerrar sesión</button>`);
+    }
+
+    function renderLogin(){
+      qSearch.value = "";
+      qSearch.style.display = "none";
+      userPill.style.display = "none";
+
+      appEl.innerHTML = `
+        <div class="card" style="max-width:480px;margin:40px auto;">
+          <h2 style="margin:0 0 6px;">Acceso</h2>
+          <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
+            Entra con correo/contraseña o crea cuenta. Tu rol inicia en <b>PENDIENTE</b>.
+          </p>
+
+          <label>Correo</label>
+          <input id="loginEmail" type="email" placeholder="correo@dominio.com" autocomplete="username">
+
+          <label>Contraseña</label>
+          <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password">
+
+          <div class="divider"></div>
+          <div class="row">
+            <button id="btnSignIn">Entrar</button>
+            <button id="btnSignUp" class="secondary">Crear cuenta</button>
+          </div>
+
+          <div style="margin-top:10px;color:var(--muted);font-size:12px;">
+            Nota: El admin autoriza cambiando tu rol desde “Admin: Roles”.
+          </div>
+        </div>
+      `;
+
+      const getCreds = () => ({
+        email: (document.getElementById("loginEmail").value || "").trim(),
+        pass:  (document.getElementById("loginPass").value || "").trim()
+      });
+
+      document.getElementById("btnSignIn").onclick = async () => {
+        const { email, pass } = getCreds();
+        if(!email || !pass) return toast("Faltan datos","Captura correo y contraseña.","warn",2600);
+        try{
+          await signInWithEmailAndPassword(auth, email, pass); // [1](https://modularfirebase.web.app/get-started/quick-start)[2](https://dev.to/patricklusaya/how-to-migrate-to-modular-firebase-sdk-a-quick-guide-10ac)
+          toast("Bienvenido","Sesión iniciada.","ok",1600);
+        }catch(err){
+          console.error(err);
+          toast("Error","No se pudo iniciar sesión. Revisa credenciales.","bad",3600);
         }
       };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-  }
 
-  async function idbSetDoc(key, blob){
-    const dbx = await idbOpen();
-    return new Promise((resolve, reject) => {
-      const tx = dbx.transaction(STORE_DOCS, "readwrite");
-      tx.objectStore(STORE_DOCS).put(blob, key);
-      tx.oncomplete = () => resolve(true);
-      tx.onerror = () => reject(tx.error);
-    });
-  }
-  async function idbGetDoc(key){
-    const dbx = await idbOpen();
-    return new Promise((resolve, reject) => {
-      const tx = dbx.transaction(STORE_DOCS, "readonly");
-      const req = tx.objectStore(STORE_DOCS).get(key);
-      req.onsuccess = () => resolve(req.result || null);
-      req.onerror = () => reject(req.error);
-    });
-  }
-  async function idbDelDoc(key){
-    const dbx = await idbOpen();
-    return new Promise((resolve, reject) => {
-      const tx = dbx.transaction(STORE_DOCS, "readwrite");
-      tx.objectStore(STORE_DOCS).delete(key);
-      tx.oncomplete = () => resolve(true);
-      tx.onerror = () => reject(tx.error);
-    });
-  }
-
-  async function normalizeUploadFile(file){
-    if(!file) return null;
-    return { blob: file };
-  }
-
-  // =========================
-  // Scanner
-  // =========================
-  let qrScanner = null;
-  function stopScanner(){
-    if(qrScanner){
-      try{
-        qrScanner.stop().catch(()=>{}).finally(() => qrScanner = null);
-      }catch{ qrScanner = null; }
+      document.getElementById("btnSignUp").onclick = async () => {
+        const { email, pass } = getCreds();
+        if(!email || !pass) return toast("Faltan datos","Captura correo y contraseña.","warn",2600);
+        try{
+          await createUserWithEmailAndPassword(auth, email, pass); // [1](https://modularfirebase.web.app/get-started/quick-start)[2](https://dev.to/patricklusaya/how-to-migrate-to-modular-firebase-sdk-a-quick-guide-10ac)
+          toast("Cuenta creada","Listo. Ahora pide autorización (rol pendiente).","ok",2600);
+        }catch(err){
+          console.error(err);
+          toast("Error","No se pudo crear la cuenta (quizá ya existe o contraseña débil).","bad",4200);
+        }
+      };
     }
-  }
-  function cleanup(){ stopScanner(); }
 
-  // =========================
-  // Estados
-  // =========================
-  const Status = {
-    PROGRAMADO: "programado",
-    LLEGADO: "llegado",
-    DENTRO: "dentro",
-    DESPACHADO: "despachado",
-    FINALIZADO: "finalizado"
-  };
+    // -------------------------
+    // Views: Pendiente / Dashboard  / Historial
+    // -------------------------
+    function getCounts(list){
+      return {
+        programados: list.filter(v => v.status === Status.PROGRAMADO),
+        llegados: list.filter(v => v.status === Status.LLEGADO),
+        dentro: list.filter(v => v.status === Status.DENTRO),
+        despachados: list.filter(v => v.status === Status.DESPACHADO),
+        finalizados: list.filter(v => v.status === Status.FINALIZADO),
+      };
+    }
 
-  function getCounts(list){
-    return {
-      programados: list.filter(v => v.status === Status.PROGRAMADO),
-      llegados: list.filter(v => v.status === Status.LLEGADO),
-      dentro: list.filter(v => v.status === Status.DENTRO),
-      despachados: list.filter(v => v.status === Status.DESPACHADO),
-      finalizados: list.filter(v => v.status === Status.FINALIZADO),
-    };
-  }
-
-  // =========================
-  // HOME por rol
-  // =========================
-  function renderHome(){
-    if(!currentUser) return renderLogin();
-    if(currentUser.role === ROLES.PROVEEDOR) return renderProveedor();
-    return renderDashboard();
-  }
-
-  // =========================
-  // Dashboard
-  // =========================
-  function renderDashboard(){
-    if(!requirePerm("ver_dashboard","Tu perfil no puede ver el dashboard.")) return;
-    cleanup();
-    const term = (qSearch.value || "").trim().toLowerCase();
-    const filtered = !term ? visitas : visitas.filter(v =>
-      (v.proveedor||"").toLowerCase().includes(term) ||
-      (v.empresa||"").toLowerCase().includes(term) ||
-      String(v.id).toLowerCase() === term
-    );
-
-    const { programados, llegados, dentro, despachados, finalizados } = getCounts(filtered);
-
-    const resumen = `
-      <div class="grid cols-5" style="margin-bottom:18px">
-        <div class="card"><h3>Programados</h3><div class="big">${programados.length}</div></div>
-        <div class="card"><h3>Llegaron</h3><div class="big">${llegados.length}</div></div>
-        <div class="card"><h3>Dentro</h3><div class="big">${dentro.length}</div></div>
-        <div class="card"><h3>Despachados</h3><div class="big">${despachados.length}</div></div>
-        <div class="card"><h3>Finalizados</h3><div class="big">${finalizados.length}</div></div>
-      </div>
-    `;
-
-    const col = (title, dotClass, items) => `
-      <div class="col">
-        <h3>
-          <span><span class="dot ${dotClass}" style="margin-right:8px;"></span>${esc(title)}</span>
-          <span>${items.length}</span>
-        </h3>
-        ${items.length ? items.map(card).join("") : `<div style="color:var(--muted);font-size:12px;">Sin registros</div>`}
-      </div>
-    `;
-
-    function card(v){
-      const cita = v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-";
-      const dict = (v.dictamen?.estado || "pendiente").toLowerCase();
-      const dictLabel = (v.dictamen?.estado || "pendiente").toUpperCase();
-      let docColor="bad";
-      if(v.ocNo && v.facturaNo) docColor="ok";
-      else if(v.ocNo || v.facturaNo) docColor="warn";
-      return `
-        <div class="tarjeta" data-action="ficha" data-id="${esc(v.id)}">
-          <strong>${esc(v.proveedor)}</strong>
-          <small>${esc(v.empresa)}</small>
-          <div class="meta">
-            <span class="pill"><span class="dot info"></span>${esc(v.area || "Área")}</span>
-            <span class="pill"><span class="dot warn"></span>${esc(cita)}</span>
-            <span class="pill"><span class="dot ${docColor}"></span>Docs</span>
-            <span class="badge-dictamen ${esc(dict)}"><span class="bdot"></span> ${esc(dictLabel)}</span>
-            ${v.gafeteNo ? `<span class="pill"><span class="dot info"></span>Gafete: ${esc(v.gafeteNo)}</span>` : ""}
-            ${v.incidenciasSalida ? `<span class="pill"><span class="dot warn"></span>Incidencia</span>` : ""}
+    function renderPendiente(){
+      appEl.innerHTML = `
+        <div class="card" style="max-width:720px;margin:30px auto;">
+          <h2 style="margin:0 0 6px;">Cuenta en revisión</h2>
+          <p style="margin:0;color:var(--muted);">
+            Tu usuario está en <b>PENDIENTE</b>. Un administrador debe asignarte un rol.
+          </p>
+          <div class="divider"></div>
+          <div class="row">
+            <button class="secondary" data-action="sync">Reintentar Sync</button>
           </div>
         </div>
       `;
     }
 
-    app.innerHTML = `
-      ${resumen}
-      <div class="grid cols-5">
-        ${col("Programados","info",programados)}
-        ${col("Llegaron","warn",llegados)}
-        ${col("Dentro","ok",dentro)}
-        ${col("Despachados","brand",despachados)}
-        ${col("Finalizados","muted",finalizados)}
-      </div>
-      <div class="divider"></div>
-      <div class="row">
-        ${hasPerm("exportar_excel") ? `<button class="secondary" data-action="exportExcel">Exportar Excel</button>` : ""}
-        ${hasPerm("limpiar_finalizados") ? `<button class="secondary danger" data-action="limpiarFinalizados">Borrar Finalizados</button>` : ""}
-        <span class="pill" style="margin-left:auto;">
-          Total: <b style="color:var(--text); margin-left:6px;">${visitas.length}</b>
-        </span>
-      </div>
-    `;
-  }
+    function renderDashboardHoy(){
+      if(!requirePerm("ver_dashboard","Tu rol no puede ver el dashboard.")) return;
 
-  // =========================
-  // Portal Proveedor (restringido)
-  // =========================
-  function renderProveedor(){
-    if(!requirePerm("buscar_proveedor","Tu perfil no puede usar el portal de proveedor.")) return;
-    cleanup();
-    const term = (qSearch.value || "").trim().toLowerCase();
-    const results = !term ? [] : visitas.filter(v =>
-      String(v.id).toLowerCase() === term ||
-      (v.empresa||"").toLowerCase().includes(term) ||
-      (v.proveedor||"").toLowerCase().includes(term)
-    ).slice(0, 10);
+      const today = new Date();
+      const term = (qSearch.value || "").trim().toLowerCase();
 
-    app.innerHTML = `
-      <div class="card">
-        <h2 style="margin:0 0 6px;">Portal Proveedor</h2>
-        <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
-          Escribe tu <b>ID</b> (del QR) o tu empresa/proveedor para ver tu QR.
-        </p>
-        <div class="divider"></div>
-        ${results.length ? results.map(v => `
-          <div class="tarjeta" data-action="verQR" data-id="${esc(v.id)}">
+      // ✅ SOLO HOY: filtra por fechaHoraTs
+      const todayList = visitas.filter(v => typeof v.fechaHoraTs === "number" && isSameDay(v.fechaHoraTs, today));
+
+      const filtered = !term ? todayList : todayList.filter(v =>
+        (v.proveedor||"").toLowerCase().includes(term) ||
+        (v.empresa||"").toLowerCase().includes(term) ||
+        String(v.id).toLowerCase() === term
+      );
+
+      const { programados, llegados, dentro, despachados, finalizados } = getCounts(filtered);
+
+      const resumen = `
+        <div class="grid cols-5" style="margin-bottom:18px">
+          <div class="card"><h3>Programados</h3><div class="big">${programados.length}</div></div>
+          <div class="card"><h3>Llegaron</h3><div class="big">${llegados.length}</div></div>
+          <div class="card"><h3>Dentro</h3><div class="big">${dentro.length}</div></div>
+          <div class="card"><h3>Despachados</h3><div class="big">${despachados.length}</div></div>
+          <div class="card"><h3>Finalizados</h3><div class="big">${finalizados.length}</div></div>
+        </div>
+      `;
+
+      const col = (title, dotClass, items) => `
+        <div class="col">
+          <h3>
+            <span><span class="dot ${dotClass}" style="margin-right:8px;"></span>${esc(title)}</span>
+            <span>${items.length}</span>
+          </h3>
+          ${items.length ? items.map(card).join("") : `<div style="color:var(--muted);font-size:12px;">Sin registros</div>`}
+        </div>
+      `;
+
+      function card(v){
+        const cita = v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-";
+        const dict = (v.dictamen?.estado || "pendiente").toLowerCase();
+        const dictLabel = (v.dictamen?.estado || "pendiente").toUpperCase();
+        let docColor="bad";
+        if(v.ocNo && v.facturaNo) docColor="ok";
+        else if(v.ocNo || v.facturaNo) docColor="warn";
+        return `
+          <div class="tarjeta" data-action="ficha" data-id="${esc(v.id)}">
             <strong>${esc(v.proveedor)}</strong>
             <small>${esc(v.empresa)}</small>
             <div class="meta">
-              <span class="pill"><span class="dot info"></span>ID: ${esc(v.id)}</span>
-              <span class="pill"><span class="dot ${v.qrActivo ? "ok":"bad"}"></span>${v.qrActivo ? "QR Activo":"QR Inactivo"}</span>
-              <span class="pill"><span class="dot warn"></span>${esc(v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-")}</span>
+              <span class="pill"><span class="dot info"></span>${esc(v.area || "Área")}</span>
+              <span class="pill"><span class="dot warn"></span>${esc(cita)}</span>
+              <span class="pill"><span class="dot ${docColor}"></span>Docs</span>
+              <span class="badge-dictamen ${esc(dict)}"><span class="bdot"></span> ${esc(dictLabel)}</span>
+              ${v.gafeteNo ? `<span class="pill"><span class="dot info"></span>Gafete: ${esc(v.gafeteNo)}</span>` : ""}
+              ${v.incidenciasSalida ? `<span class="pill"><span class="dot warn"></span>Incidencia</span>` : ""}
             </div>
           </div>
-        `).join("") : `
-          <div style="color:var(--muted);font-size:12px;">
-            Sin resultados. Escribe tu ID/empresa en el buscador superior.
-          </div>
-        `}
-      </div>
-    `;
-  }
+        `;
+      }
 
-  // =========================
-  // Nueva Cita
-  // =========================
-  function renderNuevo(){
-    if(!requirePerm("crear_cita","Solo COMPRAS o ADMIN pueden crear citas.")) return;
-    cleanup();
-    app.innerHTML = `
-      <div class="card">
-        <h2 style="margin:0 0 6px;">Nueva Cita</h2>
-        <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
-          Captura los datos mínimos para generar el QR y controlar el acceso.
-        </p>
-        <div class="two">
-          <div>
-            <label>Proveedor *</label>
-            <input id="proveedor" placeholder="Nombre del proveedor" autocomplete="off" />
-          </div>
-          <div>
-            <label>Empresa *</label>
-            <input id="empresa" placeholder="Empresa / Razón social" autocomplete="off" />
-          </div>
-          <div>
-            <label>Persona a visitar</label>
-            <input id="persona" placeholder="Nombre" autocomplete="off" />
-          </div>
-          <div>
-            <label>Área</label>
-            <input id="area" placeholder="Área destino" autocomplete="off" />
-          </div>
-          <div>
-            <label>Motivo</label>
-            <input id="motivo" placeholder="Entrega, recolección, visita..." autocomplete="off" />
-          </div>
-          <div>
-            <label>Teléfono</label>
-            <input id="telefono" placeholder="Teléfono" inputmode="tel" autocomplete="off" />
-          </div>
-          <div>
-            <label>Correo</label>
-            <input id="correo" placeholder="correo@dominio.com" inputmode="email" autocomplete="off" />
-          </div>
-          <div>
-            <label>Fecha y hora *</label>
-            <input type="datetime-local" id="fechaHora" />
-          </div>
-          <div>
-            <label>No. Orden de Compra</label>
-            <input id="ocNo" placeholder="OC-12345">
-          </div>
-          <div>
-            <label>No. Factura</label>
-            <input id="facturaNo" placeholder="FAC-88921">
-          </div>
-          <div>
-            <label>Adjuntar OC</label>
-            <input type="file" id="ocFile" accept="image/*,.pdf">
-          </div>
-          <div>
-            <label>Adjuntar Factura</label>
-            <input type="file" id="facturaFile" accept="image/*,.pdf">
-          </div>
+      appEl.innerHTML = `
+        <div class="pill" style="margin-bottom:10px;">
+          <span class="dot brand"></span> Vista: <b style="color:var(--text);">${new Date().toLocaleDateString()}</b>
+        </div>
+        ${resumen}
+        <div class="grid cols-5">
+          ${col("Programados","info",programados)}
+          ${col("Llegaron","warn",llegados)}
+          ${col("Dentro","ok",dentro)}
+          ${col("Despachados","brand",despachados)}
+          ${col("Finalizados","muted",finalizados)}
         </div>
         <div class="divider"></div>
         <div class="row">
-          <button data-action="guardar">Guardar y Generar QR</button>
-          <button class="secondary" data-action="home">Cancelar</button>
+          ${hasPerm("exportar_excel") ? `<button class="secondary" data-action="exportExcel">Exportar Excel</button>` : ""}
+          ${hasPerm("limpiar_finalizados") ? `<button class="secondary danger" data-action="limpiarFinalizadosHoy">Borrar Finalizados</button>` : ""}
+          <span class="pill" style="margin-left:auto;">Total: <b style="color:var(--text); margin-left:6px;">${filtered.length}</b></span>
         </div>
-      </div>
-    `;
-  }
-
-  function validateEmail(v){
-    if(!v) return true;
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-  }
-
-  function existeCitaEnHorario(fechaHoraISO){
-    if(!fechaHoraISO) return false;
-    const ts = new Date(fechaHoraISO).getTime();
-    const SLOT = 30 * 60 * 1000;
-    return visitas.some(v => v.fechaHoraTs ? Math.abs(v.fechaHoraTs - ts) < SLOT : false);
-  }
-
-  function createVisitaFromForm(){
-    const proveedor = $("#proveedor").value.trim();
-    const empresa = $("#empresa").value.trim();
-    const persona = $("#persona").value.trim();
-    const area = $("#area").value.trim();
-    const motivo = $("#motivo").value.trim();
-    const telefono = $("#telefono").value.trim();
-    const correo = $("#correo").value.trim();
-    const fechaHora = $("#fechaHora").value;
-
-    const ocNo = ($("#ocNo")?.value || "").trim();
-    const facturaNo = ($("#facturaNo")?.value || "").trim();
-
-    const ocFile = $("#ocFile")?.files?.[0] || null;
-    const facturaFile = $("#facturaFile")?.files?.[0] || null;
-
-    if(!proveedor || !empresa || !fechaHora){
-      toast("Campos obligatorios", "Proveedor, Empresa, Fecha y Hora son requeridos.", "warn", 3600);
-      return null;
-    }
-    if(existeCitaEnHorario(fechaHora)){
-      toast("Horario no disponible", "Ya existe una cita en ese horario.", "warn", 3600);
-      return null;
-    }
-    if(correo && !validateEmail(correo)){
-      toast("Correo inválido", "Verifica el formato del correo.", "warn", 3600);
-      return null;
+      `;
     }
 
-    const id = Date.now().toString();
-    const fechaHoraTs = new Date(fechaHora).getTime();
+    async function renderHistorial(){
+      if(!requirePerm("ver_historial","Tu rol no puede ver historial.")) return;
 
-    const visita = {
-      id,
-      proveedor,
-      empresa,
-      personaVisita: persona,
-      area,
-      motivo,
-      telefono,
-      correo,
-      ocNo,
-      facturaNo,
-      ocFileKey: null,
-      facturaFileKey: null,
-      fechaHora,
-      fechaHoraTs,
-      createdTs: Date.now(),
-      updatedTs: Date.now(),
+      const todayISO = new Date().toISOString().slice(0,10);
 
-      llegadaTs: null,
-      entradaTs: null,
-      salidaTs: null,
-
-      status: Status.PROGRAMADO,
-      qrActivo: true,
-
-      guardNombre: null,
-      gafeteNo: null,
-
-      dictamen: { estado: "pendiente", notas: "", ts: null, por: null },
-      incidenciasSalida: "",
-      salidaPor: ""
-    };
-
-    // Guardado asíncrono de adjuntos en IndexedDB (igual que tu lógica)
-    setTimeout(async () => {
-      try{
-        const v = visitas.find(x => x.id === id);
-        if(!v) return;
-
-        if(ocFile){
-          const { blob } = await normalizeUploadFile(ocFile);
-          const key = `oc_${id}`;
-          await idbSetDoc(key, blob);
-          v.ocFileKey = key;
-        }
-        if(facturaFile){
-          const { blob } = await normalizeUploadFile(facturaFile);
-          const key = `fac_${id}`;
-          await idbSetDoc(key, blob);
-          v.facturaFileKey = key;
-        }
-
-        v.updatedTs = Date.now();
-        await saveVisitas();
-      }catch(e){
-        console.warn("No se pudieron guardar adjuntos", e);
-      }
-    }, 120);
-
-    return visita;
-  }
-
-  // =========================
-  // QR
-  // =========================
-  function renderQR(id){
-    cleanup();
-    const v = visitas.find(x => x.id == id);
-    if(!v) return renderHome();
-    if(!hasPerm("ver_qr") && currentUser.role !== ROLES.PROVEEDOR){
-      toast("Acceso denegado", "Tu perfil no puede ver QR.", "bad");
-      return renderHome();
-    }
-
-    app.innerHTML = `
-      <div class="card printable">
-        <h2 style="margin:0 0 6px;">QR de la Cita</h2>
-        <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">
-          Escanea este código en recepción para abrir la ficha.
-        </p>
-        <div class="row" style="align-items:flex-start;">
-          <div style="flex:0 0 280px;">
-            <div id="qrcode" style="background:white; padding:10px; border-radius:14px; display:inline-block;"></div>
-          </div>
-          <div style="flex:1; min-width:220px;">
-            <div class="pill" style="margin-bottom:10px;">
-              <span class="dot info"></span>
-              ID: <b style="color:var(--text); margin-left:6px;">${esc(String(v.id))}</b>
+      appEl.innerHTML = `
+        <div class="card">
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <h2 style="margin:0 0 4px;">Historial de Visitas</h2>
+              <div style="color:var(--muted); font-size:12px;">Selecciona un día para ver sus registros.</div>
             </div>
-            <div class="card" style="box-shadow:none;">
-              <div style="color:var(--muted);font-size:12px;">Proveedor</div>
-              <div style="font-weight:800;">${esc(v.proveedor)}</div>
-              <div style="height:8px"></div>
-              <div style="color:var(--muted);font-size:12px;">Empresa</div>
-              <div style="font-weight:700;">${esc(v.empresa)}</div>
-              <div style="height:8px"></div>
-              <div style="color:var(--muted);font-size:12px;">Cita</div>
-              <div style="font-weight:700;"><b>${esc(v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-")}</b></div>
-            </div>
-            <div class="row" style="margin-top:12px;">
-              <button class="secondary" data-action="print">Imprimir</button>
+            <div class="row">
               <button class="secondary" data-action="home">Volver</button>
             </div>
           </div>
+
+          <div class="divider"></div>
+
+          <div class="row">
+            <div style="min-width:220px;">
+              <label>Día</label>
+              <input type="date" id="histDate" value="${todayISO}">
+            </div>
+            <div style="min-width:220px;">
+              <label>&nbsp;</label>
+              <button class="secondary" data-action="histLoad">Cargar día</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div id="histWrap" style="min-height:80px;color:var(--muted);font-size:12px;">
+            Selecciona un día y presiona “Cargar día”.
+          </div>
         </div>
-      </div>
-    `;
-
-    try{
-      const box = $("#qrcode");
-      box.innerHTML = "";
-      new QRCode(box, {
-        text: String(v.id),
-        width: 260,
-        height: 260,
-        colorDark: "#111827",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M
-      });
-    }catch(e){
-      toast("QR", "No se pudo generar el QR. Revisa la librería.", "bad", 4200);
+      `;
     }
-  }
 
-  // =========================
-  // Escáner
-  // =========================
-  function renderScanner(){
-    if(!requirePerm("escanear_qr","Solo GUARDIA o ADMIN pueden escanear QR.")) return;
-    cleanup();
-    app.innerHTML = `
-      <div class="card">
-        <h2 style="margin:0 0 6px;">Escanear QR</h2>
-        <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">
-          Apunta la cámara al QR del proveedor para abrir la ficha.
-        </p>
-        <div id="reader"></div>
+    async function loadHistDay(){
+      const dateStr = (document.getElementById("histDate")?.value || "").trim();
+      if(!dateStr) return;
+
+      const d = new Date(dateStr + "T00:00:00");
+      toast("Historial", "Cargando desde la nube...", "info", 1600);
+      await syncDay(d);
+
+      // filtra local por ese día
+      const list = visitas.filter(v => typeof v.fechaHoraTs === "number" && isSameDay(v.fechaHoraTs, d));
+      const { programados, llegados, dentro, despachados, finalizados } = getCounts(list);
+
+      const wrap = document.getElementById("histWrap");
+      const col = (title, dotClass, items) => `
+        <div class="col">
+          <h3><span><span class="dot ${dotClass}" style="margin-right:8px;"></span>${esc(title)}</span><span>${items.length}</span></h3>
+          ${items.length ? items.map(card).join("") : `<div style="color:var(--muted);font-size:12px;">Sin registros</div>`}
+        </div>
+      `;
+      function card(v){
+        const cita = v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-";
+        const dict = (v.dictamen?.estado || "pendiente").toLowerCase();
+        const dictLabel = (v.dictamen?.estado || "pendiente").toUpperCase();
+        return `
+          <div class="tarjeta" data-action="ficha" data-id="${esc(v.id)}">
+            <strong>${esc(v.proveedor)}</strong>
+            <small>${esc(v.empresa)}</small>
+            <div class="meta">
+              <span class="pill"><span class="dot warn"></span>${esc(cita)}</span>
+              <span class="badge-dictamen ${esc(dict)}"><span class="bdot"></span> ${esc(dictLabel)}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      wrap.innerHTML = `
+        <div class="pill" style="margin-bottom:10px;">
+          <span class="dot brand"></span> Día: <b style="color:var(--text);">${d.toLocaleDateString()}</b>
+        </div>
+
+        <div class="grid cols-5" style="margin-bottom:18px">
+          <div class="card"><h3>Programados</h3><div class="big">${programados.length}</div></div>
+          <div class="card"><h3>Llegaron</h3><div class="big">${llegados.length}</div></div>
+          <div class="card"><h3>Dentro</h3><div class="big">${dentro.length}</div></div>
+          <div class="card"><h3>Despachados</h3><div class="big">${despachados.length}</div></div>
+          <div class="card"><h3>Finalizados</h3><div class="big">${finalizados.length}</div></div>
+        </div>
+
+        <div class="grid cols-5">
+          ${col("Programados","info",programados)}
+          ${col("Llegaron","warn",llegados)}
+          ${col("Dentro","ok",dentro)}
+          ${col("Despachados","brand",despachados)}
+          ${col("Finalizados","muted",finalizados)}
+        </div>
+
         <div class="divider"></div>
         <div class="row">
-          <button class="secondary" data-action="home">Cancelar</button>
+          ${hasPerm("exportar_excel") ? `<button class="secondary" data-action="exportExcelHist" data-date="${esc(dateStr)}">Exportar Excel (día)</button>` : ""}
+          <span class="pill" style="margin-left:auto;">Total día: <b style="color:var(--text); margin-left:6px;">${list.length}</b></span>
         </div>
-      </div>
-    `;
-    try{
-      qrScanner = new Html5Qrcode("reader");
-    }catch(e){
-      toast("Escáner", "No se pudo inicializar Html5Qrcode.", "bad", 4200);
-      return renderHome();
+      `;
     }
 
-    qrScanner.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
-      async (decodedText) => {
-        stopScanner();
-        await abrirFichaDesdeQR(String(decodedText).trim());
-      },
-      () => {}
-    ).catch(err => {
-      toast("Permisos", "No se pudo abrir la cámara: " + err, "bad", 4200);
-      renderHome();
-    });
-  }
+    // -------------------------
+    // Admin roles screen
+    // -------------------------
+    let _adminUsersCache = [];
 
-  // ✅ Programado -> Llegado (y regresa al dashboard)
-  async function abrirFichaDesdeQR(id){
-    const v = visitas.find(x => x.id == id);
-    if(!v || !v.qrActivo){
-      toast("QR inválido", "QR no encontrado o desactivado.", "bad", 3600);
-      return renderDashboard();
-    }
-    if(v.status === Status.PROGRAMADO){
-      v.status = Status.LLEGADO;
-      v.llegadaTs = Date.now();
-      v.updatedTs = Date.now();
-      await saveVisitas();
-      // sube este registro inmediato (mejor UX)
-      if(navigator.onLine){ try{ await cloudUpsertVisita(v);}catch{} }
-      toast("Llegada registrada", "Se movió a 'Llegaron'.", "ok", 2200);
-      renderDashboard();
-      return;
-    }
-    renderFicha(v.id);
-  }
+    async function renderAdminRoles(){
+      if(!requirePerm("admin_roles","Solo ADMIN puede administrar roles.")) return;
 
-  // =========================
-  // FICHA
-  // =========================
-  function renderFicha(id){
-    cleanup();
-    const v = visitas.find(x => x.id == id);
-    if(!v) return renderDashboard();
-    if(!requirePerm("ver_ficha","Tu perfil no puede ver fichas.")) return;
-
-    if(v.status === Status.DENTRO && (currentUser.role === ROLES.CALIDAD || currentUser.role === ROLES.ADMIN)){
-      return renderFichaCalidad(v);
-    }
-
-    const dur = calcDuration(v);
-    const statusLabel =
-      v.status === Status.PROGRAMADO ? "Programado" :
-      v.status === Status.LLEGADO ? "Llegó" :
-      v.status === Status.DENTRO ? "Dentro" :
-      v.status === Status.DESPACHADO ? "Despachado" : "Finalizado";
-
-    const statusDot =
-      v.status === Status.PROGRAMADO ? "warn" :
-      v.status === Status.LLEGADO ? "info" :
-      v.status === Status.DENTRO ? "ok" :
-      v.status === Status.DESPACHADO ? "brand" : "bad";
-
-    const dict = (v.dictamen?.estado || "pendiente").toLowerCase();
-    const dictLabel = (v.dictamen?.estado || "pendiente").toUpperCase();
-
-    app.innerHTML = `
-      <div class="card printable">
-        <div class="row" style="justify-content:space-between; align-items:flex-start;">
-          <div>
-            <h2 style="margin:0;">${esc(v.proveedor)}</h2>
-            <div style="color:var(--muted); margin-top:2px;">${esc(v.empresa)}</div>
-            <div class="meta" style="margin-top:10px;">
-              <span class="pill"><span class="dot ${statusDot}"></span>${esc(statusLabel)}</span>
-              <span class="pill"><span class="dot info"></span>ID: ${esc(v.id)}</span>
-              ${v.qrActivo
-                ? `<span class="pill"><span class="dot ok"></span>QR Activo</span>`
-                : `<span class="pill"><span class="dot bad"></span>QR Desactivado</span>`
-              }
-              ${v.guardNombre ? `<span class="pill"><span class="dot ok"></span>Guardia: ${esc(v.guardNombre)}</span>` : ""}
-              ${v.gafeteNo ? `<span class="pill"><span class="dot info"></span>Gafete: ${esc(v.gafeteNo)}</span>` : ""}
-              <span class="badge-dictamen ${esc(dict)}"><span class="bdot"></span>${esc(dictLabel)}</span>
-              ${v.incidenciasSalida ? `<span class="pill"><span class="dot warn"></span>Incidencias</span>` : ""}
-            </div>
-          </div>
-          <div class="row">
-            <button class="secondary" data-action="verQR" data-id="${esc(v.id)}">Ver QR</button>
-            <button class="secondary" data-action="home">Volver</button>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="two">
-          <div>
-            <div class="pill" style="display:flex; justify-content:space-between;">
-              <span style="color:var(--muted)">Visita a</span>
-              <b style="color:var(--text)">${esc(v.personaVisita || "-")}</b>
-            </div>
-            <div style="height:8px;"></div>
-            <div class="pill" style="display:flex; justify-content:space-between;">
-              <span style="color:var(--muted)">Área</span>
-              <b style="color:var(--text)">${esc(v.area || "-")}</b>
-            </div>
-            <div style="height:8px;"></div>
-            <div class="pill" style="display:flex; justify-content:space-between;">
-              <span style="color:var(--muted)">Motivo</span>
-              <b style="color:var(--text)">${esc(v.motivo || "-")}</b>
-            </div>
-          </div>
-
-          <div>
-            <div class="pill" style="display:flex; justify-content:space-between;">
-              <span style="color:var(--muted)">Cita</span>
-              <b style="color:var(--text)">${esc(v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-")}</b>
-            </div>
-            <div style="height:8px;"></div>
-            <div class="pill" style="display:flex; justify-content:space-between;">
-              <span style="color:var(--muted)">Llegada (QR)</span>
-              <b style="color:var(--text)">${esc(fmt(v.llegadaTs))}</b>
-            </div>
-            <div style="height:8px;"></div>
-            <div class="pill" style="display:flex; justify-content:space-between;">
-              <span style="color:var(--muted)">Entrada</span>
-              <b style="color:var(--text)">${esc(fmt(v.entradaTs))}</b>
-            </div>
-            <div style="height:8px;"></div>
-            <div class="pill" style="display:flex; justify-content:space-between;">
-              <span style="color:var(--muted)">Salida</span>
-              <b style="color:var(--text)">${esc(fmt(v.salidaTs))}</b>
-            </div>
-            ${dur ? `
-              <div style="height:8px;"></div>
-              <div class="pill" style="display:flex; justify-content:space-between;">
-                <span style="color:var(--muted)">Tiempo Total</span>
-                <b style="color:var(--text)">${esc(dur)}</b>
+      appEl.innerHTML = `
+        <div class="card">
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <h2 style="margin:0 0 4px;">Admin: Usuarios y Roles</h2>
+              <div style="color:var(--muted); font-size:12px;">
+                Cambia roles de usuarios (por defecto: PENDIENTE).
               </div>
+            </div>
+            <div class="row">
+              <button class="secondary" data-action="home">Volver</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="row">
+            <input id="uSearch" placeholder="Buscar por correo/rol..." style="max-width:320px;">
+            <button class="secondary" data-action="adminReload">Recargar</button>
+          </div>
+
+          <div style="height:10px;"></div>
+
+          <div id="adminUsersWrap" style="overflow:auto;"></div>
+        </div>
+      `;
+
+      await loadAdminUsers();
+      document.getElementById("uSearch").addEventListener("input", filterAdminUsers);
+    }
+
+    async function loadAdminUsers(){
+      const wrap = document.getElementById("adminUsersWrap");
+      wrap.innerHTML = `<div style="color:var(--muted);font-size:12px;">Cargando usuarios...</div>`;
+
+      try{
+        const q = query(collection(db, COL_USERS), orderBy("createdTs", "desc"), limit(300));
+        const snap = await getDocs(q);
+        const arr = [];
+        snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+        _adminUsersCache = arr;
+        paintAdminUsers(arr);
+      }catch(e){
+        console.error(e);
+        wrap.innerHTML = `<div style="color:var(--muted);font-size:12px;">Error cargando usuarios (Rules/Permisos).</div>`;
+        toast("Admin","No se pudieron cargar usuarios. Revisa Rules.","bad",4200);
+      }
+    }
+
+    function filterAdminUsers(){
+      const term = (document.getElementById("uSearch").value || "").trim().toLowerCase();
+      const filtered = !term ? _adminUsersCache : _adminUsersCache.filter(u =>
+        String(u.email||"").toLowerCase().includes(term) ||
+        String(u.role||"").toLowerCase().includes(term) ||
+        String(u.uid||u.id||"").toLowerCase().includes(term)
+      );
+      paintAdminUsers(filtered);
+    }
+
+    function paintAdminUsers(list){
+      const wrap = document.getElementById("adminUsersWrap");
+      if(!wrap) return;
+
+      wrap.innerHTML = `
+        <table class="table">
+          <thead>
+            <tr><th>UID</th><th>Correo</th><th>Rol</th><th>Acción</th></tr>
+          </thead>
+          <tbody>
+            ${list.map(u => `
+              <tr>
+                <td><code>${esc(u.uid || u.id)}</code></td>
+                <td>${esc(u.email || "-")}</td>
+                <td>
+                  <select data-role-select="${esc(u.uid || u.id)}">
+                    ${ALL_ROLES.map(r => `<option value="${r}" ${String(u.role||ROLES.PENDIENTE)===r?"selected":""}>${r}</option>`).join("")}
+                  </select>
+                </td>
+                <td>
+                  <button class="secondary" data-action="saveRole" data-uid="${esc(u.uid || u.id)}">Guardar</button>
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function saveRoleForUser(uid){
+      if(!requirePerm("admin_roles","Solo ADMIN puede cambiar roles.")) return;
+      const sel = document.querySelector(`[data-role-select="${CSS.escape(uid)}"]`);
+      if(!sel) return;
+      const newRole = sel.value;
+
+      try{
+        await updateDoc(doc(db, COL_USERS, uid), {
+          role: newRole,
+          roleUpdatedTs: Date.now(),
+          roleUpdatedAt: serverTimestamp(),
+          roleUpdatedBy: currentUser.uid
+        });
+        toast("Rol actualizado", `${uid} → ${newRole}`, "ok", 2200);
+
+        // si cambiaste tu propio rol: avisa
+        if(currentUser.uid === uid){
+          toast("Aviso","Cambiaste tu propio rol. Cierra sesión y entra de nuevo.", "warn", 3200);
+        }
+      }catch(e){
+        console.error(e);
+        toast("Error","No se pudo guardar rol (Rules/Permisos).","bad",4200);
+      }
+    }
+
+    // -------------------------
+    // Portal proveedor (simple)
+    // -------------------------
+    function renderProveedor(){
+      if(!requirePerm("buscar_proveedor","Tu rol no puede usar el portal.")) return;
+      const term = (qSearch.value || "").trim().toLowerCase();
+      const results = !term ? [] : visitas.filter(v => String(v.id).toLowerCase() === term).slice(0, 10);
+
+      appEl.innerHTML = `
+        <div class="card">
+          <h2 style="margin:0 0 6px;">Portal Proveedor</h2>
+          <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
+            Escribe tu <b>ID</b> (del QR) para ver tu QR.
+          </p>
+          <div class="divider"></div>
+          ${results.length ? results.map(v => `
+            <div class="tarjeta" data-action="verQR" data-id="${esc(v.id)}">
+              <strong>${esc(v.proveedor)}</strong>
+              <small>${esc(v.empresa)}</small>
+              <div class="meta">
+                <span class="pill"><span class="dot info"></span>ID: ${esc(v.id)}</span>
+                <span class="pill"><span class="dot ${v.qrActivo ? "ok":"bad"}"></span>${v.qrActivo ? "QR Activo":"QR Inactivo"}</span>
+              </div>
+            </div>
+          `).join("") : `<div style="color:var(--muted);font-size:12px;">Sin resultados.</div>`}
+        </div>
+      `;
+    }
+
+    // -------------------------
+    // Nueva cita
+    // -------------------------
+    function validateEmail(v){
+      if(!v) return true;
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    }
+
+    function existeCitaEnHorario(fechaHoraISO){
+      if(!fechaHoraISO) return false;
+      const ts = new Date(fechaHoraISO).getTime();
+      const SLOT = 30 * 60 * 1000;
+      return visitas.some(v => v.fechaHoraTs ? Math.abs(v.fechaHoraTs - ts) < SLOT : false);
+    }
+
+    function renderNuevo(){
+      if(!requirePerm("crear_cita","Solo COMPRAS o ADMIN pueden crear citas.")) return;
+      appEl.innerHTML = `
+        <div class="card">
+          <h2 style="margin:0 0 6px;">Nueva Cita</h2>
+          <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">Captura datos mínimos.</p>
+
+          <div class="two">
+            <div><label>Proveedor *</label><input id="proveedor" placeholder="Nombre del proveedor" autocomplete="off" /></div>
+            <div><label>Empresa *</label><input id="empresa" placeholder="Empresa / Razón social" autocomplete="off" /></div>
+            <div><label>Persona a visitar</label><input id="persona" placeholder="Nombre" autocomplete="off" /></div>
+            <div><label>Área</label><input id="area" placeholder="Área destino" autocomplete="off" /></div>
+            <div><label>Motivo</label><input id="motivo" placeholder="Entrega, recolección, visita..." autocomplete="off" /></div>
+            <div><label>Teléfono</label><input id="telefono" placeholder="Teléfono" inputmode="tel" autocomplete="off" /></div>
+            <div><label>Correo</label><input id="correo" placeholder="correo@dominio.com" inputmode="email" autocomplete="off" /></div>
+            <div><label>Fecha y hora *</label><input type="datetime-local" id="fechaHora" /></div>
+
+            <div><label>No. Orden de Compra</label><input id="ocNo" placeholder="OC-12345"></div>
+            <div><label>No. Factura</label><input id="facturaNo" placeholder="FAC-88921"></div>
+
+            <div><label>Adjuntar OC</label><input type="file" id="ocFile" accept="image/*,.pdf"></div>
+            <div><label>Adjuntar Factura</label><input type="file" id="facturaFile" accept="image/*,.pdf"></div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="row">
+            <button data-action="guardar">Guardar y Generar QR</button>
+            <button class="secondary" data-action="home">Cancelar</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function createVisitaFromForm(){
+      const proveedor = ($("#proveedor").value || "").trim();
+      const empresa = ($("#empresa").value || "").trim();
+      const persona = ($("#persona").value || "").trim();
+      const area = ($("#area").value || "").trim();
+      const motivo = ($("#motivo").value || "").trim();
+      const telefono = ($("#telefono").value || "").trim();
+      const correo = ($("#correo").value || "").trim();
+      const fechaHora = ($("#fechaHora").value || "").trim();
+
+      const ocNo = ($("#ocNo")?.value || "").trim();
+      const facturaNo = ($("#facturaNo")?.value || "").trim();
+      const ocFile = $("#ocFile")?.files?.[0] || null;
+      const facturaFile = $("#facturaFile")?.files?.[0] || null;
+
+      if(!proveedor || !empresa || !fechaHora){
+        toast("Campos obligatorios","Proveedor, Empresa, Fecha y Hora son requeridos.","warn",3600);
+        return null;
+      }
+      if(existeCitaEnHorario(fechaHora)){
+        toast("Horario no disponible","Ya existe una cita en ese horario.","warn",3600);
+        return null;
+      }
+      if(correo && !validateEmail(correo)){
+        toast("Correo inválido","Verifica el formato del correo.","warn",3600);
+        return null;
+      }
+
+      const id = Date.now().toString();
+      const fechaHoraTs = new Date(fechaHora).getTime();
+
+      const visita = {
+        id,
+        proveedor,
+        empresa,
+        personaVisita: persona,
+        area,
+        motivo,
+        telefono,
+        correo,
+        ocNo,
+        facturaNo,
+        ocFileKey: null,
+        facturaFileKey: null,
+        fechaHora,
+        fechaHoraTs,
+        createdTs: Date.now(),
+        updatedTs: Date.now(),
+        createdByUid: currentUser?.uid || "",
+        createdByEmail: currentUser?.email || "",
+
+        llegadaTs: null,
+        entradaTs: null,
+        salidaTs: null,
+
+        status: Status.PROGRAMADO,
+        qrActivo: true,
+
+        guardNombre: null,
+        gafeteNo: null,
+
+        dictamen: { estado:"pendiente", notas:"", ts:null, por:null },
+        incidenciasSalida: "",
+        salidaPor: ""
+      };
+
+      // Guardar adjuntos local (IndexedDB), no a Firebase Storage
+      setTimeout(async ()=>{
+        try{
+          const v = visitas.find(x => x.id === id);
+          if(!v) return;
+
+          if(ocFile){
+            const key = `oc_${id}`;
+            await idbSetDoc(key, ocFile);
+            v.ocFileKey = key;
+          }
+          if(facturaFile){
+            const key = `fac_${id}`;
+            await idbSetDoc(key, facturaFile);
+            v.facturaFileKey = key;
+          }
+          v.updatedTs = Date.now();
+          await saveVisitas();
+          if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE){
+            await cloudUpsertVisita(v);
+          }
+        }catch(e){ console.warn(e); }
+      }, 120);
+
+      return visita;
+    }
+
+    // -------------------------
+    // QR
+    // -------------------------
+    function renderQR(id){
+      const v = visitas.find(x => x.id == id);
+      if(!v) return renderHome();
+
+      if(!hasPerm("ver_qr") && currentUser.role !== ROLES.PROVEEDOR){
+        toast("Acceso denegado","Tu rol no puede ver QR.","bad",2600);
+        return renderHome();
+      }
+
+      appEl.innerHTML = `
+        <div class="card printable">
+          <h2 style="margin:0 0 6px;">QR de la Cita</h2>
+          <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">Escanea en recepción para abrir ficha.</p>
+
+          <div class="row" style="align-items:flex-start;">
+            <div style="flex:0 0 280px;">
+              <div id="qrcode" style="background:white; padding:10px; border-radius:14px; display:inline-block;"></div>
+            </div>
+
+            <div style="flex:1; min-width:220px;">
+              <div class="pill" style="margin-bottom:10px;">
+                <span class="dot info"></span> ID:
+                <b style="color:var(--text); margin-left:6px;">${esc(String(v.id))}</b>
+              </div>
+
+              <div class="card" style="box-shadow:none;">
+                <div style="color:var(--muted);font-size:12px;">Proveedor</div>
+                <div style="font-weight:800;">${esc(v.proveedor)}</div>
+                <div style="height:8px"></div>
+                <div style="color:var(--muted);font-size:12px;">Empresa</div>
+                <div style="font-weight:700;">${esc(v.empresa)}</div>
+                <div style="height:8px"></div>
+                <div style="color:var(--muted);font-size:12px;">Cita</div>
+                <div style="font-weight:700;"><b>${esc(new Date(v.fechaHora).toLocaleString())}</b></div>
+              </div>
+
+              <div class="row" style="margin-top:12px;">
+                <button class="secondary" data-action="print">Imprimir</button>
+                <button class="secondary" data-action="home">Volver</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      try{
+        if(!window.QRCode){
+          toast("QR","La librería aún está cargando. Intenta de nuevo.","warn",2200);
+          return;
+        }
+        const box = document.getElementById("qrcode");
+        box.innerHTML = "";
+        new QRCode(box, {
+          text: String(v.id),
+          width: 260,
+          height: 260,
+          colorDark: "#111827",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }catch(e){
+        console.warn(e);
+        toast("QR","No se pudo generar el QR.","bad",3600);
+      }
+    }
+
+    // -------------------------
+    // Scanner (GUARDIA/ADMIN)
+    // -------------------------
+    let qrScanner = null;
+    function stopScanner(){
+      if(qrScanner){
+        try{ qrScanner.stop().catch(()=>{}).finally(()=> qrScanner = null); }catch{ qrScanner = null; }
+      }
+    }
+    function cleanup(){ stopScanner(); }
+
+    function renderScanner(){
+      if(!requirePerm("escanear_qr","Solo GUARDIA o ADMIN pueden escanear QR.")) return;
+      cleanup();
+
+      appEl.innerHTML = `
+        <div class="card">
+          <h2 style="margin:0 0 6px;">Escanear QR</h2>
+          <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">Apunta la cámara al QR.</p>
+          <div id="reader"></div>
+          <div class="divider"></div>
+          <div class="row"><button class="secondary" data-action="home">Cancelar</button></div>
+        </div>
+      `;
+
+      try{
+        if(!window.Html5Qrcode){
+          toast("Escáner","La librería aún está cargando. Intenta de nuevo.","warn",2600);
+          return renderHome();
+        }
+        qrScanner = new Html5Qrcode("reader");
+      }catch(e){
+        console.warn(e);
+        toast("Escáner","No se pudo inicializar cámara.","bad",4200);
+        return renderHome();
+      }
+
+      qrScanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        async (decodedText) => {
+          stopScanner();
+          await abrirFichaDesdeQR(String(decodedText).trim());
+        },
+        () => {}
+      ).catch(err => {
+        toast("Permisos", "No se pudo abrir cámara: " + err, "bad", 4200);
+        renderHome();
+      });
+    }
+
+    async function abrirFichaDesdeQR(id){
+      const v = visitas.find(x => x.id == id);
+      if(!v || !v.qrActivo){
+        toast("QR inválido","QR no encontrado o desactivado.","bad",3600);
+        return renderDashboardHoy();
+      }
+
+      if(v.status === Status.PROGRAMADO){
+        v.status = Status.LLEGADO;
+        v.llegadaTs = Date.now();
+        v.updatedTs = Date.now();
+        await saveVisitas();
+        if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE) await cloudUpsertVisita(v);
+        toast("Llegada registrada","Se movió a 'Llegaron'.","ok",2200);
+        renderDashboardHoy();
+        return;
+      }
+
+      renderFicha(v.id);
+    }
+
+    // -------------------------
+    // Ficha / Entrada / Calidad / Salida
+    // -------------------------
+    function renderFicha(id){
+      cleanup();
+      const v = visitas.find(x => x.id == id);
+      if(!v) return renderDashboardHoy();
+      if(!requirePerm("ver_ficha","Tu rol no puede ver fichas.")) return;
+
+      if(v.status === Status.DENTRO && (currentUser.role === ROLES.CALIDAD || currentUser.role === ROLES.ADMIN)){
+        return renderFichaCalidad(v);
+      }
+
+      const dur = calcDuration(v);
+      const statusLabel =
+        v.status === Status.PROGRAMADO ? "Programado" :
+        v.status === Status.LLEGADO ? "Llegó" :
+        v.status === Status.DENTRO ? "Dentro" :
+        v.status === Status.DESPACHADO ? "Despachado" : "Finalizado";
+
+      const statusDot =
+        v.status === Status.PROGRAMADO ? "warn" :
+        v.status === Status.LLEGADO ? "info" :
+        v.status === Status.DENTRO ? "ok" :
+        v.status === Status.DESPACHADO ? "brand" : "bad";
+
+      const dict = (v.dictamen?.estado || "pendiente").toLowerCase();
+      const dictLabel = (v.dictamen?.estado || "pendiente").toUpperCase();
+
+      appEl.innerHTML = `
+        <div class="card printable">
+          <div class="row" style="justify-content:space-between; align-items:flex-start;">
+            <div>
+              <h2 style="margin:0;">${esc(v.proveedor)}</h2>
+              <div style="color:var(--muted); margin-top:2px;">${esc(v.empresa)}</div>
+              <div class="meta" style="margin-top:10px;">
+                <span class="pill"><span class="dot ${statusDot}"></span>${esc(statusLabel)}</span>
+                <span class="pill"><span class="dot info"></span>ID: ${esc(v.id)}</span>
+                ${v.qrActivo
+                  ? `<span class="pill"><span class="dot ok"></span>QR Activo</span>`
+                  : `<span class="pill"><span class="dot bad"></span>QR Desactivado</span>`
+                }
+                ${v.guardNombre ? `<span class="pill"><span class="dot ok"></span>Guardia: ${esc(v.guardNombre)}</span>` : ""}
+                ${v.gafeteNo ? `<span class="pill"><span class="dot info"></span>Gafete: ${esc(v.gafeteNo)}</span>` : ""}
+                <span class="badge-dictamen ${esc(dict)}"><span class="bdot"></span>${esc(dictLabel)}</span>
+                ${v.incidenciasSalida ? `<span class="pill"><span class="dot warn"></span>Incidencias</span>` : ""}
+              </div>
+            </div>
+
+            <div class="row">
+              <button class="secondary" data-action="verQR" data-id="${esc(v.id)}">Ver QR</button>
+              <button class="secondary" data-action="home">Volver</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="two">
+            <div>
+              <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">Visita a</span><b style="color:var(--text)">${esc(v.personaVisita || "-")}</b></div>
+              <div style="height:8px;"></div>
+              <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">Área</span><b style="color:var(--text)">${esc(v.area || "-")}</b></div>
+              <div style="height:8px;"></div>
+              <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">Motivo</span><b style="color:var(--text)">${esc(v.motivo || "-")}</b></div>
+            </div>
+
+            <div>
+              <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">Cita</span><b style="color:var(--text)">${esc(v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-")}</b></div>
+              <div style="height:8px;"></div>
+              <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">Llegada (QR)</span><b style="color:var(--text)">${esc(fmt(v.llegadaTs))}</b></div>
+              <div style="height:8px;"></div>
+              <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">Entrada</span><b style="color:var(--text)">${esc(fmt(v.entradaTs))}</b></div>
+              <div style="height:8px;"></div>
+              <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">Salida</span><b style="color:var(--text)">${esc(fmt(v.salidaTs))}</b></div>
+              ${dur ? `
+                <div style="height:8px;"></div>
+                <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">Tiempo Total</span><b style="color:var(--text)">${esc(dur)}</b></div>
+              ` : ""}
+            </div>
+          </div>
+
+          ${hasPerm("ver_documentos") ? `
+            <div class="divider"></div>
+            <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">OC</span><b>${esc(v.ocNo || "-")}</b></div>
+            <div style="height:8px;"></div>
+            <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">Factura</span><b>${esc(v.facturaNo || "-")}</b></div>
+            <div class="row" style="margin-top:8px;">
+              ${v.ocFileKey ? `<button class="secondary" data-action="verOC" data-id="${esc(v.id)}">Ver OC</button>` : ""}
+              ${v.facturaFileKey ? `<button class="secondary" data-action="verFactura" data-id="${esc(v.id)}">Ver Factura</button>` : ""}
+            </div>
+          ` : ""}
+
+          ${v.incidenciasSalida ? `
+            <div class="divider"></div>
+            <div class="card" style="box-shadow:none;">
+              <h3 style="margin:0 0 6px;">Incidencias de salida</h3>
+              <div style="color:var(--muted);font-size:12px;">${esc(v.incidenciasSalida)}</div>
+              ${v.salidaPor ? `<div style="margin-top:6px;color:var(--muted);font-size:12px;">Por: <b style="color:var(--text)">${esc(v.salidaPor)}</b></div>` : ""}
+            </div>
+          ` : ""}
+
+          <div class="divider"></div>
+          <div class="row">
+            ${(v.status === Status.PROGRAMADO || v.status === Status.LLEGADO) && hasPerm("registrar_entrada") ? `
+              <button class="ok" data-action="entrada" data-id="${esc(v.id)}">Registrar Entrada</button>
+            ` : ""}
+            ${v.status === Status.DESPACHADO && hasPerm("registrar_salida") ? `
+              <button class="danger" data-action="salida" data-id="${esc(v.id)}">Registrar Salida</button>
+            ` : ""}
+            <button class="secondary" data-action="print">Imprimir</button>
+
+            ${v.status === Status.FINALIZADO && hasPerm("reactivar_qr") ? `
+              <button class="secondary" data-action="reactivar" data-id="${esc(v.id)}">Reactivar QR</button>
+            ` : ""}
+
+            ${hasPerm("eliminar") ? `
+              <button class="secondary danger" data-action="eliminar" data-id="${esc(v.id)}">Eliminar</button>
             ` : ""}
           </div>
         </div>
+      `;
+    }
 
-        ${hasPerm("ver_documentos") ? `
+    function renderEntrada(id){
+      if(!requirePerm("registrar_entrada","Solo GUARDIA o ADMIN pueden registrar entrada.")) return;
+      cleanup();
+      const v = visitas.find(x => x.id == id);
+      if(!v) return renderDashboardHoy();
+
+      appEl.innerHTML = `
+        <div class="card">
+          <h2 style="margin:0 0 6px;">Registrar Entrada</h2>
+          <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
+            Por confidencialidad, <b>no se toma foto</b>. Captura responsable y gafete.
+          </p>
+          <label>Nombre del guardia *</label>
+          <input id="guardia" placeholder="Ej. Juan Pérez" value="${esc(v.guardNombre || currentUser.nombre || "")}" autocomplete="off" />
+          <label>No. de Gafete *</label>
+          <input id="gafeteNo" placeholder="Ej. 12, 25, A-03" value="${esc(v.gafeteNo || "")}" />
           <div class="divider"></div>
-          <div class="pill" style="display:flex; justify-content:space-between;">
-            <span style="color:var(--muted)">OC</span>
-            <b>${esc(v.ocNo || "-")}</b>
+          <div class="row">
+            <button class="ok" data-action="confirmarEntrada" data-id="${esc(id)}">Confirmar Entrada</button>
+            <button class="secondary" data-action="ficha" data-id="${esc(id)}">Cancelar</button>
           </div>
-          <div style="height:8px;"></div>
-          <div class="pill" style="display:flex; justify-content:space-between;">
-            <span style="color:var(--muted)">Factura</span>
-            <b>${esc(v.facturaNo || "-")}</b>
-          </div>
-          <div class="row" style="margin-top:8px;">
-            ${v.ocFileKey ? `<button class="secondary" data-action="verOC" data-id="${esc(v.id)}">Ver OC</button>` : ""}
-            ${v.facturaFileKey ? `<button class="secondary" data-action="verFactura" data-id="${esc(v.id)}">Ver Factura</button>` : ""}
-          </div>
-        ` : ""}
-
-        ${v.incidenciasSalida ? `
-          <div class="divider"></div>
-          <div class="card" style="box-shadow:none;">
-            <h3 style="margin:0 0 6px;">Incidencias de salida</h3>
-            <div style="color:var(--muted);font-size:12px;">${esc(v.incidenciasSalida)}</div>
-            ${v.salidaPor ? `<div style="margin-top:6px;color:var(--muted);font-size:12px;">Por: <b style="color:var(--text)">${esc(v.salidaPor)}</b></div>` : ""}
-          </div>
-        ` : ""}
-
-        <div class="divider"></div>
-
-        <div class="row">
-          ${(v.status === Status.PROGRAMADO || v.status === Status.LLEGADO) && hasPerm("registrar_entrada") ? `
-            <button class="ok" data-action="entrada" data-id="${esc(v.id)}">Registrar Entrada</button>
-          ` : ""}
-          ${v.status === Status.DESPACHADO && hasPerm("registrar_salida") ? `
-            <button class="danger" data-action="salida" data-id="${esc(v.id)}">Registrar Salida</button>
-          ` : ""}
-          <button class="secondary" data-action="print">Imprimir</button>
-
-          ${v.status === Status.FINALIZADO && hasPerm("reactivar_qr") ? `
-            <button class="secondary" data-action="reactivar" data-id="${esc(v.id)}">Reactivar QR</button>
-          ` : ""}
-
-          ${hasPerm("eliminar") ? `
-            <button class="secondary danger" data-action="eliminar" data-id="${esc(v.id)}">Eliminar</button>
-          ` : ""}
         </div>
-      </div>
-    `;
-  }
-
-  // =========================
-  // Entrada (sin foto) - Llegado -> Dentro
-  // =========================
-  function renderEntrada(id){
-    if(!requirePerm("registrar_entrada","Solo GUARDIA o ADMIN pueden registrar entrada.")) return;
-    cleanup();
-    const v = visitas.find(x => x.id == id);
-    if(!v) return renderDashboard();
-    app.innerHTML = `
-      <div class="card">
-        <h2 style="margin:0 0 6px;">Registrar Entrada</h2>
-        <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
-          Por confidencialidad, <b>no se toma foto</b>. Captura responsable y gafete.
-        </p>
-        <label>Nombre del guardia *</label>
-        <input id="guardia" placeholder="Ej. Juan Pérez" value="${esc(v.guardNombre || currentUser.nombre || "")}" autocomplete="off" />
-        <label>No. de Gafete *</label>
-        <input id="gafeteNo" placeholder="Ej. 12, 25, A-03" value="${esc(v.gafeteNo || "")}" />
-        <div class="divider"></div>
-        <div class="row">
-          <button class="ok" data-action="confirmarEntrada" data-id="${esc(id)}">Confirmar Entrada</button>
-          <button class="secondary" data-action="ficha" data-id="${esc(id)}">Cancelar</button>
-        </div>
-      </div>
-    `;
-  }
-
-  async function confirmarEntrada(id){
-    const v = visitas.find(x => x.id == id);
-    if(!v) return renderDashboard();
-    const guard = ($("#guardia").value || "").trim();
-    const gafete = ($("#gafeteNo").value || "").trim();
-    if(!guard || !gafete){
-      toast("Datos requeridos", "Captura el nombre del guardia y el No. de gafete.", "warn", 3200);
-      return;
-    }
-    v.guardNombre = guard;
-    v.gafeteNo = gafete;
-    v.status = Status.DENTRO;
-    v.entradaTs = Date.now();
-    v.updatedTs = Date.now();
-    await saveVisitas();
-    if(navigator.onLine){ try{ await cloudUpsertVisita(v);}catch{} }
-    toast("Entrada registrada", "Se movió a 'Dentro'.", "ok", 2200);
-    renderDashboard();
-  }
-
-  // =========================
-  // Calidad (Dentro) - Dictamen + Despachar
-  // =========================
-  function renderFichaCalidad(v){
-    if(!requirePerm("dictaminar","Solo CALIDAD o ADMIN pueden dictaminar.")) return;
-    cleanup();
-    const dictSel = (v.dictamen?.estado || "pendiente").toLowerCase();
-    app.innerHTML = `
-      <div class="card printable">
-        <h2 style="margin:0;">Revisión de Calidad</h2>
-        <div style="color:var(--muted); margin-bottom:10px;">
-          ${esc(v.proveedor)} — ${esc(v.empresa)}
-        </div>
-        <div class="pill" style="margin-bottom:10px;">
-          <span class="dot ok"></span>
-          Entrada registrada por: <b style="color:var(--text)">${esc(v.guardNombre || "-")}</b>
-          ${v.gafeteNo ? ` Gafete: <b style="color:var(--text)">${esc(v.gafeteNo)}</b>` : ""}
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="pill" style="display:flex; justify-content:space-between;">
-          <span style="color:var(--muted)">Motivo</span>
-          <b>${esc(v.motivo || "-")}</b>
-        </div>
-
-        ${hasPerm("ver_documentos") ? `
-          <div style="height:8px;"></div>
-          <div class="pill" style="display:flex; justify-content:space-between;">
-            <span style="color:var(--muted)">OC</span>
-            <b>${esc(v.ocNo || "-")}</b>
-          </div>
-          <div style="height:8px;"></div>
-          <div class="pill" style="display:flex; justify-content:space-between;">
-            <span style="color:var(--muted)">Factura</span>
-            <b>${esc(v.facturaNo || "-")}</b>
-          </div>
-          <div class="row" style="margin-top:8px;">
-            ${v.ocFileKey ? `<button class="secondary" data-action="verOC" data-id="${esc(v.id)}">Ver OC</button>` : ""}
-            ${v.facturaFileKey ? `<button class="secondary" data-action="verFactura" data-id="${esc(v.id)}">Ver Factura</button>` : ""}
-          </div>
-        ` : ""}
-
-        <div class="divider"></div>
-
-        <h3 style="margin:0 0 6px;">Dictamen (para estadístico)</h3>
-        <label>Dictamen *</label>
-        <select id="dictamenEstado">
-          <option value="pendiente">Pendiente</option>
-          <option value="aceptado">Aceptado</option>
-          <option value="rechazado">Rechazado</option>
-        </select>
-
-        <label>Observaciones del dictamen</label>
-        <textarea id="dictamenNotas" rows="3" placeholder="Daños, faltantes, observaciones...">${esc(v.dictamen?.notas || "")}</textarea>
-
-        <div class="divider"></div>
-
-        <h3 style="margin:0 0 6px;">Flujo</h3>
-        <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">
-          Al despachar se mueve a <b>Despachados</b>. (El dictamen es solo dato para análisis).
-        </p>
-
-        <div class="row" style="margin-top:8px;">
-          ${hasPerm("despachar") ? `<button class="ok" data-action="despachar" data-id="${esc(v.id)}">Despachar</button>` : ""}
-          <button class="secondary" data-action="home">Cancelar</button>
-        </div>
-      </div>
-    `;
-    setTimeout(() => {
-      const sel = document.getElementById("dictamenEstado");
-      if(sel) sel.value = dictSel;
-    }, 0);
-  }
-
-  async function despachar(id){
-    if(!requirePerm("despachar","Solo CALIDAD o ADMIN pueden despachar.")) return;
-    const v = visitas.find(x => x.id == id);
-    if(!v) return renderDashboard();
-
-    const estado = ($("#dictamenEstado")?.value || "pendiente").trim();
-    const notas = ($("#dictamenNotas")?.value || "").trim();
-
-    v.dictamen = v.dictamen || {};
-    v.dictamen.estado = estado;
-    v.dictamen.notas = notas;
-    v.dictamen.ts = Date.now();
-    v.dictamen.por = currentUser?.nombre || "";
-
-    v.status = Status.DESPACHADO;
-    v.updatedTs = Date.now();
-
-    await saveVisitas();
-    if(navigator.onLine){ try{ await cloudUpsertVisita(v);}catch{} }
-
-    toast("Despachado", `Se movió a 'Despachados'. Dictamen: ${String(estado).toUpperCase()}`, "ok", 2200);
-    renderDashboard();
-  }
-
-  // =========================
-  // Salida (Despachado -> Finalizado)
-  // =========================
-  function renderSalida(id){
-    if(!requirePerm("registrar_salida","No tienes permiso para registrar salida.")) return;
-    cleanup();
-    const v = visitas.find(x => x.id == id);
-    if(!v) return renderDashboard();
-    app.innerHTML = `
-      <div class="card">
-        <h2 style="margin:0 0 6px;">Registrar Salida</h2>
-        <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
-          Registra incidencias si existieron (solo para medición y retroalimentación).
-        </p>
-        <label>Incidencias (opcional)</label>
-        <textarea id="incidenciasSalida" rows="4" placeholder="Ej. Documentación incompleta, daños, discrepancias, retraso...">${esc(v.incidenciasSalida || "")}</textarea>
-        <div class="divider"></div>
-        <div class="row">
-          <button class="danger" data-action="confirmarSalida" data-id="${esc(id)}">Confirmar Salida</button>
-          <button class="secondary" data-action="ficha" data-id="${esc(id)}">Cancelar</button>
-        </div>
-      </div>
-    `;
-  }
-
-  async function confirmarSalida(id){
-    if(!requirePerm("registrar_salida","No tienes permiso para registrar salida.")) return;
-    const v = visitas.find(x => x.id == id);
-    if(!v) return renderDashboard();
-
-    v.incidenciasSalida = ($("#incidenciasSalida").value || "").trim();
-    v.salidaPor = currentUser?.nombre || "";
-    v.salidaTs = Date.now();
-    v.status = Status.FINALIZADO;
-    v.qrActivo = false;
-    v.updatedTs = Date.now();
-
-    await saveVisitas();
-    if(navigator.onLine){ try{ await cloudUpsertVisita(v);}catch{} }
-
-    toast("Salida registrada", v.incidenciasSalida ? "Finalizado con incidencias." : "Finalizado (sin incidencias).", "ok", 2200);
-    renderDashboard();
-  }
-
-  // =========================
-  // Documentos
-  // =========================
-  async function verDocumento(key){
-    if(!requirePerm("ver_documentos","Tu perfil no puede ver documentos.")) return;
-    const blob = await idbGetDoc(key);
-    if(!blob){
-      toast("Archivo", "No encontrado.", "warn");
-      return;
-    }
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
-  }
-
-  // =========================
-  // Reactivar / Eliminar / Limpiar
-  // =========================
-  async function reactivarQR(id){
-    if(!requirePerm("reactivar_qr","Solo ADMIN puede reactivar QR.")) return;
-    const v = visitas.find(x => x.id == id);
-    if(!v) return;
-    v.qrActivo = true;
-    v.updatedTs = Date.now();
-    await saveVisitas();
-    if(navigator.onLine){ try{ await cloudUpsertVisita(v);}catch{} }
-    toast("QR reactivado", "El QR volvió a estar activo.", "ok", 2200);
-    renderDashboard();
-  }
-
-  async function eliminarVisita(id){
-    if(!requirePerm("eliminar","Solo ADMIN puede eliminar registros.")) return;
-    const idx = visitas.findIndex(x => x.id == id);
-    if(idx < 0) return;
-    const v = visitas[idx];
-
-    if(v.ocFileKey){ try{ await idbDelDoc(v.ocFileKey); }catch{} }
-    if(v.facturaFileKey){ try{ await idbDelDoc(v.facturaFileKey); }catch{} }
-
-    visitas.splice(idx, 1);
-    await saveVisitas();
-
-    if(navigator.onLine){
-      try{ await cloudDeleteVisita(id); }catch(e){ console.warn("No se pudo borrar en Firestore", e); }
+      `;
     }
 
-    toast("Eliminado", "Se eliminó el registro.", "ok", 2000);
-    renderDashboard();
-  }
+    async function confirmarEntrada(id){
+      const v = visitas.find(x => x.id == id);
+      if(!v) return renderDashboardHoy();
 
-  function limpiarFinalizados(){
-    if(!requirePerm("limpiar_finalizados","Solo ADMIN puede borrar finalizados.")) return;
-    const antes = visitas.length;
-    const finalizados = visitas.filter(v => v.status === Status.FINALIZADO);
-    if(!finalizados.length){
-      toast("Sin cambios", "No hay finalizados para borrar.", "info", 2200);
-      return;
-    }
-
-    Promise.all(finalizados.map(v => {
-      const ops = [];
-      if(v.ocFileKey) ops.push(idbDelDoc(v.ocFileKey).catch(()=>{}));
-      if(v.facturaFileKey) ops.push(idbDelDoc(v.facturaFileKey).catch(()=>{}));
-      return Promise.all(ops);
-    })).finally(async () => {
-      // borra en nube (best effort)
-      if(navigator.onLine){
-        await Promise.all(finalizados.map(v => cloudDeleteVisita(v.id).catch(()=>{})));
+      const guard = (document.getElementById("guardia")?.value || "").trim();
+      const gafete = (document.getElementById("gafeteNo")?.value || "").trim();
+      if(!guard || !gafete){
+        toast("Datos requeridos","Captura guardia y gafete.","warn",3200);
+        return;
       }
 
-      visitas = visitas.filter(v => v.status !== Status.FINALIZADO);
+      v.guardNombre = guard;
+      v.gafeteNo = gafete;
+      v.status = Status.DENTRO;
+      v.entradaTs = Date.now();
+      v.updatedTs = Date.now();
+
+      await saveVisitas();
+      if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE) await cloudUpsertVisita(v);
+      toast("Entrada registrada","Se movió a 'Dentro'.","ok",2200);
+      renderDashboardHoy();
+    }
+
+    function renderFichaCalidad(v){
+      if(!requirePerm("dictaminar","Solo CALIDAD o ADMIN pueden dictaminar.")) return;
+      cleanup();
+
+      const dictSel = (v.dictamen?.estado || "pendiente").toLowerCase();
+
+      appEl.innerHTML = `
+        <div class="card printable">
+          <h2 style="margin:0;">Revisión de Calidad</h2>
+          <div style="color:var(--muted); margin-bottom:10px;">${esc(v.proveedor)} — ${esc(v.empresa)}</div>
+          <div class="pill" style="margin-bottom:10px;">
+            <span class="dot ok"></span>
+            Entrada registrada por: <b style="color:var(--text)">${esc(v.guardNombre || "-")}</b>
+            ${v.gafeteNo ? ` Gafete: <b style="color:var(--text)">${esc(v.gafeteNo)}</b>` : ""}
+          </div>
+
+          ${hasPerm("ver_documentos") ? `
+            <div class="divider"></div>
+            <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">OC</span><b>${esc(v.ocNo || "-")}</b></div>
+            <div style="height:8px;"></div>
+            <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">Factura</span><b>${esc(v.facturaNo || "-")}</b></div>
+            <div class="row" style="margin-top:8px;">
+              ${v.ocFileKey ? `<button class="secondary" data-action="verOC" data-id="${esc(v.id)}">Ver OC</button>` : ""}
+              ${v.facturaFileKey ? `<button class="secondary" data-action="verFactura" data-id="${esc(v.id)}">Ver Factura</button>` : ""}
+            </div>
+          ` : ""}
+
+          <div class="divider"></div>
+
+          <h3 style="margin:0 0 6px;">Dictamen (dato)</h3>
+          <label>Dictamen *</label>
+          <select id="dictamenEstado">
+            <option value="pendiente">Pendiente</option>
+            <option value="aceptado">Aceptado</option>
+            <option value="rechazado">Rechazado</option>
+          </select>
+
+          <label>Observaciones</label>
+          <textarea id="dictamenNotas" rows="3" placeholder="Daños, faltantes, observaciones...">${esc(v.dictamen?.notas || "")}</textarea>
+
+          <div class="divider"></div>
+
+          <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">
+            Al despachar se mueve a <b>Despachados</b>.
+          </p>
+          <div class="row">
+            <button class="ok" data-action="despachar" data-id="${esc(v.id)}">Despachar</button>
+            <button class="secondary" data-action="home">Cancelar</button>
+          </div>
+        </div>
+      `;
+
+      setTimeout(()=> {
+        const sel = document.getElementById("dictamenEstado");
+        if(sel) sel.value = dictSel;
+      }, 0);
+    }
+
+    async function despachar(id){
+      if(!requirePerm("despachar","Solo CALIDAD o ADMIN pueden despachar.")) return;
+      const v = visitas.find(x => x.id == id);
+      if(!v) return renderDashboardHoy();
+
+      const estado = (document.getElementById("dictamenEstado")?.value || "pendiente").trim();
+      const notas  = (document.getElementById("dictamenNotas")?.value || "").trim();
+
+      v.dictamen = v.dictamen || {};
+      v.dictamen.estado = estado;
+      v.dictamen.notas = notas;
+      v.dictamen.ts = Date.now();
+      v.dictamen.por = currentUser?.nombre || "";
+
+      v.status = Status.DESPACHADO;
+      v.updatedTs = Date.now();
+
+      await saveVisitas();
+      if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE) await cloudUpsertVisita(v);
+      toast("Despachado",`Se movió a 'Despachados'. Dictamen: ${estado.toUpperCase()}`,"ok",2200);
+      renderDashboardHoy();
+    }
+
+    function renderSalida(id){
+      if(!requirePerm("registrar_salida","No tienes permiso para registrar salida.")) return;
+      cleanup();
+      const v = visitas.find(x => x.id == id);
+      if(!v) return renderDashboardHoy();
+
+      appEl.innerHTML = `
+        <div class="card">
+          <h2 style="margin:0 0 6px;">Registrar Salida</h2>
+          <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
+            Registra incidencias si existieron.
+          </p>
+          <label>Incidencias (opcional)</label>
+          <textarea id="incidenciasSalida" rows="4" placeholder="Ej. Documentación incompleta...">${esc(v.incidenciasSalida || "")}</textarea>
+          <div class="divider"></div>
+          <div class="row">
+            <button class="danger" data-action="confirmarSalida" data-id="${esc(id)}">Confirmar Salida</button>
+            <button class="secondary" data-action="ficha" data-id="${esc(id)}">Cancelar</button>
+          </div>
+        </div>
+      `;
+    }
+
+    async function confirmarSalida(id){
+      const v = visitas.find(x => x.id == id);
+      if(!v) return renderDashboardHoy();
+
+      v.incidenciasSalida = (document.getElementById("incidenciasSalida")?.value || "").trim();
+      v.salidaPor = currentUser?.nombre || "";
+      v.salidaTs = Date.now();
+      v.status = Status.FINALIZADO;
+      v.qrActivo = false;
+      v.updatedTs = Date.now();
+
+      await saveVisitas();
+      if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE) await cloudUpsertVisita(v);
+      toast("Salida registrada", v.incidenciasSalida ? "Finalizado con incidencias." : "Finalizado (sin incidencias).", "ok", 2200);
+      renderDashboardHoy();
+    }
+
+   async function reactivarQR(id){
+  if(!requirePerm("reactivar_qr","Solo ADMIN puede reactivar QR.")) return;
+  if(!requireAdminPin("reactivar el código QR")) return;
+
+  const v = visitas.find(x => x.id == id);
+  if(!v) return;
+
+  v.qrActivo = true;
+  v.updatedTs = Date.now();
+
+  await saveVisitas();
+  if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE){
+    await cloudUpsertVisita(v);
+  }
+
+  toast("QR reactivado","El QR volvió a estar activo.","ok",2200);
+  renderDashboardHoy();
+}
+
+    async function eliminarVisita(id){
+      if(!requirePerm("eliminar","Solo ADMIN puede eliminar registros.")) return;
+      const idx = visitas.findIndex(x => x.id == id);
+      if(idx < 0) return;
+      const v = visitas[idx];
+
+      if(v.ocFileKey){ try{ await idbDelDoc(v.ocFileKey); }catch{} }
+      if(v.facturaFileKey){ try{ await idbDelDoc(v.facturaFileKey); }catch{} }
+
+      visitas.splice(idx, 1);
       await saveVisitas();
 
-      toast("Limpieza", `Se borraron ${antes - visitas.length} finalizados.`, "ok", 2200);
-      renderDashboard();
-    });
-  }
+      if(navigator.onLine) { try{ await cloudDeleteVisita(id); }catch{} }
 
-  // =========================
-  // Excel (igual que lo traías)
-  // =========================
-  function exportExcel(){
-    if(!requirePerm("exportar_excel","Tu perfil no puede exportar Excel.")) return;
-    if(!window.XLSX){
-      toast("Excel", "No se cargó XLSX. Revisa xlsx-js-style.", "bad", 4200);
-      return;
-    }
-    const headers = [
-      "ID","Proveedor","Empresa","Persona a visitar","Área","Motivo",
-      "Teléfono","Correo","Fecha Cita","Estado","QR Activo",
-      "Guardia (Entrada)","No Gafete","Llegada (QR)","Entrada","Salida",
-      "Dictamen","Dictamen por","Dictamen notas","Dictamen ts",
-      "Salida por","Incidencias salida",
-      "No OC","No Factura"
-    ];
-
-    const rows = visitas.map(v => ([
-      v.id,
-      v.proveedor || "",
-      v.empresa || "",
-      v.personaVisita || "",
-      v.area || "",
-      v.motivo || "",
-      v.telefono || "",
-      v.correo || "",
-      v.fechaHora || "",
-      v.status || "",
-      v.qrActivo ? "Sí" : "No",
-      v.guardNombre || "",
-      v.gafeteNo || "",
-      v.llegadaTs ? new Date(v.llegadaTs).toLocaleString() : "",
-      v.entradaTs ? new Date(v.entradaTs).toLocaleString() : "",
-      v.salidaTs ? new Date(v.salidaTs).toLocaleString() : "",
-      (v.dictamen?.estado || "pendiente").toUpperCase(),
-      v.dictamen?.por || "",
-      v.dictamen?.notas || "",
-      v.dictamen?.ts ? new Date(v.dictamen.ts).toLocaleString() : "",
-      v.salidaPor || "",
-      v.incidenciasSalida || "",
-      v.ocNo || "",
-      v.facturaNo || ""
-    ]));
-
-    const data = [headers, ...rows];
-    const ws = XLSX.utils.aoa_to_sheet(data);
-
-    ws["!autofilter"] = { ref: `A1:${XLSX.utils.encode_col(headers.length-1)}1` };
-    ws["!cols"] = headers.map((h, i) => {
-      const maxLen = Math.max(h.length, ...rows.map(r => (r[i] ? String(r[i]).length : 0)));
-      return { wch: Math.min(50, Math.max(10, maxLen + 2)) };
-    });
-    ws["!rows"] = [{ hpt: 22 }, ...rows.map(()=>({ hpt: 18 }))];
-
-    const borderThin = {
-      top: { style: "thin", color: { rgb: "223047" } },
-      bottom: { style: "thin", color: { rgb: "223047" } },
-      left: { style: "thin", color: { rgb: "223047" } },
-      right: { style: "thin", color: { rgb: "223047" } }
-    };
-
-    const headerStyle = {
-      font: { bold: true, color: { rgb: "FFFFFFFF" } },
-      fill: { fgColor: { rgb: "FF1E293B" } },
-      alignment: { horizontal: "center", vertical: "center", wrapText: true },
-      border: borderThin
-    };
-
-    const normalStyle = {
-      alignment: { vertical: "top", wrapText: true },
-      border: borderThin
-    };
-
-    const dictamenStyle = (val) => {
-      if(val === "ACEPTADO"){
-        return {
-          font: { bold: true, color: { rgb: "FF065F46" } },
-          fill: { fgColor: { rgb: "FFD1FAE5" } },
-          alignment: { horizontal: "center", vertical: "center" },
-          border: borderThin
-        };
-      }
-      if(val === "RECHAZADO"){
-        return {
-          font: { bold: true, color: { rgb: "FF7F1D1D" } },
-          fill: { fgColor: { rgb: "FFFEE2E2" } },
-          alignment: { horizontal: "center", vertical: "center" },
-          border: borderThin
-        };
-      }
-      return {
-        font: { bold: true, color: { rgb: "FF78350F" } },
-        fill: { fgColor: { rgb: "FFFEF3C7" } },
-        alignment: { horizontal: "center", vertical: "center" },
-        border: borderThin
-      };
-    };
-
-    const range = XLSX.utils.decode_range(ws["!ref"]);
-    const dictamenCol = headers.indexOf("Dictamen");
-    for(let R = range.s.r; R <= range.e.r; R++){
-      for(let C = range.s.c; C <= range.e.c; C++){
-        const addr = XLSX.utils.encode_cell({ r: R, c: C });
-        if(!ws[addr]) continue;
-        if(R === 0) ws[addr].s = headerStyle;
-        else ws[addr].s = (C === dictamenCol) ? dictamenStyle(ws[addr].v) : normalStyle;
-      }
+      toast("Eliminado","Se eliminó el registro.","ok",2000);
+      renderDashboardHoy();
     }
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Visitas");
-    const filename = `visitas_${new Date().toISOString().slice(0,10)}.xlsx`;
-    XLSX.writeFile(wb, filename);
-    toast("Excel", "Archivo .xlsx con formato descargado.", "ok", 2200);
-  }
+    function limpiarFinalizadosHoy(){
+ if(!requirePerm("limpiar_finalizados","Solo ADMIN puede borrar finalizados.")) return;
+ if(!requireAdminPin("limpiar FINALIZADOS del día")) return;
+      const today = new Date();
+      const antes = visitas.length;
 
-  // =========================
-  // Eventos (acciones)
-  // =========================
-  document.addEventListener("click", async (e) => {
-    const btnTop = e.target.closest("[data-top]");
-    if(btnTop && btnTop.dataset.top === "logout"){
-      logout();
-      return;
+      const toDelete = visitas.filter(v => v.status === Status.FINALIZADO && typeof v.fechaHoraTs==="number" && isSameDay(v.fechaHoraTs, today));
+      if(!toDelete.length){
+        toast("Sin cambios","No hay finalizados para borrar.","info",2200);
+        return;
+      }
+
+      Promise.all(toDelete.map(v => {
+        const ops = [];
+        if(v.ocFileKey) ops.push(idbDelDoc(v.ocFileKey).catch(()=>{}));
+        if(v.facturaFileKey) ops.push(idbDelDoc(v.facturaFileKey).catch(()=>{}));
+        return Promise.all(ops);
+      })).finally(async () => {
+        // borrar en nube best effort
+        if(navigator.onLine){
+          await Promise.all(toDelete.map(v => cloudDeleteVisita(v.id).catch(()=>{})));
+        }
+        visitas = visitas.filter(v => !(v.status === Status.FINALIZADO && typeof v.fechaHoraTs==="number" && isSameDay(v.fechaHoraTs, today)));
+        saveVisitasLocal();
+        toast("Limpieza", `Se borraron ${antes - visitas.length} finalizados.`, "ok", 2200);
+        renderDashboardHoy();
+      });
     }
 
-    const el = e.target.closest("[data-action]");
-    if(!el) return;
+    async function verDocumento(key){
+      if(!requirePerm("ver_documentos","Tu rol no puede ver documentos.")) return;
+      const blob = await idbGetDoc(key);
+      if(!blob){
+        toast("Archivo","No encontrado.","warn",2400);
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    }
 
-    const action = el.dataset.action;
-    const id = el.dataset.id;
+    // -------------------------
+    // Excel export (HOY o historial)
+    // -------------------------
+    function exportExcelFor(list, suffix=""){
+      if(!requirePerm("exportar_excel","Tu rol no puede exportar Excel.")) return;
+      if(!window.XLSX){
+        toast("Excel","Aún no carga XLSX. Intenta de nuevo.","warn",2500);
+        return;
+      }
 
-    switch(action){
-      case "home": renderHome(); break;
-      case "nuevo": renderNuevo(); break;
+      const headers = [
+        "ID","Proveedor","Empresa","Persona a visitar","Área","Motivo",
+        "Teléfono","Correo","Fecha Cita","Estado","QR Activo",
+        "Guardia (Entrada)","No Gafete","Llegada (QR)","Entrada","Salida",
+        "Dictamen","Dictamen por","Dictamen notas","Dictamen ts",
+        "Salida por","Incidencias salida",
+        "No OC","No Factura"
+      ];
 
-      case "guardar": {
-        if(!requirePerm("crear_cita","Solo COMPRAS o ADMIN pueden crear citas.")) return;
-        const v = createVisitaFromForm();
-        if(!v) return;
+      const rows = list.map(v => ([
+        v.id,
+        v.proveedor || "",
+        v.empresa || "",
+        v.personaVisita || "",
+        v.area || "",
+        v.motivo || "",
+        v.telefono || "",
+        v.correo || "",
+        v.fechaHora || "",
+        v.status || "",
+        v.qrActivo ? "Sí" : "No",
+        v.guardNombre || "",
+        v.gafeteNo || "",
+        v.llegadaTs ? new Date(v.llegadaTs).toLocaleString() : "",
+        v.entradaTs ? new Date(v.entradaTs).toLocaleString() : "",
+        v.salidaTs ? new Date(v.salidaTs).toLocaleString() : "",
+        (v.dictamen?.estado || "pendiente").toUpperCase(),
+        v.dictamen?.por || "",
+        v.dictamen?.notas || "",
+        v.dictamen?.ts ? new Date(v.dictamen.ts).toLocaleString() : "",
+        v.salidaPor || "",
+        v.incidenciasSalida || "",
+        v.ocNo || "",
+        v.facturaNo || ""
+      ]));
 
-        visitas.unshift(v);
+      const data = [headers, ...rows];
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Visitas");
 
-        // guarda local + nube
-        if(await saveVisitas()){
-          if(navigator.onLine){ try{ await cloudUpsertVisita(v);}catch{} }
-          toast("Guardado", "Cita creada y QR generado.", "ok", 2200);
+      const filename = `visitas_${suffix || new Date().toISOString().slice(0,10)}.xlsx`;
+      XLSX.writeFile(wb, filename);
+      toast("Excel","Archivo descargado.","ok",2200);
+    }
+
+    // -------------------------
+    // Router Home
+    // -------------------------
+    function renderHome(){
+      if(!currentUser) return renderLogin();
+      if(currentUser.role === ROLES.PENDIENTE) return renderPendiente();
+      if(currentUser.role === ROLES.PROVEEDOR) return renderProveedor();
+      return renderDashboardHoy();
+    }
+
+    // -------------------------
+    // Eventos
+    // -------------------------
+    document.addEventListener("click", async (e) => {
+      const btnTop = e.target.closest("[data-top]");
+      if(btnTop && btnTop.dataset.top === "logout"){
+        await doLogout();
+        return;
+      }
+
+      const el = e.target.closest("[data-action]");
+      if(!el) return;
+
+      const action = el.dataset.action;
+      const id = el.dataset.id;
+
+      switch(action){
+        case "home": renderHome(); break;
+        case "historial": await renderHistorial(); break;
+        case "histLoad": await loadHistDay(); break;
+
+        case "nuevo": renderNuevo(); break;
+
+        case "guardar": {
+          if(!requirePerm("crear_cita","Solo COMPRAS o ADMIN pueden crear citas.")) return;
+          const v = createVisitaFromForm();
+          if(!v) return;
+
+          visitas.unshift(v);
+          await saveVisitas();
+
+          if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE){
+            try{ await cloudUpsertVisita(v); }catch(e){ console.warn(e); }
+          }
+
+          toast("Guardado","Cita creada y QR generado.","ok",2200);
           renderQR(v.id);
+          break;
         }
-        break;
-      }
 
-      case "scan": renderScanner(); break;
-      case "ficha": renderFicha(id); break;
-      case "verQR": renderQR(id); break;
-      case "entrada": renderEntrada(id); break;
-      case "confirmarEntrada": await confirmarEntrada(id); break;
-      case "despachar": await despachar(id); break;
-      case "salida": renderSalida(id); break;
-      case "confirmarSalida": await confirmarSalida(id); break;
+        case "verQR": renderQR(id); break;
+        case "scan": renderScanner(); break;
 
-      case "verOC": {
-        const v = visitas.find(x => x.id == id);
-        if(v?.ocFileKey) verDocumento(v.ocFileKey);
-        break;
-      }
-      case "verFactura": {
-        const v = visitas.find(x => x.id == id);
-        if(v?.facturaFileKey) verDocumento(v.facturaFileKey);
-        break;
-      }
+        case "ficha": renderFicha(id); break;
+        case "entrada": renderEntrada(id); break;
+        case "confirmarEntrada": await confirmarEntrada(id); break;
+        case "despachar": await despachar(id); break;
+        case "salida": renderSalida(id); break;
+        case "confirmarSalida": await confirmarSalida(id); break;
 
-      case "reactivar": await reactivarQR(id); break;
-
-      case "eliminar": {
-        const v = visitas.find(x => x.id == id);
-        if(!v) return;
-        if(confirm(`¿Eliminar el registro de "${v.proveedor}"?`)){
-          await eliminarVisita(id);
+        case "verOC": {
+          const v = visitas.find(x => x.id == id);
+          if(v?.ocFileKey) verDocumento(v.ocFileKey);
+          break;
         }
-        break;
-      }
-
-      case "limpiarFinalizados": {
-        if(confirm("¿Borrar todos los registros FINALIZADOS?")){
-          limpiarFinalizados();
+        case "verFactura": {
+          const v = visitas.find(x => x.id == id);
+          if(v?.facturaFileKey) verDocumento(v.facturaFileKey);
+          break;
         }
-        break;
+
+        case "reactivar":
+          if(!requireAdminPin("reactivar el código QR")) break;
+           await reactivarQR(id);
+           break;
+
+        case "eliminar": {
+          const v = visitas.find(x => x.id == id);
+          if(!v) return;
+          if(!requireAdminPin("eliminar este registro")) return;
+          if(confirm(`¿Eliminar el registro de "${v.proveedor}"?`)){
+            await eliminarVisita(id);
+          }
+          break;
+        }
+
+        case "sync":
+          toast("Sincronizando","Actualizando desde la nube...","info",1600);
+          await syncDay(new Date());
+          await pushRecentToCloud();
+          toast("Listo","Datos sincronizados.","ok",1600);
+          renderHome();
+          break;
+
+        case "adminRoles":
+          await renderAdminRoles();
+          break;
+        case "adminReload":
+          await loadAdminUsers();
+          break;
+        case "saveRole":
+          await saveRoleForUser(el.dataset.uid);
+          break;
+
+        case "exportExcel": {
+          const today = new Date();
+          const list = visitas.filter(v => typeof v.fechaHoraTs === "number" && isSameDay(v.fechaHoraTs, today));
+          exportExcelFor(list, "HOY");
+          break;
+        }
+        case "exportExcelHist": {
+          const dateStr = el.dataset.date || "";
+          const d = new Date(dateStr + "T00:00:00");
+          const list = visitas.filter(v => typeof v.fechaHoraTs === "number" && isSameDay(v.fechaHoraTs, d));
+          exportExcelFor(list, dateStr);
+          break;
+        }
+
+        case "limpiarFinalizadosHoy":
+ if(!requireAdminPin("limpiar FINALIZADOS del día")) break;
+ if(confirm("¿Borrar FINALIZADOS?")) limpiarFinalizadosHoy();
+          break;
+
+        case "print": window.print(); break;
       }
+    });
 
-      case "exportExcel": exportExcel(); break;
-      case "print": window.print(); break;
-
-      case "sync": {
-        if(!currentUser) return;
-        toast("Sincronizando", "Actualizando datos desde la nube...", "info", 1600);
-        visitas = await loadVisitas();
-        await saveVisitas();
-        toast("Listo", "Datos sincronizados.", "ok", 1600);
-        renderHome();
-        break;
-      }
-    }
-  });
-
-  qSearch.addEventListener("input", () => {
-    if(!currentUser) return;
-    renderHome();
-  });
-
-  function updateNet(){
-    const on = navigator.onLine;
-    netDot.className = "dot " + (on ? "ok" : "bad");
-    netText.textContent = on ? "En línea" : "Sin conexión";
-  }
-  window.addEventListener("online", async () => {
+    // Buscar (local inmediato + sync con debounce)
+let _searchTimer = null;
+qSearch.addEventListener("input", () => {
+  if(!currentUser) return;
+  renderHome();
+  if(_searchTimer) clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(async () => {
     updateNet();
-    // al volver internet, intenta sync suave
-    if(currentUser){
-      visitas = await loadVisitas();
-      await saveVisitas();
-      renderHome();
-    }
-  });
-  window.addEventListener("offline", updateNet);
-  updateNet();
-
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js")
-      .then(() => console.log("SW registrado 🔥"))
-      .catch(err => console.error("SW error", err));
-  }
-
-  // =========================
-  // Inicio
-  // =========================
-  (async () => {
-    // carga visitas lo antes posible (sin depender del login)
-    visitas = await loadVisitas();
-
-    loadUser();
-    paintHeader();
-    if(!currentUser) renderLogin();
-    else renderHome();
-  })();
-window.fb.onAuthStateChanged(window.auth, (user) => {
-  if(user){
-    currentUser = {
-      user: user.email,
-      role: "admin",
-      nombre: user.email
-    };
-
-    saveUser();
-    paintHeader();
+    await syncDay(new Date());
     renderHome();
-  } else {
-    renderLogin();
-  }
+  }, 600);
 });
 
-})();
+window.addEventListener("online", () => { updateNet(); if(currentUser) syncDay(new Date()).catch(()=>{}); });
+window.addEventListener("offline",updateNet);
+    updateNet();
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./service-worker.js")
+        .then(() => console.log("SW registrado 🔥"))
+        .catch(err => console.error("SW error", err));
+    }
+
+    // -------------------------
+    // Auth observer
+    // -------------------------
+    onAuthStateChanged(auth, async (user) => {
+      if(!user){
+        currentUser = null;
+        localStorage.removeItem(LS_USER);
+        paintHeader();
+        renderLogin();
+        return;
+      }
+
+      const prof = await ensureUserProfile(user);
+      currentUser = {
+        uid: prof.uid,
+        email: prof.email,
+        user: prof.email,
+        role: prof.role,
+        nombre: prof.email
+      };
+      localStorage.setItem(LS_USER, JSON.stringify(currentUser));
+
+      paintHeader();
+
+      // carga local inmediata + sync HOY
+      visitas = loadVisitasLocal();
+      renderHome();
+      await syncDay(new Date());
+      renderHome();
+    });
+
+    // Start
+    paintHeader();
+    renderLogin();
+  })();
 </script>
 </body>
 </html>
