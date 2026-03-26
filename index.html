@@ -345,6 +345,7 @@
   </div>
 </div>
 <script type="module">
+  
   // =========================
   // Firebase (CDN modular)
   // =========================
@@ -2056,32 +2057,7 @@ window.addEventListener('visibilitychange', ()=>{
         toast("Excel","Aún no carga XLSX. Intenta de nuevo.","warn",2500);
         return;
       }
-
-function exportPdfFor(list, suffix=""){
-  if(!requirePerm('exportar_excel','Tu rol no puede exportar.')) return;
-  const title = `Visitas_${suffix || new Date().toISOString().slice(0,10)}`;
-  const rows = (list||[]).map(v=>({
-    id: v.id, proveedor: v.proveedor||'', empresa: v.empresa||'', area: v.area||'',
-    cita: v.fechaHora ? new Date(v.fechaHora).toLocaleString() : '',
-    estado: v.status||'', qr: v.qrActivo ? 'Sí' : 'No', oc: v.ocNo||'', factura: v.facturaNo||''
-  }));
-  const w = window.open('', '_blank');
-  if(!w){ toast('Pop-up bloqueado','Permite pop-ups para generar PDF.','warn',4200); return; }
-  w.document.open();
-  w.document.write(`<!doctype html><html><head><meta charset='utf-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/>
-<title>${title}</title>
-<style>body{font-family:Arial,system-ui; padding:18px;}h1{font-size:16px;margin:0 0 10px;}small{color:#555;}table{width:100%; border-collapse:collapse; margin-top:10px;}th,td{border:1px solid #ddd; padding:6px 8px; font-size:11px; text-align:left;}th{background:#f3f4f6;}@media print{button{display:none;} body{padding:0;} }</style></head><body>
-<button onclick='window.print()' style='padding:8px 10px; margin-bottom:8px;'>Imprimir / Guardar PDF</button>
-<h1>${title}</h1><small>Total: ${rows.length}</small>
-<table><thead><tr><th>ID</th><th>Proveedor</th><th>Empresa</th><th>Área</th><th>Cita</th><th>Estado</th><th>QR</th><th>OC</th><th>Factura</th></tr></thead><tbody>
-${rows.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(r.proveedor)}</td><td>${esc(r.empresa)}</td><td>${esc(r.area)}</td><td>${esc(r.cita)}</td><td>${esc(r.estado)}</td><td>${esc(r.qr)}</td><td>${esc(r.oc)}</td><td>${esc(r.factura)}</td></tr>`).join('')}
-</tbody></table></body></html>`);
-  w.document.close();
-  toast('PDF','Se abrió la vista imprimible. Usa Guardar como PDF.','ok',2600);
-}
-
-
-      const headers = [
+    const headers = [
         "ID","Proveedor","Empresa","Persona a visitar","Área","Motivo",
         "Teléfono","Correo","Fecha Cita","Estado","QR Activo",
         "Guardia (Entrada)","No Gafete","Llegada (QR)","Entrada","Salida",
@@ -2127,11 +2103,34 @@ ${rows.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(r.proveedor)}</td><td>${esc(r.
       toast("Excel","Archivo descargado.","ok",2200);
     }
 
+    function exportPdfFor(list, suffix=""){
+  if(!requirePerm('exportar_excel','Tu rol no puede exportar.')) return;
+  const title = `Visitas_${suffix || new Date().toISOString().slice(0,10)}`;
+  const rows = (list||[]).map(v=>({
+    id: v.id, proveedor: v.proveedor||'', empresa: v.empresa||'', area: v.area||'',
+    cita: v.fechaHora ? new Date(v.fechaHora).toLocaleString() : '',
+    estado: v.status||'', qr: v.qrActivo ? 'Sí' : 'No', oc: v.ocNo||'', factura: v.facturaNo||''
+  }));
+  const w = window.open('', '_blank');
+  if(!w){ toast('Pop-up bloqueado','Permite pop-ups para generar PDF.','warn',4200); return; }
+  w.document.open();
+  w.document.write(`<!doctype html><html><head><meta charset='utf-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/>
+<title>${title}</title>
+<style>body{font-family:Arial,system-ui; padding:18px;}h1{font-size:16px;margin:0 0 10px;}small{color:#555;}table{width:100%; border-collapse:collapse; margin-top:10px;}th,td{border:1px solid #ddd; padding:6px 8px; font-size:11px; text-align:left;}th{background:#f3f4f6;}@media print{button{display:none;} body{padding:0;} }</style></head><body>
+<button onclick='window.print()' style='padding:8px 10px; margin-bottom:8px;'>Imprimir / Guardar PDF</button>
+<h1>${title}</h1><small>Total: ${rows.length}</small>
+<table><thead><tr><th>ID</th><th>Proveedor</th><th>Empresa</th><th>Área</th><th>Cita</th><th>Estado</th><th>QR</th><th>OC</th><th>Factura</th></tr></thead><tbody>
+${rows.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(r.proveedor)}</td><td>${esc(r.empresa)}</td><td>${esc(r.area)}</td><td>${esc(r.cita)}</td><td>${esc(r.estado)}</td><td>${esc(r.qr)}</td><td>${esc(r.oc)}</td><td>${esc(r.factura)}</td></tr>`).join('')}
+</tbody></table></body></html>`);
+  w.document.close();
+  toast('PDF','Se abrió la vista imprimible. Usa Guardar como PDF.','ok',2600);
+}
+
     // -------------------------
     // Router Home
     // -------------------------
     function renderHome(){
- try{ setActiveSb('dashboard'); }catch{}
+    try{ setActiveSb('dashboard'); }catch{}
       if(!currentUser) return renderLogin();
       if(currentUser.role === ROLES.PENDIENTE) return renderPendiente();
       if(currentUser.role === ROLES.PROVEEDOR) return renderProveedor();
@@ -2316,7 +2315,6 @@ window.addEventListener("offline",updateNet);
 </script>
 </body>
 </html>
-
     // Start
     paintHeader();
     renderLogin();
