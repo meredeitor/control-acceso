@@ -170,10 +170,151 @@
     }
     .big{ font-size:34px; font-weight:700; margin-top:6px; }
   
-  </style>
+
+/* =========================
+   Sidebar (colapsable, mobile-first)
+   Opción A: navegación en sidebar
+   ========================= */
+:root{ --sbw: 260px; --sb-shadow: 0 20px 50px rgba(0,0,0,.45); }
+.app-shell{ display:flex; min-height:100vh; }
+.sidebar{
+  position:fixed; inset:0 auto 0 0; z-index:30;
+  width:var(--sbw);
+  background: linear-gradient(180deg, rgba(17,28,51,.98), rgba(15,23,42,.96));
+  border-right:1px solid var(--border);
+  box-shadow: var(--sb-shadow);
+  padding:12px 10px;
+  transform: translateX(0);
+  transition: transform .22s ease;
+  display:flex; flex-direction:column; gap:10px;
+}
+.sidebar .sb-brand{ display:flex; align-items:center; gap:10px; padding:10px 10px 8px; }
+.sidebar .sb-logo{
+  width:38px; height:38px; border-radius:12px;
+  background: linear-gradient(135deg, var(--brand), #60a5fa);
+  box-shadow:0 12px 26px rgba(59,130,246,.22);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:900; letter-spacing:.5px;
+}
+.sidebar .sb-title{ line-height:1.1; }
+.sidebar .sb-title b{ display:block; font-size:13px; }
+.sidebar .sb-title span{ display:block; font-size:11px; color:var(--muted); margin-top:2px; }
+.sidebar .sb-section{ margin-top:6px; }
+.sidebar .sb-section h4{ margin:10px 10px 6px; font-size:11px; color:rgba(148,163,184,.9); letter-spacing:.25px; text-transform:uppercase; }
+.sb-nav{ display:flex; flex-direction:column; gap:6px; padding:0 6px; }
+.sb-btn{
+  display:flex; align-items:center; gap:12px;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid transparent;
+  background: rgba(2,6,23,.20);
+  color:var(--text);
+  cursor:pointer;
+  user-select:none;
+  transition: background .15s ease, border-color .15s ease, transform .06s ease;
+}
+.sb-btn:hover{ background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.25); }
+.sb-btn:active{ transform: translateY(1px); }
+.sb-btn[aria-current="page"]{ background: rgba(59,130,246,.18); border-color: rgba(59,130,246,.35); }
+.sb-ic{ width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; }
+.sb-ic svg{ width:20px; height:20px; fill:none; stroke: currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.sb-txt{ flex:1; font-weight:750; font-size:13px; }
+.sb-chip{ font-size:11px; color: var(--muted); border:1px solid rgba(255,255,255,.10); padding:3px 8px; border-radius:999px; background: rgba(2,6,23,.20); }
+.sb-sub{ margin:4px 6px 0; padding:6px; border-radius:14px; border:1px solid rgba(255,255,255,.08); background: rgba(2,6,23,.22); display:none; }
+.sb-sub.open{ display:block; }
+.sb-sub .sb-btn{ background: rgba(15,23,42,.45); }
+.main-wrap{ margin-left: var(--sbw); width:100%; }
+.hamb{ display:none; border:1px solid rgba(255,255,255,.12); background: rgba(2,6,23,.25); color: var(--text); border-radius:12px; padding:10px 10px; box-shadow:none; }
+.hamb:hover{ filter:none; background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.25); }
+.hamb svg{ width:20px; height:20px; stroke: currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.sb-overlay{ position:fixed; inset:0; background: rgba(0,0,0,.45); z-index:25; opacity:0; pointer-events:none; transition: opacity .18s ease; }
+.sb-overlay.show{ opacity:1; pointer-events:auto; }
+@media (max-width: 980px){
+  .hamb{ display:inline-flex; align-items:center; justify-content:center; }
+  .sidebar{ transform: translateX(-102%); }
+  .sidebar.open{ transform: translateX(0); }
+  .main-wrap{ margin-left: 0; }
+}
+@media (max-width: 420px){
+  .sidebar{ width: min(86vw, 320px); }
+}
+
+</style>
 </head>
 
 <body>
+
+<div class="sb-overlay" id="sbOverlay"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">PV</div>
+    <div class="sb-title">
+      <b>Acceso Proveedores</b>
+      <span>Dashboard • Citas • Historial • Configuración</span>
+    </div>
+  </div>
+  <div class="sb-section">
+    <h4>Navegación</h4>
+    <div class="sb-nav" id="sbNav">
+      <div class="sb-btn" data-sb="dashboard" aria-current="page">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M9 22V12h6v10"/></svg></span>
+        <span class="sb-txt">Dashboard</span>
+      </div>
+      <div class="sb-btn" data-sb="nuevo">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span>
+        <span class="sb-txt">Nueva cita</span>
+      </div>
+      <div class="sb-btn" data-sb="historial">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 5h14"/><path d="M3 12h14"/><path d="M3 19h14"/><path d="M19 5v14"/><path d="M19 12h2"/></svg></span>
+        <span class="sb-txt">Historial</span>
+      </div>
+      
+ <div class="sb-btn" data-sb="export" id="sbExportToggle">
+  <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></span>
+  <span class="sb-txt">Exportar</span>
+  <span class="sb-chip" id="sbExportChip">Excel/PDF</span>
+ </div>
+ <div class="sb-sub" id="sbExportSub">
+  <div class="sb-btn" data-sb="export_excel">
+    <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h6"/></svg></span>
+    <span class="sb-txt">Excel</span>
+  </div>
+  <div class="sb-btn" data-sb="export_pdf">
+    <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h4"/></svg></span>
+    <span class="sb-txt">PDF</span>
+  </div>
+ </div>
+<div class="sb-btn" data-sb="config" id="sbConfigToggle">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M19.4 15a7.8 7.8 0 0 0 .1-1 7.8 7.8 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a8 8 0 0 0-1.7-1L15 3h-6l-.3 2.4a8 8 0 0 0-1.7 1l-2.4-1-2 3.4L4.6 13a7.8 7.8 0 0 0-.1 1 7.8 7.8 0 0 0 .1 1L2.6 16.6l2 3.4 2.4-1a8 8 0 0 0 1.7 1L9 21h6l.3-2.4a8 8 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></span>
+        <span class="sb-txt">Configuración</span>
+        <span class="sb-chip" id="sbConfigChip">ADMIN</span>
+      </div>
+      <div class="sb-sub" id="sbConfigSub">
+        <div class="sb-btn" data-sb="roles">
+          <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M19 8h2"/><path d="M20 7v2"/></svg></span>
+          <span class="sb-txt">Roles</span>
+        </div>
+        <div class="sb-btn" data-sb="activarqr">
+          <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h6v6H5z"/><path d="M13 5h6v6h-6z"/><path d="M5 13h6v6H5z"/><path d="M14 14h1"/><path d="M17 13h2v2h-2z"/><path d="M13 18h6"/></svg></span>
+          <span class="sb-txt">Activar QR</span>
+        </div>
+        <div class="sb-btn" data-sb="eliminarfinalizados">
+          <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 16h10l1-16"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span>
+          <span class="sb-txt">Eliminar finalizados</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:auto; padding:0 6px 6px;">
+    <div class="sb-btn" data-sb="logout" style="background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.25);">
+      <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 3v18"/></svg></span>
+      <span class="sb-txt">Cerrar sesión</span>
+    </div>
+  </div>
+</aside>
+
+<div class="app-shell">
+  <div class="main-wrap">
 <header>
   <div class="topbar">
     <div class="title">
@@ -184,6 +325,9 @@
       </div>
     </div>
     <div class="actions" id="actionsBar">
+ <button class="hamb" id="btnHamb" title="Menú">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+</button>
       <span class="pill" title="Estado de conexión">
         <span class="dot info" id="netDot"></span>
         <span id="netText">En línea</span>
@@ -193,13 +337,13 @@
     </div>
   </div>
 </header>
-
 <div class="container">
   <div id="app"></div>
 </div>
 
 <div class="toast-wrap" id="toasts"></div>
-
+  </div>
+</div>
 <script type="module">
   // =========================
   // Firebase (CDN modular)
@@ -287,6 +431,14 @@ const PIN_SESSION_KEY = "adminPinOkTs";
     const netDot = $("#netDot");
     const netText = $("#netText");
     const actionsBar = $("#actionsBar");
+  const sidebarEl = document.getElementById('sidebar');
+  const sbOverlay = document.getElementById('sbOverlay');
+  const sbConfigSub = document.getElementById('sbConfigSub');
+  const sbConfigChip = document.getElementById('sbConfigChip');
+ const sbExportSub = document.getElementById('sbExportSub');
+ const sbExportChip = document.getElementById('sbExportChip');
+  const btnHamb = document.getElementById('btnHamb');
+
     const userPill = $("#userPill");
 
     const LS_USER = "pv_usuario_actual";
@@ -342,6 +494,158 @@ function toast(title, msg, type="info", ttl=2600){
       toast("Acceso denegado", msg || "No tienes permiso.", "bad", 3200);
       return false;
     }
+
+// -------------------------
+// Sidebar (Opción A)
+// -------------------------
+function sbOpen(){
+  if(!sidebarEl) return;
+  sidebarEl.classList.add('open');
+  if(sbOverlay) sbOverlay.classList.add('show');
+}
+function sbClose(){
+  if(!sidebarEl) return;
+  sidebarEl.classList.remove('open');
+  if(sbOverlay) sbOverlay.classList.remove('show');
+}
+function sbToggle(){
+  if(!sidebarEl) return;
+  (sidebarEl.classList.contains('open')) ? sbClose() : sbOpen();
+}
+function setActiveSb(key){
+  document.querySelectorAll('[data-sb]').forEach(el=>{
+    if(el.dataset.sb === key) el.setAttribute('aria-current','page');
+    else el.removeAttribute('aria-current');
+  });
+}
+function canShowConfig(){
+  return !!currentUser && (currentUser.role === ROLES.ADMIN) && hasPerm('admin_roles');
+}
+function paintSidebar(){
+  if(!sidebarEl) return;
+  // Dashboard/Historial/Nueva cita por permisos
+  const dash = sidebarEl.querySelector('[data-sb="dashboard"]');
+  const nuevo = sidebarEl.querySelector('[data-sb="nuevo"]');
+  const hist = sidebarEl.querySelector('[data-sb="historial"]');
+  if(dash) dash.style.display = hasPerm('ver_dashboard') ? '' : 'none';
+  if(nuevo) nuevo.style.display = hasPerm('crear_cita') ? '' : 'none';
+  if(hist) hist.style.display = hasPerm('ver_historial') ? '' : 'none';
+// Exportar por permiso
+ const exp = sidebarEl.querySelector('[data-sb="export"]');
+ const expX = sidebarEl.querySelector('[data-sb="export_excel"]');
+ const expP = sidebarEl.querySelector('[data-sb="export_pdf"]');
+ const canExport = hasPerm('exportar_excel');
+ if(exp) exp.style.display = canExport ? '' : 'none';
+ if(expX) expX.style.display = canExport ? '' : 'none';
+ if(expP) expP.style.display = canExport ? '' : 'none';
+ if(sbExportSub) sbExportSub.classList.remove('open');
+ if(sbExportChip) sbExportChip.textContent = canExport ? 'Excel/PDF' : '';
+
+  // Config solo ADMIN con permiso
+  const showCfg = canShowConfig();
+  const cfgToggle = document.getElementById('sbConfigToggle');
+  if(cfgToggle) cfgToggle.style.display = showCfg ? '' : 'none';
+  if(sbConfigSub) sbConfigSub.classList.remove('open');
+  if(sbConfigChip) sbConfigChip.textContent = showCfg ? 'ADMIN' : '';
+
+  // Logout
+  const logout = sidebarEl.querySelector('[data-sb="logout"]');
+  if(logout) logout.style.display = currentUser ? '' : 'none';
+}
+
+document.addEventListener('click', async (e)=>{
+  const sb = e.target.closest('[data-sb]');
+  if(!sb) return;
+  const key = sb.dataset.sb;
+
+  if(key === 'export'){
+  if(sbExportSub) sbExportSub.classList.toggle('open');
+  return;
+ }
+ if(key === 'config'){
+    if(sbConfigSub) sbConfigSub.classList.toggle('open');
+    return;
+  }
+  if(key === 'dashboard'){
+    setActiveSb('dashboard');
+    sbClose();
+    renderHome();
+    return;
+  }
+  if(key === 'nuevo'){
+    setActiveSb('dashboard');
+    sbClose();
+    renderNuevo();
+    return;
+  }
+  if(key === 'historial'){
+    setActiveSb('historial');
+    sbClose();
+    await renderHistorial();
+    return;
+  }
+  if(key === 'roles'){
+    setActiveSb('config');
+    sbClose();
+    await renderAdminRoles();
+    return;
+  }
+  if(key === 'eliminarfinalizados'){
+    setActiveSb('config');
+    sbClose();
+    if(confirm('¿Borrar FINALIZADOS del día?')) limpiarFinalizadosHoy();
+    return;
+  }
+  if(key === 'activarqr'){
+    setActiveSb('config');
+    sbClose();
+    if(!requirePerm('reactivar_qr','Solo ADMIN puede reactivar QR.')) return;
+    if(!requireAdminPin('reactivar un QR por ID')) return;
+    const id = prompt('Ingresa el ID (del QR) a reactivar:');
+    if(!id) return;
+    await reactivarQR(String(id).trim());
+    return;
+  }
+  if(key === 'export_excel'){
+  setActiveSb('export');
+  sbClose();
+  const hd = document.getElementById('histDate');
+  if(hd && hd.value){
+    const d = new Date(hd.value + 'T00:00:00');
+    const list = visitas.filter(v => typeof v.fechaHoraTs === 'number' && isSameDay(v.fechaHoraTs, d));
+    exportExcelFor(list, hd.value);
+  } else {
+    const today = new Date();
+    const list = visitas.filter(v => typeof v.fechaHoraTs === 'number' && isSameDay(v.fechaHoraTs, today));
+    exportExcelFor(list, 'HOY');
+  }
+  return;
+ }
+ if(key === 'export_pdf'){
+  setActiveSb('export');
+  sbClose();
+  const hd = document.getElementById('histDate');
+  if(hd && hd.value){
+    const d = new Date(hd.value + 'T00:00:00');
+    const list = visitas.filter(v => typeof v.fechaHoraTs === 'number' && isSameDay(v.fechaHoraTs, d));
+    exportPdfFor(list, hd.value);
+  } else {
+    const today = new Date();
+    const list = visitas.filter(v => typeof v.fechaHoraTs === 'number' && isSameDay(v.fechaHoraTs, today));
+    exportPdfFor(list, 'HOY');
+  }
+  return;
+ }
+ if(key === 'logout'){
+    sbClose();
+    await doLogout();
+    return;
+  }
+});
+
+if(btnHamb){ btnHamb.addEventListener('click', (e)=>{ e.preventDefault(); sbToggle(); }); }
+if(sbOverlay){ sbOverlay.addEventListener('click', sbClose); }
+
 
     
 // -------------------------
@@ -552,18 +856,82 @@ function fmt(ts){
       }
     }
 
-    async function pushRecentToCloud(){
-      if(!navigator.onLine) return;
-      if(!currentUser || currentUser.role === ROLES.PENDIENTE) return;
-      try{
-        const sorted = [...visitas].sort((a,b)=>((b.updatedTs||b.createdTs||0)-(a.updatedTs||a.createdTs||0)));
-        const top = sorted.slice(0, 10);
-        await Promise.all(top.map(v => cloudUpsertVisita(v)));
-      }catch(e){
-        console.warn(e);
-        toast("Sync", "No se pudo guardar en Firestore (revisa Rules).", "warn", 3200);
-      }
+    // Evita spam de toasts
+let _lastSyncToastTs = 0;
+
+function _maybeToastSync(msg, type="warn", ttl=3200){
+  const now = Date.now();
+  // máximo 1 toast cada 20s
+  if(now - _lastSyncToastTs < 20000) return;
+  _lastSyncToastTs = now;
+  toast("Sync", msg, type, ttl);
+}
+
+function sanitizeForFirestore(obj){
+  // Elimina undefined y valores no serializables
+  const out = {};
+  for(const [k,v] of Object.entries(obj || {})){
+    if(v === undefined) continue;
+    if(v instanceof File || v instanceof Blob) continue; // Firestore no acepta blobs tipo File aquí
+    // Evita NaN
+    if(typeof v === "number" && Number.isNaN(v)) continue;
+    // Arrays / objetos anidados: sanea recursivo
+    if(v && typeof v === "object" && !Array.isArray(v)){
+      out[k] = sanitizeForFirestore(v);
+    } else if(Array.isArray(v)){
+      out[k] = v.map(x => (x && typeof x === "object") ? sanitizeForFirestore(x) : x)
+              .filter(x => x !== undefined);
+    } else {
+      out[k] = v;
     }
+  }
+  return out;
+}
+
+async function pushRecentToCloud(){
+  if(!navigator.onLine) return;
+  if(!currentUser || currentUser.role === ROLES.PENDIENTE) return;
+
+  try{
+    const sorted = [...visitas].sort((a,b)=>((b.updatedTs||b.createdTs||0)-(a.updatedTs||a.createdTs||0)));
+    const top = sorted.slice(0, 10);
+
+    // IMPORTANTE: sanitiza antes de mandar
+    await Promise.all(top.map(v => cloudUpsertVisita(sanitizeForFirestore(v))));
+  }catch(e){
+  console.warn("pushRecentToCloud (ignorado):", e?.code, e?.message);
+
+  // 🔇 NO mostrar toast en auto-sync
+  // El guardado principal ya ocurrió
+}
+}
+
+// -------------------------
+// Auto-Sync (cada 2 min cuando está visible)
+// -------------------------
+let _autoSyncTimer = null;
+function stopAutoSync(){
+  if(_autoSyncTimer){ clearInterval(_autoSyncTimer); _autoSyncTimer = null; }
+}
+function startAutoSync(){
+  stopAutoSync();
+  if(!currentUser || currentUser.role === ROLES.PENDIENTE) return;
+  _autoSyncTimer = setInterval(async ()=>{
+    try{
+      if(document.visibilityState !== 'visible') return;
+      updateNet();
+      if(!navigator.onLine) return;
+      await syncDay(new Date());
+      await pushRecentToCloud();
+    }catch(e){}
+  }, 120000);
+}
+window.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && currentUser && navigator.onLine){
+    syncDay(new Date()).catch(()=>{});
+    pushRecentToCloud().catch(()=>{});
+  }
+});
 
     async function saveVisitas(){
       if(!saveVisitasLocal()) return false;
@@ -585,36 +953,27 @@ function fmt(ts){
     }
 
     function paintHeader(){
-      [...actionsBar.querySelectorAll("button[data-top], button[data-action]")].forEach(b => b.remove());
+  // Opción A: el header solo muestra estado/red, usuario y búsqueda.
+  // Los botones de navegación viven en el sidebar.
+  [...actionsBar.querySelectorAll("button[data-top], button[data-action]")].forEach(b => b.remove());
+  const hamb = document.getElementById("btnHamb");
+  if(!currentUser){
+    userPill.style.display = "none";
+    qSearch.style.display = "none";
+    if(hamb) hamb.style.display = "none";
+    return;
+  }
+  if(hamb) hamb.style.display = "";
+  userPill.style.display = "";
+  const dot = currentUser.role === ROLES.ADMIN ? "bad" : (currentUser.role === ROLES.PENDIENTE ? "warn" : "ok");
+  userPill.innerHTML = `<span class="dot ${dot}"></span>${esc(currentUser.nombre)} • ${esc(String(currentUser.role||"").toUpperCase())}`;
+  qSearch.style.display = "";
+  qSearch.placeholder = (currentUser.role === ROLES.PROVEEDOR)
+    ? "Ingresa ID (del QR)..."
+    : "Buscar proveedor / empresa...";
+}
 
-      if(!currentUser){
-        userPill.style.display = "none";
-        qSearch.style.display = "none";
-        return;
-      }
-
-      userPill.style.display = "";
-      const dot = currentUser.role === ROLES.ADMIN ? "bad" : (currentUser.role === ROLES.PENDIENTE ? "warn" : "ok");
-      userPill.innerHTML = `<span class="dot ${dot}"></span>${esc(currentUser.nombre)} • ${esc(currentUser.role.toUpperCase())}`;
-
-      qSearch.style.display = "";
-      qSearch.placeholder = (currentUser.role === ROLES.PROVEEDOR)
-        ? "Ingresa ID (del QR)..."
-        : "Buscar proveedor / empresa...";
-
-      const addBtn = (html) => {
-        const d = document.createElement("div");
-        d.innerHTML = html.trim();
-        actionsBar.appendChild(d.firstChild);
-      };
-
-      if(hasPerm("crear_cita")) addBtn(`<button data-action="nuevo">Nueva Cita</button>`);
-      if(hasPerm("escanear_qr")) addBtn(`<button class="secondary" data-action="scan">Escanear QR</button>`);
-      if(hasPerm("ver_historial")) addBtn(`<button class="secondary" data-action="historial">Historial</button>`);
-      addBtn(`<button class="secondary" data-action="sync">Sincronizar</button>`);
-      if(hasPerm("admin_roles")) addBtn(`<button class="secondary" data-action="adminRoles">Admin: Roles</button>`);
-      addBtn(`<button class="secondary" data-top="logout">Cerrar sesión</button>`);
-    }
+      
 
     function renderLogin(){
       qSearch.value = "";
@@ -778,14 +1137,13 @@ function fmt(ts){
         </div>
         <div class="divider"></div>
         <div class="row">
-          ${hasPerm("exportar_excel") ? `<button class="secondary" data-action="exportExcel">Exportar Excel</button>` : ""}
-          ${hasPerm("limpiar_finalizados") ? `<button class="secondary danger" data-action="limpiarFinalizadosHoy">Borrar Finalizados</button>` : ""}
-          <span class="pill" style="margin-left:auto;">Total: <b style="color:var(--text); margin-left:6px;">${filtered.length}</b></span>
-        </div>
+ <span class="pill" style="margin-left:auto;">Total: <b style="color:var(--text); margin-left:6px;">${filtered.length}</b></span>
+</div>
       `;
     }
 
     async function renderHistorial(){
+ try{ setActiveSb('historial'); }catch{}
       if(!requirePerm("ver_historial","Tu rol no puede ver historial.")) return;
 
       const todayISO = new Date().toISOString().slice(0,10);
@@ -881,7 +1239,7 @@ function fmt(ts){
 
         <div class="divider"></div>
         <div class="row">
-          ${hasPerm("exportar_excel") ? `<button class="secondary" data-action="exportExcelHist" data-date="${esc(dateStr)}">Exportar Excel (día)</button>` : ""}
+          ${false ? `<button class="secondary" data-action="exportExcelHist" data-date="${esc(dateStr)}">Exportar Excel (día)</button>` : ""}
           <span class="pill" style="margin-left:auto;">Total día: <b style="color:var(--text); margin-left:6px;">${list.length}</b></span>
         </div>
       `;
@@ -893,6 +1251,7 @@ function fmt(ts){
     let _adminUsersCache = [];
 
     async function renderAdminRoles(){
+ try{ setActiveSb('config'); }catch{}
       if(!requirePerm("admin_roles","Solo ADMIN puede administrar roles.")) return;
 
       appEl.innerHTML = `
@@ -1698,6 +2057,30 @@ function fmt(ts){
         return;
       }
 
+function exportPdfFor(list, suffix=""){
+  if(!requirePerm('exportar_excel','Tu rol no puede exportar.')) return;
+  const title = `Visitas_${suffix || new Date().toISOString().slice(0,10)}`;
+  const rows = (list||[]).map(v=>({
+    id: v.id, proveedor: v.proveedor||'', empresa: v.empresa||'', area: v.area||'',
+    cita: v.fechaHora ? new Date(v.fechaHora).toLocaleString() : '',
+    estado: v.status||'', qr: v.qrActivo ? 'Sí' : 'No', oc: v.ocNo||'', factura: v.facturaNo||''
+  }));
+  const w = window.open('', '_blank');
+  if(!w){ toast('Pop-up bloqueado','Permite pop-ups para generar PDF.','warn',4200); return; }
+  w.document.open();
+  w.document.write(`<!doctype html><html><head><meta charset='utf-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/>
+<title>${title}</title>
+<style>body{font-family:Arial,system-ui; padding:18px;}h1{font-size:16px;margin:0 0 10px;}small{color:#555;}table{width:100%; border-collapse:collapse; margin-top:10px;}th,td{border:1px solid #ddd; padding:6px 8px; font-size:11px; text-align:left;}th{background:#f3f4f6;}@media print{button{display:none;} body{padding:0;} }</style></head><body>
+<button onclick='window.print()' style='padding:8px 10px; margin-bottom:8px;'>Imprimir / Guardar PDF</button>
+<h1>${title}</h1><small>Total: ${rows.length}</small>
+<table><thead><tr><th>ID</th><th>Proveedor</th><th>Empresa</th><th>Área</th><th>Cita</th><th>Estado</th><th>QR</th><th>OC</th><th>Factura</th></tr></thead><tbody>
+${rows.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(r.proveedor)}</td><td>${esc(r.empresa)}</td><td>${esc(r.area)}</td><td>${esc(r.cita)}</td><td>${esc(r.estado)}</td><td>${esc(r.qr)}</td><td>${esc(r.oc)}</td><td>${esc(r.factura)}</td></tr>`).join('')}
+</tbody></table></body></html>`);
+  w.document.close();
+  toast('PDF','Se abrió la vista imprimible. Usa Guardar como PDF.','ok',2600);
+}
+
+
       const headers = [
         "ID","Proveedor","Empresa","Persona a visitar","Área","Motivo",
         "Teléfono","Correo","Fecha Cita","Estado","QR Activo",
@@ -1748,6 +2131,7 @@ function fmt(ts){
     // Router Home
     // -------------------------
     function renderHome(){
+ try{ setActiveSb('dashboard'); }catch{}
       if(!currentUser) return renderLogin();
       if(currentUser.role === ROLES.PENDIENTE) return renderPendiente();
       if(currentUser.role === ROLES.PROVEEDOR) return renderProveedor();
@@ -1924,6 +2308,14 @@ window.addEventListener("offline",updateNet);
       await syncDay(new Date());
       renderHome();
     });
+
+    // Start
+    paintHeader();
+    renderLogin();
+  })();
+</script>
+</body>
+</html>
 
     // Start
     paintHeader();
