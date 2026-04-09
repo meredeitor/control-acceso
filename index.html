@@ -2271,11 +2271,14 @@ window.addEventListener("online", () => { updateNet(); if(currentUser) syncDay(n
 window.addEventListener("offline",updateNet);
     updateNet();
 
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./service-worker.js")
-        .then(() => console.log("SW registrado 🔥"))
-        .catch(err => console.error("SW error", err));
+   if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  navigator.serviceWorker.register("./service-worker.js")
+    .then(() => console.log("SW registrado 🔥"))
+    .catch(err => console.error("SW error", err));
+     } else {
+     console.warn("SW deshabilitado (file://)");
     }
+
 
     // -------------------------
     // Auth observer
@@ -2300,7 +2303,7 @@ window.addEventListener("offline",updateNet);
       localStorage.setItem(LS_USER, JSON.stringify(currentUser));
 
       paintHeader();
-
+      paintSidebar();     // ✅ AQUÍ 
       // carga local inmediata + sync HOY
       visitas = loadVisitasLocal();
       renderHome();
@@ -2308,7 +2311,6 @@ window.addEventListener("offline",updateNet);
       renderHome();
     });
 
-    // Start
     paintHeader();
     renderLogin();
   })();
