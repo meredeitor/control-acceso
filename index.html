@@ -260,6 +260,8 @@
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M9 22V12h6v10"/></svg></span>
         <span class="sb-txt">Dashboard</span>
       </div>
+    </div>
+
       <div class="sb-btn" data-sb="nuevo">
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span>
         <span class="sb-txt">Nueva cita</span>
@@ -289,7 +291,20 @@
         <span class="sb-txt">Configuración</span>
         <span class="sb-chip" id="sbConfigChip">ADMIN</span>
       </div>
+      
+     
+
       <div class="sb-sub" id="sbConfigSub">
+        <div class="sb-btn" data-sb="proveedores">
+           <span class="sb-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+             <path d="M3 7h18v10H3z"/>
+             <path d="M9 7V5h6v2"/>
+             <path d="M3 12h18"/>
+            </svg>
+           </span>
+          <span class="sb-txt">Proveedores</span>
+        </div>
         <div class="sb-btn" data-sb="roles">
           <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M19 8h2"/><path d="M20 7v2"/></svg></span>
           <span class="sb-txt">Roles</span>
@@ -360,12 +375,14 @@
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js"; // Email/Password [1](https://modularfirebase.web.app/get-started/quick-start)[2](https://dev.to/patricklusaya/how-to-migrate-to-modular-firebase-sdk-a-quick-guide-10ac)
 
   import {
-    getFirestore,
-    collection, doc, getDoc, getDocs,
-    setDoc, updateDoc, deleteDoc,
-    query, orderBy, limit, where,
-    serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+  getFirestore,
+  collection, doc, getDoc, getDocs, addDoc, writeBatch,
+  setDoc, updateDoc, deleteDoc,
+  query, orderBy, limit, where,
+  serverTimestamp,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
 
   const firebaseConfig = {
     apiKey: "AIzaSyDmdS1mt12tyWOE48U2As-53vtdQT7esPg",
@@ -380,8 +397,17 @@
   const auth = getAuth(fbApp);
   const db = getFirestore(fbApp);
 
+  
+/* =========================
+   Colecciones
+========================= */
+
   const COL_VISITAS = "visitas";
   const COL_USERS = "users";
+
+/* =========================
+   Roles
+========================= */
 
   const ROLES = {
     PENDIENTE: "pendiente",
@@ -399,18 +425,79 @@
     "registrar_entrada","ver_documentos","dictaminar","despachar",
     "registrar_salida","exportar_excel","limpiar_finalizados",
     "reactivar_qr","eliminar","ver_qr","buscar_proveedor",
-    "admin_roles"
+    "admin_roles","admin_proveedores"
   ];
 
-  const PERMISOS = {
-    [ROLES.ADMIN]: ALL_PERMS,
-    [ROLES.COMPRAS]: ["ver_dashboard","ver_historial","ver_ficha","crear_cita","exportar_excel","ver_documentos","ver_qr"],
-    [ROLES.GUARDIA]: ["ver_dashboard","ver_historial","ver_ficha","escanear_qr","registrar_entrada","registrar_salida","ver_qr"],
-    [ROLES.CALIDAD]: ["ver_dashboard","ver_historial","ver_ficha","ver_documentos","dictaminar","despachar","ver_qr"],
-    [ROLES.CONTRALORIA]: ["ver_dashboard","ver_historial","ver_ficha","exportar_excel","ver_documentos","ver_qr"],
-    [ROLES.PROVEEDOR]: ["ver_qr","buscar_proveedor"],
-    [ROLES.PENDIENTE]: []
-  };
+ 
+const PERMISOS = {
+  [ROLES.ADMIN]: ALL_PERMS,
+
+  [ROLES.GUARDIA]: [
+    "ver_dashboard",
+    "ver_historial",
+    "ver_ficha",
+    "escanear_qr",
+    "registrar_entrada",
+    "registrar_salida",
+    "ver_qr"
+  ],
+
+  [ROLES.CALIDAD]: [
+    "ver_dashboard",
+    "ver_historial",
+    "ver_ficha",
+    "escanear_qr",          // ✅ CLAVE
+    "ver_documentos",
+    "dictaminar",
+    "despachar",
+    "ver_qr"
+  ],
+
+  [ROLES.COMPRAS]: [
+    "ver_dashboard",
+    "ver_historial",
+    "ver_ficha",
+    "crear_cita",
+    "exportar_excel",
+    "ver_documentos",
+    "ver_qr"
+  ],
+
+  [ROLES.CONTRALORIA]: [
+    "ver_dashboard",
+    "ver_historial",
+    "ver_ficha",
+    "exportar_excel",
+    "ver_documentos",
+    "ver_qr"
+  ],
+
+  [ROLES.PROVEEDOR]: [
+    "ver_qr",
+    "buscar_proveedor"
+  ],
+
+  [ROLES.PENDIENTE]: []
+};
+
+let proveedoresCache = [];
+let proveedoresLoaded = false;
+let proveedoresLoading = false;
+let unsubscribeVisitas = null;
+
+async function ensureProveedoresLoaded(){
+  if (proveedoresLoaded || proveedoresLoading) return;
+
+  proveedoresLoading = true;
+  try {
+    await loadProveedores();
+    proveedoresLoaded = true;
+  } catch (e) {
+    console.error("Error cargando proveedores", e);
+  } finally {
+    proveedoresLoading = false;
+  }
+}
 
 // =========================
 // Seguridad: PIN Admin
@@ -432,13 +519,13 @@ const PIN_SESSION_KEY = "adminPinOkTs";
     const netDot = $("#netDot");
     const netText = $("#netText");
     const actionsBar = $("#actionsBar");
-  const sidebarEl = document.getElementById('sidebar');
-  const sbOverlay = document.getElementById('sbOverlay');
-  const sbConfigSub = document.getElementById('sbConfigSub');
-  const sbConfigChip = document.getElementById('sbConfigChip');
- const sbExportSub = document.getElementById('sbExportSub');
- const sbExportChip = document.getElementById('sbExportChip');
-  const btnHamb = document.getElementById('btnHamb');
+    const sidebarEl = document.getElementById('sidebar');
+    const sbOverlay = document.getElementById('sbOverlay');
+    const sbConfigSub = document.getElementById('sbConfigSub');
+    const sbConfigChip = document.getElementById('sbConfigChip');
+    const sbExportSub = document.getElementById('sbExportSub');
+    const sbExportChip = document.getElementById('sbExportChip');
+    const btnHamb = document.getElementById('btnHamb');
 
     const userPill = $("#userPill");
 
@@ -459,6 +546,26 @@ const PIN_SESSION_KEY = "adminPinOkTs";
     // -------------------------
     // Helpers
     // -------------------------
+
+async function goNuevaCita(){
+  setActiveSb('dashboard');
+  sbClose();
+  await renderNuevo();
+}
+
+    async function getPendingUsersCount(){
+  try{
+    const q = query(
+      collection(db, COL_USERS),
+      where("role", "==", ROLES.PENDIENTE)
+    );
+    const snap = await getDocs(q);
+    return snap.size;
+  }catch(e){
+    console.warn("No se pudo contar pendientes", e);
+    return 0;
+  }
+}
     function esc(s=""){
   return String(s).replace(/[&<>"']/g, (ch) => ({
     "&": "&amp;",
@@ -519,44 +626,94 @@ function setActiveSb(key){
     else el.removeAttribute('aria-current');
   });
 }
+
 function canShowConfig(){
   return !!currentUser && (currentUser.role === ROLES.ADMIN) && hasPerm('admin_roles');
 }
+
 function paintSidebar(){
   if(!sidebarEl) return;
-  // Dashboard/Historial/Nueva cita por permisos
-  const dash = sidebarEl.querySelector('[data-sb="dashboard"]');
-  const nuevo = sidebarEl.querySelector('[data-sb="nuevo"]');
-  const hist = sidebarEl.querySelector('[data-sb="historial"]');
-  if(dash) dash.style.display = hasPerm('ver_dashboard') ? '' : 'none';
-  if(nuevo) nuevo.style.display = hasPerm('crear_cita') ? '' : 'none';
-  if(hist) hist.style.display = hasPerm('ver_historial') ? '' : 'none';
-// Exportar por permiso
- const exp = sidebarEl.querySelector('[data-sb="export"]');
- const expX = sidebarEl.querySelector('[data-sb="export_excel"]');
- const expP = sidebarEl.querySelector('[data-sb="export_pdf"]');
- const canExport = hasPerm('exportar_excel');
- if(exp) exp.style.display = canExport ? '' : 'none';
- if(expX) expX.style.display = canExport ? '' : 'none';
- if(expP) expP.style.display = canExport ? '' : 'none';
- if(sbExportSub) sbExportSub.classList.remove('open');
- if(sbExportChip) sbExportChip.textContent = canExport ? 'Excel/PDF' : '';
 
-  // Config solo ADMIN con permiso
-  const showCfg = canShowConfig();
+  // 🔒 Bloqueo total para usuarios PENDIENTE
+  if(!currentUser || currentUser.role === ROLES.PENDIENTE){
+    sidebarEl.querySelectorAll('.sb-btn, .sb-section').forEach(el=>{
+      // solo dejar visible "cerrar sesión"
+      if(el.dataset?.sb !== 'logout') {
+        el.style.display = 'none';
+      }
+    });
+
+    // Cerrar submenús por seguridad visual
+    if(sbExportSub) sbExportSub.classList.remove('open');
+    if(sbConfigSub) sbConfigSub.classList.remove('open');
+
+    return;
+  }
+
+  // ===============================
+  // Navegación principal
+  // ===============================
+  const dash  = sidebarEl.querySelector('[data-sb="dashboard"]');
+const nuevo = sidebarEl.querySelector('[data-sb="nuevo"]');
+const hist  = sidebarEl.querySelector('[data-sb="historial"]');
+const scan  = sidebarEl.querySelector('[data-sb="scan"]');
+
+if(dash)  dash.style.display  = hasPerm('ver_dashboard') ? '' : 'none';
+if(nuevo) nuevo.style.display = hasPerm('crear_cita') ? '' : 'none';
+if(hist)  hist.style.display  = hasPerm('ver_historial') ? '' : 'none';
+if(scan)  scan.style.display  = hasPerm('escanear_qr') ? '' : 'none';
+  // ===============================
+  // Exportar (Excel / PDF)
+  // ===============================
+  const exp  = sidebarEl.querySelector('[data-sb="export"]');
+  const expX = sidebarEl.querySelector('[data-sb="export_excel"]');
+  const expP = sidebarEl.querySelector('[data-sb="export_pdf"]');
+
+  const canExport = hasPerm('exportar_excel');
+
+  if(exp)  exp.style.display  = canExport ? '' : 'none';
+  if(expX) expX.style.display = canExport ? '' : 'none';
+  if(expP) expP.style.display = canExport ? '' : 'none';
+
+  if(sbExportSub) sbExportSub.classList.remove('open');
+  if(sbExportChip) sbExportChip.textContent = canExport ? 'Excel / PDF' : '';
+
+  // ===============================
+  // Configuración (ADMIN + PIN)
+  // ===============================
+  const showCfg = canShowConfig(); // ADMIN + admin_roles
   const cfgToggle = document.getElementById('sbConfigToggle');
+
   if(cfgToggle) cfgToggle.style.display = showCfg ? '' : 'none';
   if(sbConfigSub) sbConfigSub.classList.remove('open');
-  if(sbConfigChip) sbConfigChip.textContent = showCfg ? 'ADMIN' : '';
+  
+if(sbConfigChip){
+  if(showCfg){
+    sbConfigChip.textContent = 'ADMIN';
+    sbConfigChip.style.display = 'inline-flex';
+  } else {
+    sbConfigChip.textContent = '';
+    sbConfigChip.style.display = 'none';
+  }
+}
 
-  // Logout
+  // ===============================
+  // Logout (siempre visible con sesión)
+  // ===============================
   const logout = sidebarEl.querySelector('[data-sb="logout"]');
   if(logout) logout.style.display = currentUser ? '' : 'none';
 }
 
 document.addEventListener('click', async (e)=>{
-  const sb = e.target.closest('[data-sb]');
-  if(!sb) return;
+  
+const sb = e.target.closest('[data-sb]');
+if(sb && !e.target.closest('[data-no-sb]')){
+  // sigue flujo normal del sidebar
+} else if(sb){
+  return;
+}
+if(!sb) return;
+
   const key = sb.dataset.sb;
 
   if(key === 'export'){
@@ -576,7 +733,7 @@ document.addEventListener('click', async (e)=>{
   if(key === 'nuevo'){
     setActiveSb('dashboard');
     sbClose();
-    renderNuevo();
+    await goNuevaCita();
     return;
   }
   if(key === 'historial'){
@@ -591,6 +748,11 @@ document.addEventListener('click', async (e)=>{
     await renderAdminRoles();
     return;
   }
+if(key === "proveedores"){
+  setActiveSb("config");
+  sbClose();
+  return renderAdminProveedores();
+}
   if(key === 'eliminarfinalizados'){
     setActiveSb('config');
     sbClose();
@@ -642,6 +804,7 @@ document.addEventListener('click', async (e)=>{
     await doLogout();
     return;
   }
+
 });
 
 if(btnHamb){ btnHamb.addEventListener('click', (e)=>{ e.preventDefault(); sbToggle(); }); }
@@ -857,6 +1020,43 @@ function fmt(ts){
       }
     }
 
+    function startVisitasListener(){
+  // Evita duplicar listeners
+  if (unsubscribeVisitas) {
+    unsubscribeVisitas();
+    unsubscribeVisitas = null;
+  }
+
+  const today = new Date();
+  const { start, end } = dayBounds(today);
+
+  const q = query(
+    collection(db, COL_VISITAS),
+    where("fechaHoraTs", ">=", start),
+    where("fechaHoraTs", "<", end)
+  );
+
+  unsubscribeVisitas = onSnapshot(q, (snap) => {
+    const cloud = [];
+    snap.forEach(d => {
+      cloud.push({ id: d.id, ...d.data() });
+    });
+
+    // 🔄 Mezcla nube + local (tu lógica existente)
+    visitas = mergeById(visitas, cloud);
+    saveVisitasLocal();
+
+   
+// ✅ Actualiza UI solo si corresponde
+if (document.visibilityState === "visible") {
+  const currentView = document.querySelector('[aria-current="page"]')?.dataset?.sb;
+  if (currentView === "dashboard") {
+    renderDashboardHoy();
+  }
+}
+
+  });
+}
     // Evita spam de toasts
 let _lastSyncToastTs = 0;
 
@@ -945,6 +1145,12 @@ window.addEventListener('visibilitychange', ()=>{
     // Login / Logout UI
     // -------------------------
     async function doLogout(){
+      
+     if (unsubscribeVisitas) {
+     unsubscribeVisitas();
+     unsubscribeVisitas = null;
+     }
+
       try{ await signOut(auth); }catch{}
       localStorage.removeItem(LS_USER);
  sessionStorage.removeItem(PIN_SESSION_KEY);
@@ -976,67 +1182,144 @@ window.addEventListener('visibilitychange', ()=>{
 
       
 
-    function renderLogin(){
-      qSearch.value = "";
-      qSearch.style.display = "none";
-      userPill.style.display = "none";
+  function renderLogin(){
+  qSearch.value = "";
+  qSearch.style.display = "none";
+  userPill.style.display = "none";
 
-      appEl.innerHTML = `
-        <div class="card" style="max-width:480px;margin:40px auto;">
-          <h2 style="margin:0 0 6px;">Acceso</h2>
-          <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
-            Entra con correo/contraseña o crea cuenta. Tu rol inicia en <b>PENDIENTE</b>.
-          </p>
+  let isRegister = false;
 
-          <label>Correo</label>
-          <input id="loginEmail" type="email" placeholder="correo@dominio.com" autocomplete="username">
+  function render(){
+    appEl.innerHTML = isRegister ? renderRegisterForm() : renderLoginForm();
 
-          <label>Contraseña</label>
-          <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password">
+    // ---- Eventos LOGIN ----
+    const btnLogin = document.getElementById("btnLogin");
+    if(btnLogin){
+      btnLogin.onclick = async () => {
+        const email = $("#loginEmail").value.trim();
+        const pass  = $("#loginPass").value.trim();
 
-          <div class="divider"></div>
-          <div class="row">
-            <button id="btnSignIn">Entrar</button>
-            <button id="btnSignUp" class="secondary">Crear cuenta</button>
-          </div>
-
-          <div style="margin-top:10px;color:var(--muted);font-size:12px;">
-            Nota: El admin autoriza cambiando tu rol desde “Admin: Roles”.
-          </div>
-        </div>
-      `;
-
-      const getCreds = () => ({
-        email: (document.getElementById("loginEmail").value || "").trim(),
-        pass:  (document.getElementById("loginPass").value || "").trim()
-      });
-
-      document.getElementById("btnSignIn").onclick = async () => {
-        const { email, pass } = getCreds();
-        if(!email || !pass) return toast("Faltan datos","Captura correo y contraseña.","warn",2600);
-        try{
-          await signInWithEmailAndPassword(auth, email, pass); // [1](https://modularfirebase.web.app/get-started/quick-start)[2](https://dev.to/patricklusaya/how-to-migrate-to-modular-firebase-sdk-a-quick-guide-10ac)
-          toast("Bienvenido","Sesión iniciada.","ok",1600);
-        }catch(err){
-          console.error(err);
-          toast("Error","No se pudo iniciar sesión. Revisa credenciales.","bad",3600);
+        if(!email || !pass){
+          return toast("Faltan datos","Correo y contraseña","warn");
         }
-      };
-
-      document.getElementById("btnSignUp").onclick = async () => {
-        const { email, pass } = getCreds();
-        if(!email || !pass) return toast("Faltan datos","Captura correo y contraseña.","warn",2600);
-        try{
-          await createUserWithEmailAndPassword(auth, email, pass); // [1](https://modularfirebase.web.app/get-started/quick-start)[2](https://dev.to/patricklusaya/how-to-migrate-to-modular-firebase-sdk-a-quick-guide-10ac)
-          toast("Cuenta creada","Listo. Ahora pide autorización (rol pendiente).","ok",2600);
-        }catch(err){
-          console.error(err);
-          toast("Error","No se pudo crear la cuenta (quizá ya existe o contraseña débil).","bad",4200);
-        }
+        await signInWithEmailAndPassword(auth, email, pass);
       };
     }
 
-    // -------------------------
+    // ---- Eventos REGISTRO ----
+    const btnCreate = document.getElementById("btnCreate");
+    if(btnCreate){
+      btnCreate.onclick = async () => {
+        const data = {
+          nombre: $("#regNombre").value.trim(),
+          empresa: $("#regEmpresa").value.trim(),
+          telefono: $("#regTelefono").value.trim(),
+          area: $("#regArea").value.trim(),
+          email: $("#regEmail").value.trim(),
+          pass: $("#regPass").value.trim(),
+        };
+
+        if(!data.nombre || !data.empresa || !data.email || !data.pass){
+          return toast(
+            "Faltan datos",
+            "Nombre, empresa, correo y contraseña obligatorios",
+            "warn"
+          );
+        }
+
+        const cred = await createUserWithEmailAndPassword(auth, data.email, data.pass);
+
+        await setDoc(doc(db, COL_USERS, cred.user.uid), {
+          uid: cred.user.uid,
+          email: data.email,
+          nombre: data.nombre,
+          empresa: data.empresa,
+          telefono: data.telefono || "",
+          area: data.area || "",
+          role: ROLES.PENDIENTE,
+          aprobado: false,
+          solicitadoTs: Date.now(),
+          createdAt: serverTimestamp()
+        });
+
+        toast("Registro enviado","Cuenta pendiente de aprobación","ok",3000);
+        isRegister = false;
+        render();
+      };
+    }
+
+    // ---- Cambiar vista ----
+    document.querySelectorAll("[data-switch]").forEach(b=>{
+      b.onclick = () => {
+        isRegister = !isRegister;
+        render();
+      };
+    });
+  }
+
+  render();
+}
+
+function renderLoginForm(){
+  return `
+  <div class="card" style="max-width:420px;margin:40px auto;">
+    <h2>Iniciar sesión</h2>
+
+    <label>Correo</label>
+    <input id="loginEmail" type="email"/>
+
+    <label>Contraseña</label>
+    <input id="loginPass" type="password"/>
+
+    <div class="divider"></div>
+
+    <button id="btnLogin">Entrar</button>
+
+    <p style="margin-top:12px;font-size:12px;color:var(--muted);">
+      ¿No tienes cuenta?
+      <b data-switch style="cursor:pointer;color:var(--brand);">Crear una</b>
+    </p>
+  </div>
+  `;
+}
+
+function renderRegisterForm(){
+  return `
+  <div class="card" style="max-width:520px;margin:40px auto;">
+    <h2>Registro de usuario</h2>
+
+    <label>Nombre completo *</label>
+    <input id="regNombre"/>
+
+    <label>Empresa / Proveedor *</label>
+    <input id="regEmpresa"/>
+
+    <label>Teléfono</label>
+    <input id="regTelefono"/>
+
+    <label>Área</label>
+    <input id="regArea"/>
+
+    <div class="divider"></div>
+
+    <label>Correo *</label>
+    <input id="regEmail" type="email"/>
+
+    <label>Contraseña *</label>
+    <input id="regPass" type="password"/>
+
+    <div class="divider"></div>
+
+    <button id="btnCreate">Solicitar acceso</button>
+
+    <p style="margin-top:12px;font-size:12px;color:var(--muted);">
+      ¿Ya tienes cuenta?
+      <b data-switch style="cursor:pointer;color:var(--brand);">Iniciar sesión</b>
+    </p>
+  </div>
+  `;
+}
+// -------------------------
     // Views: Pendiente / Dashboard  / Historial
     // -------------------------
     function getCounts(list){
@@ -1050,19 +1333,34 @@ window.addEventListener('visibilitychange', ()=>{
     }
 
     function renderPendiente(){
-      appEl.innerHTML = `
-        <div class="card" style="max-width:720px;margin:30px auto;">
-          <h2 style="margin:0 0 6px;">Cuenta en revisión</h2>
-          <p style="margin:0;color:var(--muted);">
-            Tu usuario está en <b>PENDIENTE</b>. Un administrador debe asignarte un rol.
-          </p>
-          <div class="divider"></div>
-          <div class="row">
-            <button class="secondary" data-action="sync">Reintentar Sync</button>
-          </div>
-        </div>
-      `;
-    }
+  appEl.innerHTML = `
+    <div class="card" style="max-width:520px;margin:50px auto;text-align:center;">
+      <div class="logo" style="margin:0 auto 14px;">⏳</div>
+
+      <h2 style="margin:0 0 8px;">Tu solicitud está en revisión</h2>
+
+      <p style="margin:0;color:var(--muted);font-size:13px;">
+        Un administrador debe validar tu información y asignarte un rol.
+      </p>
+
+      <div class="divider"></div>
+
+      <div class="pill" style="justify-content:center;margin-bottom:10px;">
+        <span class="dot warn"></span>
+        Estado: <b style="margin-left:6px;">PENDIENTE</b>
+      </div>
+
+      <p style="margin:0;color:var(--muted);font-size:12px;">
+        Este proceso suele ser rápido.  
+        Si ya pasó un tiempo, contacta al administrador.
+      </p>
+
+      <div class="divider"></div>
+
+      <button class="secondary" data-action="logout">Cerrar sesión</button>
+    </div>
+  `;
+}
 
     function renderDashboardHoy(){
       if(!requirePerm("ver_dashboard","Tu rol no puede ver el dashboard.")) return;
@@ -1082,7 +1380,14 @@ window.addEventListener('visibilitychange', ()=>{
       const { programados, llegados, dentro, despachados, finalizados } = getCounts(filtered);
 
       const resumen = `
-        <div class="grid cols-5" style="margin-bottom:18px">
+      ${hasPerm("escanear_qr") ? `
+  <button class="secondary"
+          data-action="scan"
+          data-from="dashboard">
+    Escanear QR
+  </button>
+` : ""}  
+      <div class="grid cols-5" style="margin-bottom:18px">
           <div class="card"><h3>Programados</h3><div class="big">${programados.length}</div></div>
           <div class="card"><h3>Llegaron</h3><div class="big">${llegados.length}</div></div>
           <div class="card"><h3>Dentro</h3><div class="big">${dentro.length}</div></div>
@@ -1343,31 +1648,23 @@ window.addEventListener('visibilitychange', ()=>{
       `;
     }
 
-    async function saveRoleForUser(uid){
-      if(!requirePerm("admin_roles","Solo ADMIN puede cambiar roles.")) return;
-      const sel = document.querySelector(`[data-role-select="${CSS.escape(uid)}"]`);
-      if(!sel) return;
-      const newRole = sel.value;
+  async function saveRoleForUser(uid){
+  if(!requirePerm("admin_roles")) return;
+  if(!requireAdminPin("aprobar usuario")) return;
 
-      try{
-        await updateDoc(doc(db, COL_USERS, uid), {
-          role: newRole,
-          roleUpdatedTs: Date.now(),
-          roleUpdatedAt: serverTimestamp(),
-          roleUpdatedBy: currentUser.uid
-        });
-        toast("Rol actualizado", `${uid} → ${newRole}`, "ok", 2200);
+  const sel = document.querySelector(`[data-role-select="${uid}"]`);
+  const role = sel.value;
 
-        // si cambiaste tu propio rol: avisa
-        if(currentUser.uid === uid){
-          toast("Aviso","Cambiaste tu propio rol. Cierra sesión y entra de nuevo.", "warn", 3200);
-        }
-      }catch(e){
-        console.error(e);
-        toast("Error","No se pudo guardar rol (Rules/Permisos).","bad",4200);
-      }
-    }
+  await updateDoc(doc(db,COL_USERS,uid),{
+    role,
+    aprobado: role !== ROLES.PENDIENTE,
+    aprobadoTs: Date.now(),
+    aprobadoPor: currentUser.uid
+  });
 
+  toast("Usuario aprobado",`Rol: ${role}`,"ok");
+  updatePendingBadge();
+}
     // -------------------------
     // Portal proveedor (simple)
     // -------------------------
@@ -1412,133 +1709,143 @@ window.addEventListener('visibilitychange', ()=>{
       return visitas.some(v => v.fechaHoraTs ? Math.abs(v.fechaHoraTs - ts) < SLOT : false);
     }
 
-    function renderNuevo(){
-      if(!requirePerm("crear_cita","Solo COMPRAS o ADMIN pueden crear citas.")) return;
-      appEl.innerHTML = `
-        <div class="card">
-          <h2 style="margin:0 0 6px;">Nueva Cita</h2>
-          <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">Captura datos mínimos.</p>
+async function renderNuevo(){
+  if(!requirePerm("crear_cita","Solo COMPRAS o ADMIN pueden crear citas.")) return;
 
-          <div class="two">
-            <div><label>Proveedor *</label><input id="proveedor" placeholder="Nombre del proveedor" autocomplete="off" /></div>
-            <div><label>Empresa *</label><input id="empresa" placeholder="Empresa / Razón social" autocomplete="off" /></div>
-            <div><label>Persona a visitar</label><input id="persona" placeholder="Nombre" autocomplete="off" /></div>
-            <div><label>Área</label><input id="area" placeholder="Área destino" autocomplete="off" /></div>
-            <div><label>Motivo</label><input id="motivo" placeholder="Entrega, recolección, visita..." autocomplete="off" /></div>
-            <div><label>Teléfono</label><input id="telefono" placeholder="Teléfono" inputmode="tel" autocomplete="off" /></div>
-            <div><label>Correo</label><input id="correo" placeholder="correo@dominio.com" inputmode="email" autocomplete="off" /></div>
-            <div><label>Fecha y hora *</label><input type="datetime-local" id="fechaHora" /></div>
+  if(!proveedoresCache.length){
+  await loadProveedores();
+  }
 
-            <div><label>No. Orden de Compra</label><input id="ocNo" placeholder="OC-12345"></div>
-            <div><label>No. Factura</label><input id="facturaNo" placeholder="FAC-88921"></div>
+  if(!proveedoresCache || !proveedoresCache.length){
+    appEl.innerHTML = `
+      <div class="card">
+        <h2>Nueva Cita</h2>
+        <p style="color:var(--muted);font-size:12px;">
+          No hay proveedores registrados.<br>
+          Ve a <b>Configuración → Proveedores</b> y agrega al menos uno.
+        </p>
+        <div class="divider"></div>
+        <button class="secondary" data-action="home">Volver</button>
+      </div>
+    `;
+    return;
+  }
 
-            <div><label>Adjuntar OC</label><input type="file" id="ocFile" accept="image/*,.pdf"></div>
-            <div><label>Adjuntar Factura</label><input type="file" id="facturaFile" accept="image/*,.pdf"></div>
-          </div>
+  appEl.innerHTML = `
+    <div class="card">
+      <h2 style="margin:0 0 6px;">Nueva Cita</h2>
+      <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
+        Captura datos mínimos.
+      </p>
 
-          <div class="divider"></div>
-          <div class="row">
-            <button data-action="guardar">Guardar y Generar QR</button>
-            <button class="secondary" data-action="home">Cancelar</button>
-          </div>
+      <div class="two">
+
+        <div>
+          <label>Proveedor *</label>
+          <select id="proveedorCodigo">
+            <option value="">— Selecciona —</option>
+            ${proveedoresCache.map(p => `
+              <option value="${p.codigo}">
+                ${p.razonSocial}
+              </option>
+            `).join("")}
+          </select>
         </div>
-      `;
-    }
 
-    function createVisitaFromForm(){
-      const proveedor = ($("#proveedor").value || "").trim();
-      const empresa = ($("#empresa").value || "").trim();
-      const persona = ($("#persona").value || "").trim();
-      const area = ($("#area").value || "").trim();
-      const motivo = ($("#motivo").value || "").trim();
-      const telefono = ($("#telefono").value || "").trim();
-      const correo = ($("#correo").value || "").trim();
-      const fechaHora = ($("#fechaHora").value || "").trim();
+        <div>
+          <label>Persona a visitar</label>
+          <input id="persona" autocomplete="off"/>
+        </div>
 
-      const ocNo = ($("#ocNo")?.value || "").trim();
-      const facturaNo = ($("#facturaNo")?.value || "").trim();
-      const ocFile = $("#ocFile")?.files?.[0] || null;
-      const facturaFile = $("#facturaFile")?.files?.[0] || null;
+        <div>
+          <label>Área *</label>
+          <select id="area">
+            <option value="">— Selecciona —</option>
+            <option>Aduana piel</option>
+            <option>Aduana Exótico</option>
+            <option>Aduana Peleteria</option>
+            <option>Otros</option>
+          </select>
+        </div>
 
-      if(!proveedor || !empresa || !fechaHora){
-        toast("Campos obligatorios","Proveedor, Empresa, Fecha y Hora son requeridos.","warn",3600);
-        return null;
-      }
-      if(existeCitaEnHorario(fechaHora)){
-        toast("Horario no disponible","Ya existe una cita en ese horario.","warn",3600);
-        return null;
-      }
-      if(correo && !validateEmail(correo)){
-        toast("Correo inválido","Verifica el formato del correo.","warn",3600);
-        return null;
-      }
+        <div>
+          <label>Motivo *</label>
+          <select id="motivo">
+            <option value="">— Selecciona —</option>
+            <option>Entrega</option>
+            <option>Recolección</option>
+            <option>Visita</option>
+          </select>
+        </div>
 
-      const id = Date.now().toString();
-      const fechaHoraTs = new Date(fechaHora).getTime();
+        <div>
+          <label>Fecha y hora *</label>
+          <input type="datetime-local" id="fechaHora"/>
+        </div>
 
-      const visita = {
-        id,
-        proveedor,
-        empresa,
-        personaVisita: persona,
-        area,
-        motivo,
-        telefono,
-        correo,
-        ocNo,
-        facturaNo,
-        ocFileKey: null,
-        facturaFileKey: null,
-        fechaHora,
-        fechaHoraTs,
-        createdTs: Date.now(),
-        updatedTs: Date.now(),
-        createdByUid: currentUser?.uid || "",
-        createdByEmail: currentUser?.email || "",
+        <div>
+          <label>No. Orden de Compra</label>
+          <input id="ocNo"/>
+        </div>
 
-        llegadaTs: null,
-        entradaTs: null,
-        salidaTs: null,
+        <div>
+          <label>No. Factura</label>
+          <input id="facturaNo"/>
+        </div>
 
-        status: Status.PROGRAMADO,
-        qrActivo: true,
+      </div>
 
-        guardNombre: null,
-        gafeteNo: null,
+      <div class="divider"></div>
+      <div class="row">
+        <button data-action="guardar">Guardar y Generar QR</button>
+        <button class="secondary" data-action="home">Cancelar</button>
+      </div>
+    </div>
+  `;
+}
 
-        dictamen: { estado:"pendiente", notas:"", ts:null, por:null },
-        incidenciasSalida: "",
-        salidaPor: ""
-      };
+   function createVisitaFromForm(){
+  if(!currentUser || !currentUser.uid) return null;
 
-      // Guardar adjuntos local (IndexedDB), no a Firebase Storage
-      setTimeout(async ()=>{
-        try{
-          const v = visitas.find(x => x.id === id);
-          if(!v) return;
+  const sel = document.getElementById("proveedorCodigo");
+  const proveedorCodigo = sel.value;
+  const proveedorNombre = sel.options[sel.selectedIndex]?.text || "";
 
-          if(ocFile){
-            const key = `oc_${id}`;
-            await idbSetDoc(key, ocFile);
-            v.ocFileKey = key;
-          }
-          if(facturaFile){
-            const key = `fac_${id}`;
-            await idbSetDoc(key, facturaFile);
-            v.facturaFileKey = key;
-          }
-          v.updatedTs = Date.now();
-          await saveVisitas();
-          if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE){
-            await cloudUpsertVisita(v);
-          }
-        }catch(e){ console.warn(e); }
-      }, 120);
+  const persona = document.getElementById("persona").value.trim();
+  const area = document.getElementById("area").value;
+  const motivo = document.getElementById("motivo").value;
+  const fechaHora = document.getElementById("fechaHora").value;
+  const ocNo = document.getElementById("ocNo").value.trim();
+  const facturaNo = document.getElementById("facturaNo").value.trim();
 
-      return visita;
-    }
+  if(!proveedorCodigo || !area || !motivo || !fechaHora){
+    toast("Campos obligatorios","Proveedor, Área, Motivo y Fecha","warn");
+    return null;
+  }
 
-    // -------------------------
+  const fechaHoraTs = new Date(fechaHora).getTime();
+
+  return {
+    id: Date.now().toString(),
+    proveedorCodigo,
+    proveedor: proveedorNombre,
+    personaVisita: persona,
+    area,
+    motivo,
+    fechaHora,
+    fechaHoraTs,
+    ocNo,
+    facturaNo,
+    status: "programado",
+    createdByUid: currentUser.uid,
+    createdByEmail: currentUser.email,
+    createdTs: Date.now(),
+    updatedTs: Date.now(),
+    qrActivo: true
+  };
+}
+    
+// -------------------------
     // QR
     // -------------------------
     function renderQR(id){
@@ -1660,6 +1967,7 @@ window.addEventListener('visibilitychange', ()=>{
 
     async function abrirFichaDesdeQR(id){
       const v = visitas.find(x => x.id == id);
+
       if(!v || !v.qrActivo){
         toast("QR inválido","QR no encontrado o desactivado.","bad",3600);
         return renderDashboardHoy();
@@ -1673,8 +1981,23 @@ window.addEventListener('visibilitychange', ()=>{
         if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE) await cloudUpsertVisita(v);
         toast("Llegada registrada","Se movió a 'Llegaron'.","ok",2200);
         renderDashboardHoy();
-        return;
       }
+
+      
+// 🟢 LLEGADO → ENTRADA (GUARDIA)
+  if(v.status === Status.LLEGADO && hasPerm("registrar_entrada")){
+    return renderEntrada(v.id);
+  }
+
+  // 🔵 DENTRO → CALIDAD
+  if(v.status === Status.DENTRO && currentUser.role === ROLES.CALIDAD){
+    return renderFichaCalidad(v);
+  }
+
+  // 🔴 DESPACHADO → SALIDA
+  if(v.status === Status.DESPACHADO && hasPerm("registrar_salida")){
+    return renderSalida(v.id);
+  }
 
       renderFicha(v.id);
     }
@@ -1682,6 +2005,45 @@ window.addEventListener('visibilitychange', ()=>{
     // -------------------------
     // Ficha / Entrada / Calidad / Salida
     // -------------------------
+
+async function renderAdminProveedores(){
+  if(!requirePerm("admin_proveedores","Solo ADMIN")) return;
+
+  appEl.innerHTML = `
+    <div class="card">
+      <h2>Catálogo de Proveedores</h2>
+      <p style="color:var(--muted);font-size:12px;">
+        Alta de Proveedores
+      </p>
+
+      <div class="divider"></div>
+
+      <h3>Alta</h3>
+      <div class="two">
+        <div>
+          <label>Código</label>
+          <input id="provCodigo" placeholder="AMTO0001"/>
+        </div>
+        <div>
+          <label>Razón Social</label>
+          <input id="provRazon"/>
+        </div>
+      </div>
+
+      <button class="secondary" data-action="guardarProveedor" data-no-sb="true">
+  Guardar proveedor
+</button>
+
+      <div class="divider"></div>
+
+      <h3>Proveedores registrados</h3>
+      <div id="proveedoresRegistrados"></div>
+    </div>
+  `;
+
+  await loadProveedores();
+}
+
     function renderFicha(id){
       cleanup();
       const v = visitas.find(x => x.id == id);
@@ -1803,52 +2165,81 @@ window.addEventListener('visibilitychange', ()=>{
     }
 
     function renderEntrada(id){
-      if(!requirePerm("registrar_entrada","Solo GUARDIA o ADMIN pueden registrar entrada.")) return;
-      cleanup();
-      const v = visitas.find(x => x.id == id);
-      if(!v) return renderDashboardHoy();
+  if(!requirePerm("registrar_entrada","Solo GUARDIA o ADMIN pueden registrar entrada.")) return;
 
-      appEl.innerHTML = `
-        <div class="card">
-          <h2 style="margin:0 0 6px;">Registrar Entrada</h2>
-          <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
-            Por confidencialidad, <b>no se toma foto</b>. Captura responsable y gafete.
-          </p>
-          <label>Nombre del guardia *</label>
-          <input id="guardia" placeholder="Ej. Juan Pérez" value="${esc(v.guardNombre || currentUser.nombre || "")}" autocomplete="off" />
-          <label>No. de Gafete *</label>
-          <input id="gafeteNo" placeholder="Ej. 12, 25, A-03" value="${esc(v.gafeteNo || "")}" />
-          <div class="divider"></div>
-          <div class="row">
-            <button class="ok" data-action="confirmarEntrada" data-id="${esc(id)}">Confirmar Entrada</button>
-            <button class="secondary" data-action="ficha" data-id="${esc(id)}">Cancelar</button>
-          </div>
-        </div>
-      `;
-    }
+  const v = visitas.find(x => x.id == id);
+  if(!v) return renderDashboardHoy();
+
+  appEl.innerHTML = `
+    <div class="card">
+      <h2 style="margin:0 0 6px;">Registrar Entrada</h2>
+      <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
+        Captura guardia y gafete. Puedes confirmar OC y Factura si vienen con el proveedor.
+      </p>
+
+      <label>Nombre del guardia *</label>
+      <input id="guardia" value="${esc(v.guardNombre || currentUser.nombre || "")}" />
+
+      <label>No. de Gafete *</label>
+      <input id="gafeteNo" value="${esc(v.gafeteNo || "")}" />
+
+      <!-- ✅ NUEVO -->
+      <label>No. Orden de Compra</label>
+      <input id="ocNo" placeholder="OC-12345" value="${esc(v.ocNo || "")}" />
+
+      <!-- ✅ NUEVO -->
+      <label>No. Factura</label>
+      <input id="facturaNo" placeholder="FAC-88921" value="${esc(v.facturaNo || "")}" />
+
+      <div class="divider"></div>
+      <div class="row">
+        <button class="ok" data-action="confirmarEntrada" data-id="${id}">
+          Confirmar Entrada
+        </button>
+        <button class="secondary" data-action="ficha" data-id="${id}">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  `;
+}
+
 
     async function confirmarEntrada(id){
-      const v = visitas.find(x => x.id == id);
-      if(!v) return renderDashboardHoy();
+  const v = visitas.find(x => x.id == id);
+  if(!v) return renderDashboardHoy();
 
-      const guard = (document.getElementById("guardia")?.value || "").trim();
-      const gafete = (document.getElementById("gafeteNo")?.value || "").trim();
-      if(!guard || !gafete){
-        toast("Datos requeridos","Captura guardia y gafete.","warn",3200);
-        return;
-      }
+  const guard = document.getElementById("guardia").value.trim();
+  const gafete = document.getElementById("gafeteNo").value.trim();
 
-      v.guardNombre = guard;
-      v.gafeteNo = gafete;
-      v.status = Status.DENTRO;
-      v.entradaTs = Date.now();
-      v.updatedTs = Date.now();
+  // ✅ NUEVO
+  const ocNo = document.getElementById("ocNo").value.trim();
+  const facturaNo = document.getElementById("facturaNo").value.trim();
 
-      await saveVisitas();
-      if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE) await cloudUpsertVisita(v);
-      toast("Entrada registrada","Se movió a 'Dentro'.","ok",2200);
-      renderDashboardHoy();
-    }
+  if(!guard || !gafete){
+    toast("Datos requeridos","Captura guardia y gafete.","warn",3200);
+    return;
+  }
+
+  v.guardNombre = guard;
+  v.gafeteNo = gafete;
+
+  // ✅ GUARDAR / ACTUALIZAR
+  v.ocNo = ocNo;
+  v.facturaNo = facturaNo;
+
+  v.status = Status.DENTRO;
+  v.entradaTs = Date.now();
+  v.updatedTs = Date.now();
+
+  await saveVisitas();
+  if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE){
+    await cloudUpsertVisita(v);
+  }
+
+  toast("Entrada registrada","Datos y documentos actualizados.","ok",2200);
+  renderDashboardHoy();
+}
 
     function renderFichaCalidad(v){
       if(!requirePerm("dictaminar","Solo CALIDAD o ADMIN pueden dictaminar.")) return;
@@ -2048,6 +2439,26 @@ window.addEventListener('visibilitychange', ()=>{
       window.open(url, "_blank");
     }
 
+    async function updatePendingBadge(){
+  if(!currentUser || currentUser.role !== ROLES.ADMIN) return;
+
+  const count = await getPendingUsersCount();
+  if(!sbConfigChip) return;
+
+  if(count > 0){
+    sbConfigChip.textContent = `${count} pendiente${count > 1 ? 's' : ''}`;
+    sbConfigChip.style.display = 'inline-flex';
+    
+sbConfigChip.style.background =
+  count > 0 ? 'rgba(250,204,21,.15)' : '';
+sbConfigChip.style.borderColor =
+  count > 0 ? 'rgba(250,204,21,.35)' : '';
+
+  }else{
+    sbConfigChip.textContent = 'ADMIN';
+  }
+}
+
     // -------------------------
     // Excel export (HOY o historial)
     // -------------------------
@@ -2126,7 +2537,77 @@ ${rows.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(r.proveedor)}</td><td>${esc(r.
   toast('PDF','Se abrió la vista imprimible. Usa Guardar como PDF.','ok',2600);
 }
 
-    // -------------------------
+async function guardarProveedor(){
+  const codigo = $("#provCodigo").value.trim();
+  const razon  = $("#provRazon").value.trim();
+
+  if(!codigo || !razon){
+    toast("Datos requeridos","Código y razón social","warn");
+    return;
+  }
+
+  try{
+    await addDoc(collection(db,"proveedores"),{
+      codigo,
+      razonSocial: razon,
+      activo: true,
+      createdAt: serverTimestamp(),
+      createdBy: currentUser.uid
+    });
+
+    toast("Proveedor creado","Registro guardado","ok");
+
+    // recarga cache
+    proveedoresLoaded = false;
+    await ensureProveedoresLoaded();
+
+  }catch(e){
+    console.error(e);
+    toast("Error", e.message || "Revisa permisos de Firestore", "bad", 4000);
+  }
+}
+async function loadProveedores(){
+  try{
+    const snap = await getDocs(collection(db,"proveedores"));
+    const lista = [];
+
+    snap.forEach(doc=>{
+      lista.push({ id: doc.id, ...doc.data() });
+    });
+
+    // 🔥 ESTA LÍNEA FALTABA
+    proveedoresCache = lista;
+
+    console.log("Proveedores:", proveedoresCache);
+
+    renderProveedores(proveedoresCache);
+
+  }catch(e){
+    console.error(e);
+    toast("Error","No se pudieron cargar proveedores","bad");
+  }
+}
+
+function renderProveedores(lista){
+  const cont = document.getElementById("proveedoresRegistrados");
+  if(!cont) return;
+
+  if(!lista.length){
+    cont.innerHTML = `
+      <div class="pill">
+        No hay proveedores registrados
+      </div>
+    `;
+    return;
+  }
+
+  cont.innerHTML = lista.map(p => `
+    <div class="pill">
+      <b>${p.codigo ?? "-"}</b> — ${p.razonSocial ?? "(Sin razón social)"}
+    </div>
+  `).join("");
+}
+// -------------------------
     // Router Home
     // -------------------------
     function renderHome(){
@@ -2158,8 +2639,10 @@ ${rows.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(r.proveedor)}</td><td>${esc(r.
         case "historial": await renderHistorial(); break;
         case "histLoad": await loadHistDay(); break;
 
-        case "nuevo": renderNuevo(); break;
+        case "nuevo": await goNuevaCita(); break;
 
+        case "guardarProveedor": await guardarProveedor(); break;
+        
         case "guardar": {
           if(!requirePerm("crear_cita","Solo COMPRAS o ADMIN pueden crear citas.")) return;
           const v = createVisitaFromForm();
@@ -2292,6 +2775,7 @@ window.addEventListener("offline",updateNet);
         return;
       }
 
+      startVisitasListener();
       const prof = await ensureUserProfile(user);
       currentUser = {
         uid: prof.uid,
@@ -2304,6 +2788,7 @@ window.addEventListener("offline",updateNet);
 
       paintHeader();
       paintSidebar();     // ✅ AQUÍ 
+      updatePendingBadge();
       // carga local inmediata + sync HOY
       visitas = loadVisitasLocal();
       renderHome();
