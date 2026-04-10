@@ -11,6 +11,7 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script defer src="https://unpkg.com/html5-qrcode"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <style>
     :root{
@@ -237,6 +238,27 @@
 }
 @media (max-width: 420px){
   .sidebar{ width: min(86vw, 320px); }
+}
+.agenda-slot{
+  font-weight: 600;
+  transition: transform .05s ease, filter .15s ease;
+}
+
+.agenda-slot:hover{
+  transform: translateY(-1px);
+}
+
+.agenda-slot.agenda-free{
+  background: rgba(34,197,94,.18);        /* verde */
+  border-color: rgba(34,197,94,.45);
+  color: #86efac;
+}
+
+.agenda-slot.agenda-busy{
+  background: rgba(249,115,22,.28);       /* naranja */
+  border-color: rgba(249,115,22,.6);
+  color: #fed7aa;
+  pointer-events: none;
 }
 
 </style>
@@ -484,6 +506,7 @@ let proveedoresCache = [];
 let proveedoresLoaded = false;
 let proveedoresLoading = false;
 let unsubscribeVisitas = null;
+let lockView = false;
 
 async function ensureProveedoresLoaded(){
   if (proveedoresLoaded || proveedoresLoading) return;
@@ -546,6 +569,89 @@ const PIN_SESSION_KEY = "adminPinOkTs";
     // -------------------------
     // Helpers
     // -------------------------
+    
+    async function normalizarUsuariosViejos(){
+  if(!currentUser || currentUser.role !== ROLES.ADMIN){
+    toast("Seguridad","Solo ADMIN puede normalizar usuarios","bad");
+    return;
+  }
+
+  const snap = await getDocs(collection(db, COL_USERS));
+  let total = 0;
+  let actualizados = 0;
+
+  for(const docSnap of snap.docs){
+    total++;
+    const u = docSnap.data();
+    const update = {};
+
+    if(u.aprobado === undefined) update.aprobado = true;
+    if(!u.nombre) update.nombre = u.email || "";
+    if(u.empresa === undefined) update.empresa = "";
+    if(u.area === undefined) update.area = "";
+    if(u.telefono === undefined) update.telefono = "";
+    if(u.solicitadoTs === undefined){
+      update.solicitadoTs = u.createdTs || Date.now();
+    }
+    if(!u.createdAt && u.createdTs){
+      update.createdAt = new Date(u.createdTs);
+    }
+
+    if(Object.keys(update).length > 0){
+      await updateDoc(doc(db, COL_USERS, docSnap.id), update);
+      actualizados++;
+    }
+  }
+
+  toast(
+    "Normalización completa",
+    `${actualizados} de ${total} usuarios actualizados`,
+    "ok",
+    4500
+  );
+}
+
+    const AREAS = [
+  "Aduana piel",
+  "Aduana Exótico",
+  "Aduana Peleteria",
+  "Otros"
+];
+
+const SLOT_MINUTES = 30;      // bloques visuales
+const MIN_DIFF_MINUTES = 0;  // regla de negocio
+const AGENDA_START = 8;      // 08:00
+const AGENDA_END = 18;       // 18:00
+
+function generarSlots(){
+  const slots = [];
+  for(let h = AGENDA_START; h < AGENDA_END; h++){
+    slots.push(`${String(h).padStart(2,"0")}:00`);
+    slots.push(`${String(h).padStart(2,"0")}:30`);
+  }
+  return slots;
+}
+
+function obtenerCitasDeHoy(){
+  const hoy = new Date();
+  return visitas.filter(v =>
+    typeof v.fechaHoraTs === "number" &&
+    isSameDay(v.fechaHoraTs, hoy)
+  );
+}
+
+function slotOcupado(area, slotHora, citasHoy){
+  const [h, m] = slotHora.split(":").map(Number);
+  const slotTs = new Date();
+  slotTs.setHours(h, m, 0, 0);
+
+  return citasHoy.some(v => {
+    if(v.area !== area) return false;
+
+    const diffMin = Math.abs(v.fechaHoraTs - slotTs.getTime()) / 60000;
+    return diffMin <= MIN_DIFF_MINUTES;
+  });
+}
 
 async function goNuevaCita(){
   setActiveSb('dashboard');
@@ -1050,9 +1156,9 @@ function fmt(ts){
 // ✅ Actualiza UI solo si corresponde
 if (document.visibilityState === "visible") {
   const currentView = document.querySelector('[aria-current="page"]')?.dataset?.sb;
-  if (currentView === "dashboard") {
-    renderDashboardHoy();
-  }
+  if (!lockView && currentView === "dashboard") {
+  renderDashboardHoy();
+}
 }
 
   });
@@ -1569,9 +1675,16 @@ function renderRegisterForm(){
                 Cambia roles de usuarios (por defecto: PENDIENTE).
               </div>
             </div>
-            <div class="row">
-              <button class="secondary" data-action="home">Volver</button>
-            </div>
+            <div class="row" style="gap:10px; flex-wrap:wrap;">
+  <button class="secondary" data-action="home">Volver</button>
+
+  <!-- ✅ SOLO ADMIN -->
+  ${currentUser?.role === ROLES.ADMIN ? `
+    <button class="danger" data-action="normalizarUsuarios">
+      Normalizar usuarios
+    </button>
+  ` : ""}
+</div>
           </div>
 
           <div class="divider"></div>
@@ -1596,7 +1709,10 @@ function renderRegisterForm(){
       wrap.innerHTML = `<div style="color:var(--muted);font-size:12px;">Cargando usuarios...</div>`;
 
       try{
-        const q = query(collection(db, COL_USERS), orderBy("createdTs", "desc"), limit(300));
+        const q = query(
+        collection(db, COL_USERS),
+        limit(300)
+        );
         const snap = await getDocs(q);
         const arr = [];
         snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
@@ -1624,29 +1740,63 @@ function renderRegisterForm(){
       if(!wrap) return;
 
       wrap.innerHTML = `
-        <table class="table">
-          <thead>
-            <tr><th>UID</th><th>Correo</th><th>Rol</th><th>Acción</th></tr>
-          </thead>
-          <tbody>
-            ${list.map(u => `
-              <tr>
-                <td><code>${esc(u.uid || u.id)}</code></td>
-                <td>${esc(u.email || "-")}</td>
-                <td>
-                  <select data-role-select="${esc(u.uid || u.id)}">
-                    ${ALL_ROLES.map(r => `<option value="${r}" ${String(u.role||ROLES.PENDIENTE)===r?"selected":""}>${r}</option>`).join("")}
-                  </select>
-                </td>
-                <td>
-                  <button class="secondary" data-action="saveRole" data-uid="${esc(u.uid || u.id)}">Guardar</button>
-                </td>
-              </tr>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Nombre</th>
+      <th>Correo</th>
+      <th>Área</th>
+      <th>Empresa</th>
+      <th>Teléfono</th>
+      <th>Rol</th>
+      <th>Estado</th>
+      <th>Acción</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    ${list.map(u => `
+      <tr>
+        <td><b>${esc(u.nombre || "-")}</b></td>
+        <td>${esc(u.email || "-")}</td>
+        <td>${esc(u.area || "-")}</td>
+        <td>${esc(u.empresa || "-")}</td>
+        <td>${esc(u.telefono || "-")}</td>
+
+        <td>
+          <select data-role-select="${esc(u.uid)}">
+            ${ALL_ROLES.map(r => `
+              <option value="${r}" ${u.role === r ? "selected" : ""}>
+                ${r}
+              </option>
             `).join("")}
-          </tbody>
-        </table>
-      `;
-    }
+          </select>
+        </td>
+
+        <td>
+          <span class="pill"
+                style="
+                  background:${u.aprobado ? 'rgba(34,197,94,.15)' : 'rgba(250,204,21,.15)'};
+                  border-color:${u.aprobado ? 'rgba(34,197,94,.45)' : 'rgba(250,204,21,.45)'};
+                  color:${u.aprobado ? '#86efac' : '#fde68a'};
+                ">
+            <span class="dot ${u.aprobado ? 'ok' : 'warn'}"></span>
+            ${u.aprobado ? 'Aprobado' : 'Pendiente'}
+          </span>
+        </td>
+
+        <td>
+          <button class="secondary"
+                  data-action="saveRole"
+                  data-uid="${esc(u.uid)}">
+            Guardar
+          </button>
+        </td>
+      </tr>
+    `).join("")}
+  </tbody>
+</table>
+`;}
 
   async function saveRoleForUser(uid){
   if(!requirePerm("admin_roles")) return;
@@ -1709,6 +1859,48 @@ function renderRegisterForm(){
       return visitas.some(v => v.fechaHoraTs ? Math.abs(v.fechaHoraTs - ts) < SLOT : false);
     }
 
+   function renderAgendaVisual(){
+  const citasHoy = obtenerCitasDeHoy();
+  const slots = generarSlots();
+
+  return `
+    <h3 style="margin-top:14px;">Disponibilidad de hoy</h3>
+
+    ${AREAS.map(area => `
+      <div style="margin-bottom:14px;">
+        <div style="
+          font-size:13px;
+          font-weight:700;
+          margin-bottom:6px;
+        ">
+          ${area}
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          ${slots.map(hora => {
+            const ocupado = slotOcupado(area, hora, citasHoy);
+
+            return `
+              <div
+                class="pill agenda-slot ${ocupado ? "agenda-busy" : "agenda-free"}"
+                data-area="${area}"
+                data-hora="${hora}"
+                style="
+                  cursor:${ocupado ? "not-allowed" : "pointer"};
+                  opacity:${ocupado ? "0.9" : "1"};
+                "
+                title="${ocupado ? "Horario no disponible en esta área" : "Horario disponible"}"
+              >
+                ${hora} ${ocupado ? "✖" : ""}
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    `).join("")}
+  `;
+}
+
 async function renderNuevo(){
   if(!requirePerm("crear_cita","Solo COMPRAS o ADMIN pueden crear citas.")) return;
 
@@ -1740,22 +1932,26 @@ async function renderNuevo(){
 
       <div class="two">
 
-        <div>
+        <div>  
           <label>Proveedor *</label>
-          <select id="proveedorCodigo">
-            <option value="">— Selecciona —</option>
-            ${proveedoresCache.map(p => `
-              <option value="${p.codigo}">
-                ${p.razonSocial}
-              </option>
-            `).join("")}
-          </select>
+          <input id="proveedorSearch" placeholder="Escribe nombre o código…" autocomplete="off"/>
+          <div id="proveedorResults"></div>
         </div>
 
         <div>
-          <label>Persona a visitar</label>
-          <input id="persona" autocomplete="off"/>
-        </div>
+           <label>Persona a visitar *</label>
+           <select id="persona">
+             <option value="">— Selecciona —</option>
+             <option>Sergio Palomares de Haro</option>
+             <option>Daniel López Ramírez</option>
+             <option>Cesar Reyes Gasca</option>
+             <option>Jaqueline Gómez Valdivia</option>
+             <option>Miriam García Aguayo</option>
+             <option>Tisbet Gónzalez Guerrero</option>
+             <option>Hugo Reyes Pérez</option>
+             <option>Porfirio Silva García</option>
+           </select>
+         </div>
 
         <div>
           <label>Área *</label>
@@ -1777,12 +1973,7 @@ async function renderNuevo(){
             <option>Visita</option>
           </select>
         </div>
-
-        <div>
-          <label>Fecha y hora *</label>
-          <input type="datetime-local" id="fechaHora"/>
-        </div>
-
+         
         <div>
           <label>No. Orden de Compra</label>
           <input id="ocNo"/>
@@ -1791,6 +1982,14 @@ async function renderNuevo(){
         <div>
           <label>No. Factura</label>
           <input id="facturaNo"/>
+        </div>
+        <div>
+          <label>Fecha y hora *</label>
+          <input type="datetime-local" id="fechaHora"/>
+        </div>
+
+        <div id="agendaVisual">
+         ${renderAgendaVisual()}
         </div>
 
       </div>
@@ -1802,47 +2001,107 @@ async function renderNuevo(){
       </div>
     </div>
   `;
+  setupProveedorAutocomplete();
+  
+  document.getElementById("agendaVisual")
+  ?.addEventListener("click", e => {
+
+  const slot = e.target.closest(".agenda-slot");
+  if(!slot || slot.classList.contains("bad")) return;
+
+  const hora = slot.dataset.hora;
+  const fechaInput = document.getElementById("fechaHora");
+
+  const hoy = new Date().toISOString().slice(0,10);
+  fechaInput.value = `${hoy}T${hora}`;
+});
+
+document.getElementById("area")
+  ?.addEventListener("change", () => {
+    const cont = document.getElementById("agendaVisual");
+    if(cont){
+      cont.innerHTML = renderAgendaVisual();
+    }
+});
+
+}
+
+function setupProveedorAutocomplete(){
+  const input = document.getElementById("proveedorSearch");
+  const results = document.getElementById("proveedorResults");
+
+  input.addEventListener("input", () => {
+    const term = input.value.trim().toLowerCase();
+    if(!term){
+      results.innerHTML = "";
+      return;
+    }
+
+    const matches = proveedoresCache
+      .filter(p =>
+        p.codigo.toLowerCase().includes(term) ||
+        p.razonSocial.toLowerCase().includes(term)
+      )
+      .slice(0, 10); // 👈 máximo 10 resultados
+
+    results.innerHTML = matches.map(p => `
+      <div class="pill proveedor-opt"
+           data-codigo="${p.codigo}"
+           data-nombre="${p.razonSocial}">
+        <b>${p.codigo}</b> — ${p.razonSocial}
+      </div>
+    `).join("");
+  });
+
+  results.addEventListener("click", e => {
+    const opt = e.target.closest(".proveedor-opt");
+    if(!opt) return;
+
+    input.value = opt.dataset.nombre;
+    input.dataset.codigo = opt.dataset.codigo;
+    results.innerHTML = "";
+  });
 }
 
    function createVisitaFromForm(){
   if(!currentUser || !currentUser.uid) return null;
 
-  const sel = document.getElementById("proveedorCodigo");
-  const proveedorCodigo = sel.value;
-  const proveedorNombre = sel.options[sel.selectedIndex]?.text || "";
+  const proveedorInput = document.getElementById("proveedorSearch");
+  const proveedorCodigo = proveedorInput.dataset.codigo || "";
+  const proveedorNombre = proveedorInput.value.trim();
 
-  const persona = document.getElementById("persona").value.trim();
+  const persona = document.getElementById("persona").value;
   const area = document.getElementById("area").value;
   const motivo = document.getElementById("motivo").value;
   const fechaHora = document.getElementById("fechaHora").value;
   const ocNo = document.getElementById("ocNo").value.trim();
   const facturaNo = document.getElementById("facturaNo").value.trim();
 
-  if(!proveedorCodigo || !area || !motivo || !fechaHora){
-    toast("Campos obligatorios","Proveedor, Área, Motivo y Fecha","warn");
+  if(!proveedorCodigo || !area || !motivo || !fechaHora ){
+    toast("Campos obligatorios","Proveedor, Persona, Área, Motivo y Fecha","warn");
     return null;
   }
 
   const fechaHoraTs = new Date(fechaHora).getTime();
 
   return {
-    id: Date.now().toString(),
-    proveedorCodigo,
-    proveedor: proveedorNombre,
-    personaVisita: persona,
-    area,
-    motivo,
-    fechaHora,
-    fechaHoraTs,
-    ocNo,
-    facturaNo,
-    status: "programado",
-    createdByUid: currentUser.uid,
-    createdByEmail: currentUser.email,
-    createdTs: Date.now(),
-    updatedTs: Date.now(),
-    qrActivo: true
-  };
+  id: Date.now().toString(),
+  proveedorCodigo,
+  proveedor: proveedorNombre,
+  personaVisita: persona,
+  area,
+  motivo,
+  fechaHora,
+  fechaHoraTs,
+  ocNo,
+  facturaNo,
+  status: "programado",
+  createdByUid: currentUser.uid,
+  createdByEmail: currentUser.email,
+  createdTs: Date.now(),
+  updatedTs: Date.now(),
+  qrActivo: true
+};
 }
     
 // -------------------------
@@ -1860,7 +2119,7 @@ async function renderNuevo(){
       appEl.innerHTML = `
         <div class="card printable">
           <h2 style="margin:0 0 6px;">QR de la Cita</h2>
-          <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">Escanea en recepción para abrir ficha.</p>
+          <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">Escanea en recepción para el acceso.</p>
 
           <div class="row" style="align-items:flex-start;">
             <div style="flex:0 0 280px;">
@@ -1884,9 +2143,28 @@ async function renderNuevo(){
                 <div style="font-weight:700;"><b>${esc(new Date(v.fechaHora).toLocaleString())}</b></div>
               </div>
 
-              <div class="row" style="margin-top:12px;">
-                <button class="secondary" data-action="print">Imprimir</button>
-                <button class="secondary" data-action="home">Volver</button>
+              <div class="divider"></div>
+
+<div class="pill"
+     style="
+       background: rgba(250,204,21,.15);
+       border-color: rgba(250,204,21,.45);
+       color: #fde68a;
+       font-size: 12px;
+       font-weight: 600;
+     ">
+  <span class="dot warn"></span>
+  <b>Nota:</b> No olvides traer tu <u>Orden de Compra</u> y <u>Factura</u>
+</div>
+
+
+              <div class="row" style="margin-top:12px; flex-wrap:wrap;">
+                <button class="secondary" data-action="print">
+                 Guardar / Imprimir
+                </button>
+                <button class="secondary" data-action="home">
+                Volver
+                </button>
               </div>
             </div>
           </div>
@@ -2031,9 +2309,15 @@ async function renderAdminProveedores(){
       </div>
 
       <button class="secondary" data-action="guardarProveedor" data-no-sb="true">
-  Guardar proveedor
-</button>
+      Guardar proveedor
+      </button>
+      <div class="divider"></div>
 
+       <h3>Carga masiva</h3>
+       <input type="file" id="provExcel" accept=".xlsx,.xls"/>
+       <button class="secondary" data-action="importProveedores">
+       Importar proveedores desde Excel
+       </button>
       <div class="divider"></div>
 
       <h3>Proveedores registrados</h3>
@@ -2566,6 +2850,54 @@ async function guardarProveedor(){
     toast("Error", e.message || "Revisa permisos de Firestore", "bad", 4000);
   }
 }
+
+async function importProveedoresDesdeExcel(){
+  if(!requirePerm("admin_proveedores","Solo ADMIN")) return;
+
+  const input = document.getElementById("provExcel");
+  if(!input || !input.files.length){
+    toast("Archivo requerido","Selecciona un archivo Excel","warn");
+    return;
+  }
+
+  const file = input.files[0];
+  const data = await file.arrayBuffer();
+  const wb = XLSX.read(data);
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(sheet);
+
+  if(!rows.length){
+    toast("Excel vacío","No hay filas para importar","warn");
+    return;
+  }
+
+  const batch = writeBatch(db);
+  let count = 0;
+
+  rows.forEach(r => {
+    if(!r.codigo || !r.razonSocial) return;
+
+    const ref = doc(collection(db,"proveedores"));
+    batch.set(ref,{
+      codigo: String(r.codigo).trim(),
+      razonSocial: String(r.razonSocial).trim(),
+      activo: r.activo !== false,
+      createdAt: serverTimestamp(),
+      createdBy: currentUser.uid
+    });
+
+    count++;
+  });
+
+  await batch.commit();
+
+  toast("Importación completa",`${count} proveedores cargados`,`ok`,3000);
+
+  // refresca cache
+  proveedoresLoaded = false;
+  await loadProveedores();
+}
+
 async function loadProveedores(){
   try{
     const snap = await getDocs(collection(db,"proveedores"));
@@ -2592,7 +2924,7 @@ function renderProveedores(lista){
   const cont = document.getElementById("proveedoresRegistrados");
   if(!cont) return;
 
-  if(!lista.length){
+  if(!lista || !lista.length){
     cont.innerHTML = `
       <div class="pill">
         No hay proveedores registrados
@@ -2601,12 +2933,33 @@ function renderProveedores(lista){
     return;
   }
 
-  cont.innerHTML = lista.map(p => `
-    <div class="pill">
-      <b>${p.codigo ?? "-"}</b> — ${p.razonSocial ?? "(Sin razón social)"}
-    </div>
-  `).join("");
+  // ✅ ORDENAR POR CÓDIGO (alfanumérico)
+  const ordenados = [...lista].sort((a, b) =>
+    String(a.codigo).localeCompare(String(b.codigo), undefined, {
+      numeric: true,
+      sensitivity: 'base'
+    })
+  );
+
+  cont.innerHTML = `
+    <ul style="
+      list-style:none;
+      padding:0;
+      margin:0;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    ">
+      ${ordenados.map(p => `
+        <li class="pill" style="justify-content:space-between;">
+          <span><b>${p.codigo}</b></span>
+          <span>${p.razonSocial}</span>
+        </li>
+      `).join("")}
+    </ul>
+  `;
 }
+
 // -------------------------
     // Router Home
     // -------------------------
@@ -2635,7 +2988,7 @@ function renderProveedores(lista){
       const id = el.dataset.id;
 
       switch(action){
-        case "home": renderHome(); break;
+        case "home": lockView = false; renderHome(); break;
         case "historial": await renderHistorial(); break;
         case "histLoad": await loadHistDay(); break;
 
@@ -2643,6 +2996,8 @@ function renderProveedores(lista){
 
         case "guardarProveedor": await guardarProveedor(); break;
         
+        case "importProveedores": await importProveedoresDesdeExcel(); break;
+
         case "guardar": {
           if(!requirePerm("crear_cita","Solo COMPRAS o ADMIN pueden crear citas.")) return;
           const v = createVisitaFromForm();
@@ -2656,9 +3011,24 @@ function renderProveedores(lista){
           }
 
           toast("Guardado","Cita creada y QR generado.","ok",2200);
+          lockView = true;
           renderQR(v.id);
           break;
         }
+
+        case "normalizarUsuarios":
+  if(!requirePerm("admin_roles","Solo ADMIN puede normalizar usuarios")) return;
+
+  if(!confirm(
+    "⚠️ Esta acción actualizará usuarios antiguos agregando campos faltantes.\n\n" +
+    "✅ No borra datos\n" +
+    "✅ No cambia roles\n\n" +
+    "¿Deseas continuar?"
+  )) return;
+
+  await normalizarUsuariosViejos();
+  await loadAdminUsers(); // refresca la lista
+  break;
 
         case "verQR": renderQR(id); break;
         case "scan": renderScanner(); break;
@@ -2680,6 +3050,8 @@ function renderProveedores(lista){
           if(v?.facturaFileKey) verDocumento(v.facturaFileKey);
           break;
         }
+
+        case "shareCitaConQR": compartirCitaConQR(id); break;
 
         case "reactivar":
           if(!requireAdminPin("reactivar el código QR")) break;
