@@ -615,8 +615,21 @@ const PIN_SESSION_KEY = "adminPinOkTs";
   "Aduana piel",
   "Aduana Exótico",
   "Aduana Peleteria",
+  "Avíos", 
   "Otros"
 ];
+
+// =========================
+// Capacidad por área (citas simultáneas por horario)
+// =========================
+const AREA_CAPACITY = {
+  "Avíos": 2,
+  "Aduana Peleteria": 2
+};
+function capArea(area){
+  return AREA_CAPACITY[area] || 1; // default: 1
+}
+
 
 const SLOT_MINUTES = 30;      // bloques visuales
 const MIN_DIFF_MINUTES = 0;  // regla de negocio
@@ -645,14 +658,19 @@ function slotOcupado(area, slotHora, citasHoy){
   const slotTs = new Date();
   slotTs.setHours(h, m, 0, 0);
 
-  return citasHoy.some(v => {
+  const cap = capArea(area);
+  const slotWindowMs = SLOT_MINUTES * 60 * 1000;
+
+  // Cuenta cuántas citas existen en ese horario PARA ESA ÁREA (misma ventana de 30 min)
+  const ocupadas = citasHoy.filter(v => {
     if(v.area !== area) return false;
+    if(typeof v.fechaHoraTs !== "number") return false;
+    return Math.abs(v.fechaHoraTs - slotTs.getTime()) < slotWindowMs;
+  }).length;
 
-    const diffMin = Math.abs(v.fechaHoraTs - slotTs.getTime()) / 60000;
-    return diffMin <= MIN_DIFF_MINUTES;
-  });
+  // Ocupado si ya se alcanzó la capacidad del área
+  return ocupadas >= cap;
 }
-
 
 async function goNuevaCita(){
   setActiveSb('nuevo');   // ✅ CLAVE
@@ -999,18 +1017,27 @@ function fmt(ts){
       }
     }
 
-    function mergeById(localArr, cloudArr){
-      const map = new Map();
-      for(const v of localArr) map.set(String(v.id), v);
-      for(const v of cloudArr){
-        const id = String(v.id);
-        const prev = map.get(id);
-        const prevU = prev?.updatedTs || prev?.createdTs || 0;
-        const curU  = v?.updatedTs || v?.createdTs || 0;
-        if(!prev || curU >= prevU) map.set(id, v);
-      }
-      return Array.from(map.values()).sort((a,b)=> (b.createdTs||0) - (a.createdTs||0));
+   function mergeById(localArr, cloudArr){
+  const cloudIds = new Set(cloudArr.map(v => String(v.id)));
+  const map = new Map();
+
+  // 1️⃣ solo conserva locales que SIGUEN existiendo en la nube
+  for(const v of localArr){
+    const id = String(v.id);
+    if(cloudIds.has(id)){
+      map.set(id, v);
     }
+  }
+
+  // 2️⃣ aplica nube (siempre manda)
+  for(const v of cloudArr){
+    map.set(String(v.id), v);
+  }
+
+  // 3️⃣ ordena por fecha
+  return Array.from(map.values())
+    .sort((a,b) => (b.createdTs || 0) - (a.createdTs || 0));
+}
 
     // -------------------------
     // IndexedDB (docs OC/Factura)
@@ -1860,54 +1887,74 @@ function renderRegisterForm(){
   if(!fechaHoraISO || !area) return false;
 
   const ts = new Date(fechaHoraISO).getTime();
-  const SLOT = 30 * 60 * 1000;
+  const cap = capArea(area);
+  const slotWindowMs = SLOT_MINUTES * 60 * 1000;
 
-  return visitas.some(v =>
-    v.area === area &&                       // ✅ CLAVE
-    v.fechaHoraTs &&
-    Math.abs(v.fechaHoraTs - ts) < SLOT
-  );
+  const ocupadas = visitas.filter(v =>
+    v.area === area &&
+    typeof v.fechaHoraTs === "number" &&
+    Math.abs(v.fechaHoraTs - ts) < slotWindowMs
+  ).length;
+
+  return ocupadas >= cap; // ✅ solo bloquea si ya llegó al límite
 }
 
-   function renderAgendaVisual(){
+ function renderAgendaVisual(){
   const citasHoy = obtenerCitasDeHoy();
   const slots = generarSlots();
+  const slotWindowMs = SLOT_MINUTES * 60 * 1000;
+
+  // helper: cuenta cuántas citas hay en ese slot para esa área
+  function countOcupadas(area, slotHora){
+    const [h, m] = slotHora.split(":").map(Number);
+    const slotTs = new Date();
+    slotTs.setHours(h, m, 0, 0);
+    const base = slotTs.getTime();
+
+    return citasHoy.filter(v => {
+      if(v.area !== area) return false;
+      if(typeof v.fechaHoraTs !== "number") return false;
+      return Math.abs(v.fechaHoraTs - base) < slotWindowMs;
+    }).length;
+  }
 
   return `
     <h3 style="margin-top:14px;">Disponibilidad de hoy</h3>
+    ${AREAS.map(area => {
+      const cap = capArea(area); // ✅ 2 solo en Avíos y Aduana Peleteria, si ya lo definiste así
 
-    ${AREAS.map(area => `
-      <div style="margin-bottom:14px;">
-        <div style="
-          font-size:13px;
-          font-weight:700;
-          margin-bottom:6px;
-        ">
-          ${area}
+      return `
+        <div style="margin-bottom:14px;">
+          <div style="font-size:13px; font-weight:700; margin-bottom:6px;">
+            ${area}${cap > 1 ? ` <span style="color:var(--muted); font-weight:600;">(capacidad ${cap})</span>` : ``}
+          </div>
+
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            ${slots.map(hora => {
+              const ocupadas = countOcupadas(area, hora);
+              const ocupado = ocupadas >= cap;
+
+              return `
+                <div
+                  class="pill agenda-slot ${ocupado ? "agenda-busy" : "agenda-free"}"
+                  data-area="${area}"
+                  data-hora="${hora}"
+                  style="
+                    cursor:${ocupado ? "not-allowed" : "pointer"};
+                    opacity:${ocupado ? "0.9" : "1"};
+                  "
+                  title="${ocupado ? "Horario no disponible en esta área" : "Horario disponible"}"
+                >
+                  ${hora}
+                  ${cap > 1 ? ` (${ocupadas}/${cap})` : ``}
+                  ${ocupado ? " ✖" : ""}
+                </div>
+              `;
+            }).join("")}
+          </div>
         </div>
-
-        <div style="display:flex; flex-wrap:wrap; gap:6px;">
-          ${slots.map(hora => {
-            const ocupado = slotOcupado(area, hora, citasHoy);
-
-            return `
-              <div
-                class="pill agenda-slot ${ocupado ? "agenda-busy" : "agenda-free"}"
-                data-area="${area}"
-                data-hora="${hora}"
-                style="
-                  cursor:${ocupado ? "not-allowed" : "pointer"};
-                  opacity:${ocupado ? "0.9" : "1"};
-                "
-                title="${ocupado ? "Horario no disponible en esta área" : "Horario disponible"}"
-              >
-                ${hora} ${ocupado ? "✖" : ""}
-              </div>
-            `;
-          }).join("")}
-        </div>
-      </div>
-    `).join("")}
+      `;
+    }).join("")}
   `;
 }
 
@@ -1970,6 +2017,7 @@ async function renderNuevo(){
             <option>Aduana piel</option>
             <option>Aduana Exótico</option>
             <option>Aduana Peleteria</option>
+            <option>Avíos</option>
             <option>Otros</option>
           </select>
         </div>
@@ -1986,12 +2034,12 @@ async function renderNuevo(){
          
         <div>
           <label>No. Orden de Compra</label>
-          <input id="ocNo"/>
+          <input id="ocNo" maxlength="100"/>
         </div>
 
         <div>
           <label>No. Factura</label>
-          <input id="facturaNo"/>
+          <input id="facturaNo" maxlength="100"/>
         </div>
         <div>
           <label>Fecha y hora *</label>
@@ -2096,10 +2144,9 @@ function setupProveedorAutocomplete(){
 
   // ✅ Bloquea solo si ya existe cita en ese horario PARA LA MISMA ÁREA
 if(existeCitaEnHorario(fechaHora, area)){
-  toast("Horario no disponible", "Ya existe una cita en ese horario para esta área.", "warn");
+  toast("Horario no disponible", "Ya existe el máximo de citas para esa área en ese horario.", "warn");
   return null;
 }
-
   return {
   id: Date.now().toString(),
   proveedorCodigo,
@@ -2485,11 +2532,11 @@ async function renderAdminProveedores(){
 
       <!-- ✅ NUEVO -->
       <label>No. Orden de Compra</label>
-      <input id="ocNo" placeholder="OC-12345" value="${esc(v.ocNo || "")}" />
+      <input id="ocNo" placeholder="OC-12345" maxlength="100" value="${esc(v.ocNo || "")}" />
 
       <!-- ✅ NUEVO -->
       <label>No. Factura</label>
-      <input id="facturaNo" placeholder="FAC-88921" value="${esc(v.facturaNo || "")}" />
+      <input id="facturaNo" placeholder="FAC-88921" maxlength="100" value="${esc(v.facturaNo || "")}" />
 
       <div class="divider"></div>
       <div class="row">
@@ -2696,6 +2743,11 @@ async function renderAdminProveedores(){
       if(navigator.onLine) { try{ await cloudDeleteVisita(id); }catch{} }
 
       toast("Eliminado","Se eliminó el registro.","ok",2000);
+
+       // ✅ Limpieza dura
+      visitas = visitas.filter(v => v.id !== id);
+      saveVisitasLocal();
+
       renderDashboardHoy();
     }
 
