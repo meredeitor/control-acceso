@@ -12,7 +12,8 @@
   <script defer src="https://unpkg.com/html5-qrcode"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
   <style>
     :root{
       --bg:#0b1220; --panel:#111c33; --panel2:#0f172a; --text:#e5e7eb; --muted:#94a3b8;
@@ -308,6 +309,17 @@
     <span class="sb-txt">PDF</span>
   </div>
  </div>
+ <div class="sb-btn" data-sb="reportes">
+  <span class="sb-ic" aria-hidden="true">
+    <svg viewBox="0 0 24 24">
+      <path d="M3 3v18h18"/>
+      <path d="M7 16v-6"/>
+      <path d="M12 16v-10"/>
+      <path d="M17 16v-4"/>
+    </svg>
+  </span>
+  <span class="sb-txt">Reportes</span>
+</div>
 <div class="sb-btn" data-sb="config" id="sbConfigToggle">
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M19.4 15a7.8 7.8 0 0 0 .1-1 7.8 7.8 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a8 8 0 0 0-1.7-1L15 3h-6l-.3 2.4a8 8 0 0 0-1.7 1l-2.4-1-2 3.4L4.6 13a7.8 7.8 0 0 0-.1 1 7.8 7.8 0 0 0 .1 1L2.6 16.6l2 3.4 2.4-1a8 8 0 0 0 1.7 1L9 21h6l.3-2.4a8 8 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></span>
         <span class="sb-txt">Configuración</span>
@@ -507,6 +519,11 @@ let proveedoresLoaded = false;
 let proveedoresLoading = false;
 let unsubscribeVisitas = null;
 let lockView = false;
+let chartAreaInstance = null;
+let chartEstadoInstance = null;
+let chartDictamenInstance = null;
+let chartTiempoInstance = null;
+let chartIncidenciasInstance = null;
 
 async function ensureProveedoresLoaded(){
   if (proveedoresLoaded || proveedoresLoading) return;
@@ -730,6 +747,434 @@ function toast(title, msg, type="info", ttl=2600){
       return false;
     }
 
+// ===================================================
+// REPORTES – FUNCIONES DE CÁLCULO (PASO 2)
+// ===================================================
+
+// 1️⃣ Filtro por rango de fechas (fechaHoraTs)
+function filterVisitasByRange(visitas, fromTs, toTs){
+  return visitas.filter(v =>
+    typeof v.fechaHoraTs === "number" &&
+    v.fechaHoraTs >= fromTs &&
+    v.fechaHoraTs <= toTs
+  );
+}
+
+// 2️⃣ Filtro por área (si area === "" → todas)
+function filterByArea(visitas, area){
+  if(!area) return visitas;
+  return visitas.filter(v => v.area === area);
+}
+
+// 3️⃣ Conteo de visitas por área
+function countByArea(visitas){
+  const out = {};
+  visitas.forEach(v => {
+    const a = v.area || "Sin área";
+    out[a] = (out[a] || 0) + 1;
+  });
+  return out; // { "Avíos": 10, "Aduana Peleteria": 5, ... }
+}
+
+// 4️⃣ Conteo por status
+function countByStatus(visitas){
+  const out = {};
+  visitas.forEach(v => {
+    const s = v.status || "desconocido";
+    out[s] = (out[s] || 0) + 1;
+  });
+  return out; // { programado: 4, dentro: 2, finalizado: 10 }
+}
+
+// 5️⃣ Dictamen de calidad (solo cuando existe)
+function dictamenStats(visitas){
+  const stats = { aceptado: 0, rechazado: 0, pendiente: 0 };
+
+  visitas.forEach(v => {
+    if(v.dictamen && v.dictamen.estado){
+      const e = v.dictamen.estado.toLowerCase();
+      if(stats[e] !== undefined){
+        stats[e]++;
+      }
+    }
+  });
+
+  return stats;
+}
+
+// 6️⃣ Tiempo promedio por área (minutos)
+function avgTiempoPorArea(visitas){
+  const buckets = {};
+  const counts = {};
+
+  visitas.forEach(v => {
+    if(
+      typeof v.entradaTs === "number" &&
+      typeof v.salidaTs === "number" &&
+      v.salidaTs > v.entradaTs
+    ){
+      const area = v.area || "Sin área";
+      const mins = (v.salidaTs - v.entradaTs) / 60000;
+
+      buckets[area] = (buckets[area] || 0) + mins;
+      counts[area] = (counts[area] || 0) + 1;
+    }
+  });
+
+  const promedios = {};
+  Object.keys(buckets).forEach(area => {
+    promedios[area] = Math.round(buckets[area] / counts[area]);
+  });
+
+  return promedios; // { "Avíos": 42, "Aduana Peleteria": 55 }
+}
+
+// 7️⃣ Incidencias por área
+function incidenciasPorArea(visitas){
+  const out = {};
+  visitas.forEach(v => {
+    if(v.incidenciasSalida){
+      const area = v.area || "Sin área";
+      out[area] = (out[area] || 0) + 1;
+    }
+  });
+  return out;
+}
+
+// 8️⃣ KPIs generales
+function calcKPIs(visitas){
+  const total = visitas.length;
+
+  let totalTiempo = 0;
+  let conteoTiempo = 0;
+  let rechazos = 0;
+  let incidencias = 0;
+
+  visitas.forEach(v => {
+    if(v.entradaTs && v.salidaTs && v.salidaTs > v.entradaTs){
+      totalTiempo += (v.salidaTs - v.entradaTs);
+      conteoTiempo++;
+    }
+    if(v.dictamen?.estado === "rechazado"){
+      rechazos++;
+    }
+    if(v.incidenciasSalida){
+      incidencias++;
+    }
+  });
+
+  return {
+    total,
+    tiempoPromedioMin:
+      conteoTiempo ? Math.round((totalTiempo / conteoTiempo) / 60000) : 0,
+    pctRechazo:
+      total ? Math.round((rechazos / total) * 100) : 0,
+    incidencias,
+  };
+}
+
+function renderChartVisitasPorArea(visitas){
+  const dataByArea = countByArea(visitas);
+
+  const labels = Object.keys(dataByArea);
+  const values = Object.values(dataByArea);
+
+  const ctx = document.getElementById("chartArea");
+  if(!ctx) return;
+
+  // Destruir gráfica previa (si existe)
+  if(chartAreaInstance){
+    chartAreaInstance.destroy();
+  }
+
+  chartAreaInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+     datasets: [{
+      label: "Visitas",
+      data: values,
+      backgroundColor: "rgba(59,130,246,.75)",
+      borderColor: "rgba(59,130,246,1)",
+      borderWidth: 1,
+      borderRadius: 6
+     }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.raw} visitas`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 }
+        }
+      }
+    }
+  });
+}
+
+function renderChartEstados(visitas){
+  // Usa tu función del Paso 2
+  const byStatus = countByStatus(visitas);
+
+  // Orden fijo (para que siempre se vea igual)
+  const labels = ["programado","llegado","dentro","despachado","finalizado"];
+  const values = labels.map(k => byStatus[k] || 0);
+
+  const ctx = document.getElementById("chartEstado");
+  if(!ctx) return;
+
+  // Destruye instancia previa (evita “valores viejos” y encimados)
+  if(chartEstadoInstance){
+    chartEstadoInstance.destroy();
+  }
+
+  chartEstadoInstance = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["Programados","Llegaron","Dentro","Despachados","Finalizados"],
+      datasets: [{
+        data: values,
+        backgroundColor: [
+          "rgba(56,189,248,.85)",  // programado (info)
+          "rgba(250,204,21,.85)",  // llegado (warn)
+          "rgba(34,197,94,.85)",   // dentro (ok)
+          "rgba(59,130,246,.85)",  // despachado (brand)
+          "rgba(148,163,184,.65)"  // finalizado (muted)
+        ],
+        legend: {
+  position: "bottom",
+  labels: {
+    color: "#e5e7eb",
+    boxWidth: 10,
+    padding: 14
+  }
+},
+        borderColor: "rgba(255,255,255,.10)",
+        borderWidth: 1,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false, // recomendado cuando controlas la altura del contenedor [1](https://www.chartjs.org/docs/latest/configuration/responsive.html)
+      cutout: "60%",
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: { color: "#e5e7eb", boxWidth: 10 }
+        },
+        tooltip: {
+          callbacks: {
+            label: (c) => ` ${c.label}: ${c.raw}`
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderChartDictamen(visitas){
+  const s = dictamenStats(visitas); // { aceptado, rechazado, pendiente }
+
+  const labels = ["Aceptado", "Rechazado", "Pendiente"];
+  const values = [s.aceptado || 0, s.rechazado || 0, s.pendiente || 0];
+
+  const total = values.reduce((a,b)=>a+b,0);
+
+  const ctx = document.getElementById("chartDictamen");
+  if(!ctx) return;
+
+  // Evita instancias viejas
+  if(chartDictamenInstance){
+    chartDictamenInstance.destroy();
+  }
+
+  // Si no hay dictámenes, muestra un donut “vacío” informativo
+  const dataToPlot = total > 0 ? values : [1];
+  const labelsToPlot = total > 0 ? labels : ["Sin dictámenes"];
+
+  chartDictamenInstance = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: labelsToPlot,
+      datasets: [{
+        data: dataToPlot,
+        backgroundColor: total > 0
+          ? [
+              "rgba(34,197,94,.85)",  // Aceptado (ok)
+              "rgba(239,68,68,.85)",  // Rechazado (bad)
+              "rgba(250,204,21,.85)"  // Pendiente (warn)
+            ]
+          : ["rgba(148,163,184,.35)"], // “Sin dictámenes”
+        borderColor: "rgba(255,255,255,.10)",
+        borderWidth: 1,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "62%",
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: { color: "#e5e7eb", boxWidth: 10 }
+        },
+        tooltip: {
+          callbacks: {
+            label: (c) => {
+              if(total === 0) return " Sin dictámenes";
+              const val = c.raw || 0;
+              const pct = total ? Math.round((val/total)*100) : 0;
+              return ` ${c.label}: ${val} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderChartTiempoPorArea(visitas){
+  const proms = avgTiempoPorArea(visitas); // { "Avíos": 42, "Aduana Peleteria": 55, ... }
+
+  // Orden: por minutos desc (más tardado arriba)
+  const entries = Object.entries(proms)
+    .map(([area, min]) => [area, Number(min) || 0])
+    .filter(([,min]) => min > 0)
+    .sort((a,b) => b[1] - a[1]);
+
+  const ctx = document.getElementById("chartTiempo");
+  if(!ctx) return;
+
+  // Si no hay datos de tiempos, limpia la gráfica y muestra “—”
+  if(chartTiempoInstance){
+    chartTiempoInstance.destroy();
+    chartTiempoInstance = null;
+  }
+  if(entries.length === 0){
+    // Deja el canvas vacío; opcionalmente puedes mostrar un toast
+    return;
+  }
+
+  const labels = entries.map(e => e[0]);
+  const values = entries.map(e => e[1]);
+
+  chartTiempoInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Minutos promedio",
+        data: values,
+        backgroundColor: "rgba(34,197,94,.75)", // verde
+        borderColor: "rgba(34,197,94,.95)",
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (c) => ` ${c.raw} min`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (v) => `${v}m`
+          }
+        },
+        x: {
+          ticks: {
+            maxRotation: 0,
+            autoSkip: false
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderChartIncidenciasPorArea(visitas){
+  const byArea = incidenciasPorArea(visitas); // { "Avíos": 3, "Aduana Peleteria": 1 }
+
+  // Ordena desc por incidencias
+  const entries = Object.entries(byArea)
+    .map(([area, n]) => [area, Number(n) || 0])
+    .filter(([,n]) => n > 0)
+    .sort((a,b) => b[1] - a[1]);
+
+  const ctx = document.getElementById("chartIncidencias");
+  if(!ctx) return;
+
+  // Destruye instancia previa
+  if(chartIncidenciasInstance){
+    chartIncidenciasInstance.destroy();
+    chartIncidenciasInstance = null;
+  }
+
+  // Si no hay incidencias, deja el canvas vacío
+  if(entries.length === 0){
+    return;
+  }
+
+  const labels = entries.map(e => e[0]);
+  const values = entries.map(e => e[1]);
+
+  chartIncidenciasInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Incidencias",
+        data: values,
+        backgroundColor: "rgba(250,204,21,.8)", // warn
+        borderColor: "rgba(250,204,21,1)",
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (c) => ` ${c.raw} incidencia(s)`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 }
+        },
+        x: {
+          ticks: {
+            maxRotation: 0,
+            autoSkip: false
+          }
+        }
+      }
+    }
+  });
+}
+
 // -------------------------
 // Sidebar (Opción A)
 // -------------------------
@@ -868,6 +1313,12 @@ if(!sb) return;
     sbClose();
     await renderHistorial();
     return;
+  }
+  if (key === 'reportes'){
+  setActiveSb('reportes');
+  sbClose();
+  renderReportes();
+  return;
   }
   if(key === 'roles'){
     setActiveSb('config');
@@ -1687,6 +2138,161 @@ function renderRegisterForm(){
         </div>
       `;
     }
+
+function renderReportes(){
+  // Permiso mínimo (luego lo afinamos)
+  if(!hasPerm("ver_dashboard")){
+    toast("Acceso denegado", "No tienes permiso para ver reportes.", "bad");
+    return;
+  }
+
+  const todayISO = new Date().toISOString().slice(0,10);
+  const weekAgo = new Date(Date.now() - 6*24*60*60*1000).toISOString().slice(0,10);
+
+  appEl.innerHTML = `
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <div>
+          <h2 style="margin:0 0 4px;">📊 Reportes</h2>
+          <div style="color:var(--muted); font-size:12px;">
+            Análisis de visitas, tiempos y calidad
+          </div>
+        </div>
+        <div class="row">
+          <button class="secondary" data-action="home">Volver</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ===================== -->
+      <!-- Filtros -->
+      <!-- ===================== -->
+      <div class="row" style="gap:12px; flex-wrap:wrap;">
+        <div style="min-width:180px;">
+          <label>Fecha inicio</label>
+          <input type="date" id="repFrom" value="${weekAgo}">
+        </div>
+
+        <div style="min-width:180px;">
+          <label>Fecha fin</label>
+          <input type="date" id="repTo" value="${todayISO}">
+        </div>
+
+        <div style="min-width:220px;">
+          <label>Área</label>
+          <select id="repArea">
+            <option value="">Todas</option>
+            ${AREAS.map(a => `<option value="${a}">${a}</option>`).join("")}
+          </select>
+        </div>
+
+        <div style="align-self:flex-end;">
+          <button id="repApply">Aplicar</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ===================== -->
+      <!-- KPIs -->
+      <!-- ===================== -->
+      <div class="grid cols-5" style="margin-bottom:18px;">
+        <div class="card"><h3>Total visitas</h3><div class="big" id="kpiTotal">—</div></div>
+        <div class="card"><h3>Tiempo promedio</h3><div class="big" id="kpiTiempo">—</div></div>
+        <div class="card"><h3>% Rechazo</h3><div class="big" id="kpiRechazo">—</div></div>
+        <div class="card"><h3>Incidencias</h3><div class="big" id="kpiIncidencias">—</div></div>
+        <div class="card"><h3>Visitas hoy</h3><div class="big" id="kpiHoy">—</div></div>
+      </div>
+
+      <!-- ===================== -->
+      <!-- Gráficas -->
+      <!-- ===================== -->
+      <div class="grid cols-5">
+        <div class="col" style="grid-column:span 2;  height:220px;">
+          <h3>Visitas por área</h3>
+          <canvas id="chartArea"></canvas>
+        </div>
+
+        <div class="col" style="grid-column:span 2; height:220px;">
+          <h3>Estado de visitas</h3>
+          <canvas id="chartEstado"></canvas>
+        </div>
+
+        <div class="col" style="height:220px;">
+          <h3>Dictamen calidad</h3>
+          <canvas id="chartDictamen"></canvas>
+        </div>
+
+       <div class="col" style="grid-column:span 3; height:240px;">
+         <h3>Tiempo promedio por área</h3>
+         <canvas id="chartTiempo"></canvas>
+        </div>
+
+        <div class="col" style="grid-column:span 2; height:220px;">
+          <h3>Incidencias por área</h3>
+          <canvas id="chartIncidencias"></canvas>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  // Hook del botón (lógica vendrá en el paso 2)
+ document.getElementById("repApply").onclick = () => {
+  const from = document.getElementById("repFrom").value;
+  const to   = document.getElementById("repTo").value;
+  const area = document.getElementById("repArea").value;
+
+  if(!from || !to){
+    toast("Filtros incompletos", "Selecciona rango de fechas", "warn");
+    return;
+  }
+
+  const fromTs = new Date(from + "T00:00:00").getTime();
+  const toTs   = new Date(to   + "T23:59:59").getTime();
+
+  let data = filterVisitasByRange(visitas, fromTs, toTs);
+  data = filterByArea(data, area);
+
+// KPIs
+// =====================
+const kpi = calcKPIs(data);
+
+// Total de visitas
+document.getElementById("kpiTotal").textContent = kpi.total;
+
+// Tiempo promedio general
+document.getElementById("kpiTiempo").textContent =
+  kpi.tiempoPromedioMin ? `${kpi.tiempoPromedioMin} min` : "—";
+
+// % Rechazo de calidad
+document.getElementById("kpiRechazo").style.color =
+  kpi.pctRechazo > 10 ? "var(--bad)" : "var(--ok)";
+
+// Incidencias
+document.getElementById("kpiIncidencias").style.color =
+  kpi.incidencias > 0 ? "var(--warn)" : "var(--muted)";
+
+
+// Visitas HOY (no depende de filtros)
+const hoy = new Date();
+const visitasHoy = visitas.filter(v =>
+  typeof v.fechaHoraTs === "number" &&
+  isSameDay(v.fechaHoraTs, hoy)
+);
+document.getElementById("kpiHoy").textContent = visitasHoy.length;
+
+
+  // ✅ GRÁFICOS
+  renderChartVisitasPorArea(data);
+  renderChartEstados(data);
+  renderChartDictamen(data);
+  renderChartTiempoPorArea(data);
+  renderChartIncidenciasPorArea(data);
+
+};
+}
 
     // -------------------------
     // Admin roles screen
