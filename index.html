@@ -1856,12 +1856,18 @@ function renderRegisterForm(){
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
     }
 
-    function existeCitaEnHorario(fechaHoraISO){
-      if(!fechaHoraISO) return false;
-      const ts = new Date(fechaHoraISO).getTime();
-      const SLOT = 30 * 60 * 1000;
-      return visitas.some(v => v.fechaHoraTs ? Math.abs(v.fechaHoraTs - ts) < SLOT : false);
-    }
+    function existeCitaEnHorario(fechaHoraISO, area){
+  if(!fechaHoraISO || !area) return false;
+
+  const ts = new Date(fechaHoraISO).getTime();
+  const SLOT = 30 * 60 * 1000;
+
+  return visitas.some(v =>
+    v.area === area &&                       // ✅ CLAVE
+    v.fechaHoraTs &&
+    Math.abs(v.fechaHoraTs - ts) < SLOT
+  );
+}
 
    function renderAgendaVisual(){
   const citasHoy = obtenerCitasDeHoy();
@@ -2011,7 +2017,7 @@ async function renderNuevo(){
   ?.addEventListener("click", e => {
 
   const slot = e.target.closest(".agenda-slot");
-  if(!slot || slot.classList.contains("bad")) return;
+  if(!slot || slot.classList.contains("agenda-busy")) return; // ✅ no permitir click en ocupado
 
   const hora = slot.dataset.hora;
   const fechaInput = document.getElementById("fechaHora");
@@ -2087,6 +2093,12 @@ function setupProveedorAutocomplete(){
   }
 
   const fechaHoraTs = new Date(fechaHora).getTime();
+
+  // ✅ Bloquea solo si ya existe cita en ese horario PARA LA MISMA ÁREA
+if(existeCitaEnHorario(fechaHora, area)){
+  toast("Horario no disponible", "Ya existe una cita en ese horario para esta área.", "warn");
+  return null;
+}
 
   return {
   id: Date.now().toString(),
