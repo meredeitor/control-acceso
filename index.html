@@ -653,11 +653,14 @@ function slotOcupado(area, slotHora, citasHoy){
   });
 }
 
+
 async function goNuevaCita(){
-  setActiveSb('dashboard');
+  setActiveSb('nuevo');   // ✅ CLAVE
+  lockView = true;        // 🔒 bloquea auto-render
   sbClose();
   await renderNuevo();
 }
+
 
     async function getPendingUsersCount(){
   try{
@@ -1154,11 +1157,12 @@ function fmt(ts){
 
    
 // ✅ Actualiza UI solo si corresponde
-if (document.visibilityState === "visible") {
-  const currentView = document.querySelector('[aria-current="page"]')?.dataset?.sb;
-  if (!lockView && currentView === "dashboard") {
+
+if (
+  document.visibilityState === "visible" &&
+  !lockView && currentView === "dashboard"
+) {
   renderDashboardHoy();
-}
 }
 
   });
