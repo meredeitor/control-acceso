@@ -600,6 +600,9 @@ const PIN_SESSION_KEY = "adminPinOkTs";
 
     let currentUser = null; // {uid,email,role,nombre}
     let visitas = loadVisitasLocal();
+    let _returnToEditCitaId = null;
+    let _returnToEditMode = false;
+
 
     // -------------------------
     // Helpers
@@ -2465,6 +2468,7 @@ async function renderEditarCitaCompras(id){
       <div class="divider"></div>
 
       <div class="row">
+        <button class="secondary" data-action="ccVerQR" data-id="${esc(v.id)}">Ver QR</button>
         <button class="ok" data-action="ccSaveEdit" data-id="${esc(v.id)}">Guardar cambios</button>
         <button class="secondary" data-action="citasComprasBack">Cancelar</button>
       </div>
@@ -3344,6 +3348,9 @@ if(existeCitaEnHorario(fechaHora, area)){
 
 
               <div class="row" style="margin-top:12px; flex-wrap:wrap;">
+                ${_returnToEditMode ? `
+  <button class="secondary" data-action="volverAEditarCita">Volver a edición</button>
+` : ""}
                 <button class="secondary" data-action="print">
                  Guardar / Imprimir
                 </button>
@@ -4331,6 +4338,28 @@ case "citasComprasBack":
   await loadCitasCompras();
   break;
 }
+
+case "ccVerQR":
+  _returnToEditCitaId = id;
+  _returnToEditMode = true;
+  renderQR(id);
+  break;
+
+case "volverAEditarCita":
+  if(_returnToEditMode && _returnToEditCitaId){
+    await renderEditarCitaCompras(_returnToEditCitaId);
+  } else {
+    renderHome();
+  }
+  break;
+
+  case "home":
+  _returnToEditMode = false;
+  _returnToEditCitaId = null;
+  lockView = false;
+  renderHome();
+  break;
+  
       }
     });
 
