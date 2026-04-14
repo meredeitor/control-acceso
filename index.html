@@ -289,6 +289,19 @@
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span>
         <span class="sb-txt">Nueva cita</span>
       </div>
+      <div class="sb-btn" data-sb="citas_compras">
+  <span class="sb-ic" aria-hidden="true">
+    <svg viewBox="0 0 24 24">
+      <path d="M3 5h18"/>
+      <path d="M7 3v4"/>
+      <path d="M17 3v4"/>
+      <path d="M5 9h14"/>
+      <path d="M7 13h4"/>
+      <path d="M7 17h6"/>
+    </svg>
+  </span>
+  <span class="sb-txt">Citas (Compras)</span>
+</div>
       <div class="sb-btn" data-sb="historial">
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 5h14"/><path d="M3 12h14"/><path d="M3 19h14"/><path d="M19 5v14"/><path d="M19 12h2"/></svg></span>
         <span class="sb-txt">Historial</span>
@@ -459,7 +472,8 @@
     "registrar_entrada","ver_documentos","dictaminar","despachar",
     "registrar_salida","exportar_excel","limpiar_finalizados",
     "reactivar_qr","eliminar","ver_qr","buscar_proveedor",
-    "admin_roles","admin_proveedores"
+    "admin_roles","admin_proveedores","ver_citas_compras",
+    "editar_cita","cancelar_cita"
   ];
 
  
@@ -494,7 +508,10 @@ const PERMISOS = {
     "crear_cita",
     "exportar_excel",
     "ver_documentos",
-    "ver_qr"
+    "ver_qr",
+    "ver_citas_compras",
+    "editar_cita",
+    "cancelar_cita"
   ],
 
   [ROLES.CONTRALORIA]: [
@@ -577,7 +594,8 @@ const PIN_SESSION_KEY = "adminPinOkTs";
       LLEGADO:"llegado",
       DENTRO:"dentro",
       DESPACHADO:"despachado",
-      FINALIZADO:"finalizado"
+      FINALIZADO:"finalizado",
+      CANCELADO:"cancelado"
     };
 
     let currentUser = null; // {uid,email,role,nombre}
@@ -1267,6 +1285,9 @@ if(sbConfigChip){
     sbConfigChip.textContent = '';
     sbConfigChip.style.display = 'none';
   }
+  const comprasCitas = sidebarEl.querySelector('[data-sb="citas_compras"]');
+if(comprasCitas) comprasCitas.style.display = hasPerm('ver_citas_compras') ? '' : 'none';
+
 }
 
   // ===============================
@@ -1314,6 +1335,12 @@ if(!sb) return;
     await renderHistorial();
     return;
   }
+  if(key === 'citas_compras'){
+  setActiveSb('citas_compras');
+  sbClose();
+  await renderCitasCompras();
+  return;
+}
   if (key === 'reportes'){
   setActiveSb('reportes');
   sbClose();
@@ -1768,8 +1795,6 @@ window.addEventListener('visibilitychange', ()=>{
     : "Buscar proveedor / empresa...";
 }
 
-      
-
   function renderLogin(){
   qSearch.value = "";
   qSearch.style.display = "none";
@@ -1957,7 +1982,11 @@ function renderRegisterForm(){
       const term = (qSearch.value || "").trim().toLowerCase();
 
       // ✅ SOLO HOY: filtra por fechaHoraTs
-      const todayList = visitas.filter(v => typeof v.fechaHoraTs === "number" && isSameDay(v.fechaHoraTs, today));
+      const todayList = visitas.filter(v =>
+      typeof v.fechaHoraTs === "number" &&
+      isSameDay(v.fechaHoraTs, today) &&
+      v.status !== Status.CANCELADO
+      );
 
       const filtered = !term ? todayList : todayList.filter(v =>
         (v.proveedor||"").toLowerCase().includes(term) ||
@@ -2074,6 +2103,495 @@ function renderRegisterForm(){
         </div>
       `;
     }
+
+async function cloudFetchByRange(fromTs, toTs){
+  const q = query(
+    collection(db, COL_VISITAS),
+    where("fechaHoraTs", ">=", fromTs),
+    where("fechaHoraTs", "<=", toTs),
+    orderBy("fechaHoraTs", "desc"),
+    limit(1000)
+  );
+  const snap = await getDocs(q);
+  const arr = [];
+  snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+  return arr;
+}
+
+function existeCitaEnHorarioExcluding(fechaHoraISO, area, excludeId){
+  if(!fechaHoraISO || !area) return false;
+  const ts = new Date(fechaHoraISO).getTime();
+  const cap = capArea(area);
+  const slotWindowMs = SLOT_MINUTES * 60 * 1000;
+
+  const ocupadas = visitas.filter(v =>
+    String(v.id) !== String(excludeId) &&
+    v.area === area &&
+    typeof v.fechaHoraTs === "number" &&
+    Math.abs(v.fechaHoraTs - ts) < slotWindowMs &&
+    v.status !== Status.CANCELADO
+  ).length;
+
+  return ocupadas >= cap;
+}
+
+let _comprasCache = []; // cache de la vista (rango cargado)
+
+async function renderCitasCompras(){
+  if(!requirePerm("ver_citas_compras","Solo COMPRAS puede ver esta tabla.")) return;
+
+  // defaults: hoy -> +30 días
+  const today = new Date();
+  const todayISO = today.toISOString().slice(0,10);
+  const plus30 = new Date(Date.now() + 30*24*60*60*1000).toISOString().slice(0,10);
+
+  appEl.innerHTML = `
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <div>
+          <h2 style="margin:0 0 4px;">Citas (Compras)</h2>
+          <div style="color:var(--muted);font-size:12px;">
+            Filtra por rango y área. Desde aquí puedes editar horario o cancelar.
+          </div>
+        </div>
+        <div class="row">
+          <button class="secondary" data-action="home">Volver</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row" style="gap:12px; flex-wrap:wrap;">
+        <div style="min-width:180px;">
+          <label>Fecha inicio</label>
+          <input type="date" id="ccFrom" value="${todayISO}">
+        </div>
+        <div style="min-width:180px;">
+          <label>Fecha fin</label>
+          <input type="date" id="ccTo" value="${plus30}">
+        </div>
+        <div style="min-width:220px;">
+          <label>Área</label>
+          <select id="ccArea">
+            <option value="">Todas</option>
+            ${AREAS.map(a=>`<option value="${a}">${a}</option>`).join("")}
+          </select>
+        </div>
+        <div style="min-width:200px;">
+          <label>Estatus</label>
+          <select id="ccStatus">
+            <option value="">Todos</option>
+            <option value="${Status.PROGRAMADO}">Programado</option>
+            <option value="${Status.LLEGADO}">Llegó</option>
+            <option value="${Status.DENTRO}">Dentro</option>
+            <option value="${Status.DESPACHADO}">Despachado</option>
+            <option value="${Status.FINALIZADO}">Finalizado</option>
+            <option value="${Status.CANCELADO}">Cancelado</option>
+          </select>
+        </div>
+        <div style="min-width:240px; flex:1;">
+          <label>Buscar</label>
+          <input id="ccSearch" placeholder="Proveedor / Empresa / ID...">
+        </div>
+        <div style="align-self:flex-end;">
+          <button class="secondary" data-action="ccLoad">Cargar</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div id="ccWrap" style="overflow:auto;">
+        <div style="color:var(--muted);font-size:12px;">Presiona “Cargar”.</div>
+      </div>
+    </div>
+  `;
+}
+
+async function loadCitasCompras(){
+  if(!requirePerm("ver_citas_compras")) return;
+  const wrap = document.getElementById("ccWrap");
+  if(!wrap) return;
+
+  const from = document.getElementById("ccFrom").value;
+  const to = document.getElementById("ccTo").value;
+  const areaSel = document.getElementById("ccArea").value;
+  const statusSel = document.getElementById("ccStatus").value;
+  const term = (document.getElementById("ccSearch").value || "").trim().toLowerCase();
+
+  if(!from || !to){
+    toast("Filtros incompletos","Selecciona rango de fechas","warn");
+    return;
+  }
+
+  const fromTs = new Date(from + "T00:00:00").getTime();
+  const toTs = new Date(to + "T23:59:59").getTime();
+
+  wrap.innerHTML = `<div style="color:var(--muted);font-size:12px;">Cargando citas…</div>`;
+
+  try{
+    if(navigator.onLine){
+      const cloud = await cloudFetchByRange(fromTs, toTs);
+      visitas = mergeById(visitas, cloud);
+      saveVisitasLocal();
+    }else{
+      toast("Sin conexión","Mostrando solo lo disponible en local","warn",2600);
+    }
+
+    // 1) BASE por rango (sin filtros de área)
+    let baseList = visitas.filter(v =>
+      typeof v.fechaHoraTs === "number" &&
+      v.fechaHoraTs >= fromTs &&
+      v.fechaHoraTs <= toTs
+    );
+
+    // 2) Aplica filtros que NO son área (status + búsqueda)
+    if(statusSel) baseList = baseList.filter(v => v.status === statusSel);
+
+    if(term){
+      baseList = baseList.filter(v =>
+        String(v.id||"").toLowerCase().includes(term) ||
+        String(v.proveedor||"").toLowerCase().includes(term) ||
+        String(v.empresa||"").toLowerCase().includes(term) ||
+        String(v.personaVisita||"").toLowerCase().includes(term)
+      );
+    }
+
+    // 3) TABLA: ahora sí filtra por área seleccionada (si hay)
+    const tableList = areaSel ? baseList.filter(v => v.area === areaSel) : baseList;
+
+    _comprasCache = tableList;
+    paintCitasComprasTable(tableList, baseList); // 👈 ahora recibe ambos
+
+  }catch(e){
+    console.error(e);
+    wrap.innerHTML = `<div style="color:var(--muted);font-size:12px;">Error cargando citas (Rules/Internet).</div>`;
+    toast("Compras","No se pudieron cargar citas. Revisa Rules/Conexión.","bad",4200);
+  }
+}
+
+function paintCitasComprasTable(tableList, baseList){
+  const wrap = document.getElementById("ccWrap");
+  if(!wrap) return;
+
+  // ---------- Resumen por área (sobre baseList) ----------
+  const counts = {};
+  (baseList || []).forEach(v=>{
+    const a = (v.area && String(v.area).trim()) ? v.area : "Sin área";
+    counts[a] = (counts[a] || 0) + 1;
+  });
+
+  // Orden sugerido: las AREAS conocidas primero, luego extras, luego "Sin área"
+  const known = (typeof AREAS !== "undefined" && Array.isArray(AREAS)) ? AREAS : [];
+  const extras = Object.keys(counts).filter(a => a !== "Sin área" && !known.includes(a)).sort();
+  const orderedAreas = [...known, ...extras, ...(counts["Sin área"] ? ["Sin área"] : [])];
+
+  const totalBase = (baseList || []).length;
+
+  const chip = (areaName, n, isAll=false)=>{
+    const dotClass =
+      isAll ? "brand" :
+      (n > 0 ? "ok" : "warn");
+
+    const style =
+      (isAll || n > 0)
+        ? ""
+        : "opacity:.55; filter:saturate(.8);";
+
+    // Usa data-action para que lo agarre tu listener global
+    return `
+      <span class="pill"
+            style="cursor:pointer; ${style}"
+            data-action="ccChipArea"
+            data-area="${esc(areaName)}">
+        <span class="dot ${dotClass}"></span>
+        ${isAll ? "Todas" : esc(areaName)}
+        <b style="color:var(--text); margin-left:6px;">${n}</b>
+        ${totalBase ? `<span style="color:var(--muted); margin-left:6px;">(${Math.round((n/totalBase)*100)}%)</span>` : ""}
+      </span>
+    `;
+  };
+
+  const resumenHtml = `
+    <div class="row" style="gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+      ${chip("__ALL__", totalBase, true)}
+      ${orderedAreas.map(a => chip(a, counts[a] || 0)).join("")}
+    </div>
+  `;
+
+  // ---------- Badges de estatus ----------
+  const badge = (s)=>{
+    const map = {
+      [Status.PROGRAMADO]: ["info","PROGRAMADO"],
+      [Status.LLEGADO]: ["warn","LLEGÓ"],
+      [Status.DENTRO]: ["ok","DENTRO"],
+      [Status.DESPACHADO]: ["brand","DESPACHADO"],
+      [Status.FINALIZADO]: ["muted","FINALIZADO"],
+      [Status.CANCELADO]: ["bad","CANCELADO"],
+    };
+    const [dot,label] = map[s] || ["muted", (s||"").toUpperCase()];
+    return `<span class="pill"><span class="dot ${dot}"></span>${label}</span>`;
+  };
+
+  // ---------- Tabla ----------
+  wrap.innerHTML = `
+    ${resumenHtml}
+
+    <div class="row" style="margin-bottom:10px;">
+      <span class="pill">Mostrando: <b style="color:var(--text); margin-left:6px;">${(tableList||[]).length}</b></span>
+      <span class="pill" style="margin-left:auto;">Total rango: <b style="color:var(--text); margin-left:6px;">${totalBase}</b></span>
+    </div>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Proveedor</th>
+          <th>Empresa</th>
+          <th>Persona</th>
+          <th>Área</th>
+          <th>Motivo</th>
+          <th>Estatus</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${(tableList||[]).map(v=>{
+          const fecha = v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-";
+          const canEdit = hasPerm("editar_cita") && v.status !== Status.CANCELADO && v.status !== Status.FINALIZADO;
+          const canCancel = hasPerm("cancelar_cita") && v.status !== Status.CANCELADO && v.status !== Status.FINALIZADO;
+
+          return `
+            <tr>
+              <td>${esc(fecha)}</td>
+              <td><b>${esc(v.proveedor||"-")}</b><br><code>${esc(v.id)}</code></td>
+              <td>${esc(v.empresa||"-")}</td>
+              <td>${esc(v.personaVisita||"-")}</td>
+              <td>${esc(v.area||"-")}</td>
+              <td>${esc(v.motivo||"-")}</td>
+              <td>${badge(v.status)}</td>
+              <td style="white-space:nowrap;">
+                <button class="secondary" data-action="ccEdit" data-id="${esc(v.id)}" ${canEdit?"":"disabled"}>
+                  Editar
+                </button>
+                <button class="danger" data-action="ccCancel" data-id="${esc(v.id)}" ${canCancel?"":"disabled"}>
+                  Cancelar
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+async function renderEditarCitaCompras(id){
+  if(!requirePerm("editar_cita","No tienes permiso para editar citas.")) return;
+  const v = visitas.find(x => String(x.id) === String(id));
+  if(!v){
+    toast("No encontrado","No se encontró la cita.","warn");
+    return renderCitasCompras();
+  }
+
+  // asegura proveedores en cache para autocompletar
+  await ensureProveedoresLoaded();
+
+  appEl.innerHTML = `
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <div>
+          <h2 style="margin:0 0 4px;">Editar cita</h2>
+          <div style="color:var(--muted);font-size:12px;">ID: <b style="color:var(--text)">${esc(v.id)}</b></div>
+        </div>
+        <div class="row">
+          <button class="secondary" data-action="citasComprasBack">Volver</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="two">
+        <div>
+          <label>Proveedor *</label>
+          <input id="ccProvSearch" placeholder="Escribe nombre o código…" autocomplete="off" value="${esc(v.proveedor||"")}">
+          <div id="ccProvResults"></div>
+        </div>
+
+        <div>
+          <label>Persona a visitar *</label>
+          <select id="ccPersona">
+            <option value="">— Selecciona —</option>
+            <option>Sergio Palomares de Haro</option>
+            <option>Daniel López Ramírez</option>
+            <option>Cesar Reyes Gasca</option>
+            <option>Jaqueline Gómez Valdivia</option>
+            <option>Miriam García Aguayo</option>
+            <option>Tisbet Gónzalez Guerrero</option>
+            <option>Hugo Reyes Pérez</option>
+            <option>Porfirio Silva García</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Área *</label>
+          <select id="ccAreaEdit">
+            <option value="">— Selecciona —</option>
+            ${AREAS.map(a=>`<option ${v.area===a?"selected":""}>${a}</option>`).join("")}
+          </select>
+        </div>
+
+        <div>
+          <label>Motivo *</label>
+          <select id="ccMotivo">
+            <option value="">— Selecciona —</option>
+            ${["Entrega","Recolección","Visita"].map(m=>`<option ${v.motivo===m?"selected":""}>${m}</option>`).join("")}
+          </select>
+        </div>
+
+        <div>
+          <label>No. Orden de Compra</label>
+          <input id="ccOc" maxlength="100" value="${esc(v.ocNo||"")}">
+        </div>
+
+        <div>
+          <label>No. Factura</label>
+          <input id="ccFac" maxlength="100" value="${esc(v.facturaNo||"")}">
+        </div>
+
+        <div>
+          <label>Fecha y hora *</label>
+          <input type="datetime-local" id="ccFechaHora" value="${esc((v.fechaHora||"").slice(0,16))}">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row">
+        <button class="ok" data-action="ccSaveEdit" data-id="${esc(v.id)}">Guardar cambios</button>
+        <button class="secondary" data-action="citasComprasBack">Cancelar</button>
+      </div>
+    </div>
+  `;
+
+  // set persona select
+  setTimeout(()=>{
+    const sel = document.getElementById("ccPersona");
+    if(sel) sel.value = v.personaVisita || "";
+  },0);
+
+  // autocomplete proveedor (reutiliza tu idea pero en este form)
+  setupProveedorAutocompleteForEdit(v);
+}
+
+function setupProveedorAutocompleteForEdit(v){
+  const input = document.getElementById("ccProvSearch");
+  const results = document.getElementById("ccProvResults");
+  if(!input || !results) return;
+
+  // si ya había código guardado, respétalo
+  if(v.proveedorCodigo) input.dataset.codigo = v.proveedorCodigo;
+
+  input.addEventListener("input", ()=>{
+    const term = input.value.trim().toLowerCase();
+    if(!term){ results.innerHTML=""; return; }
+    const matches = (proveedoresCache||[])
+      .filter(p => String(p.codigo||"").toLowerCase().includes(term) || String(p.razonSocial||"").toLowerCase().includes(term))
+      .slice(0,10);
+    results.innerHTML = matches.map(p=>`
+      <div class="pill proveedor-opt" data-codigo="${esc(p.codigo)}" data-nombre="${esc(p.razonSocial)}">
+        <b>${esc(p.codigo)}</b> — ${esc(p.razonSocial)}
+      </div>
+    `).join("");
+  });
+
+  results.addEventListener("click", (e)=>{
+    const opt = e.target.closest(".proveedor-opt");
+    if(!opt) return;
+    input.value = opt.dataset.nombre;
+    input.dataset.codigo = opt.dataset.codigo;
+    results.innerHTML = "";
+  });
+}
+
+async function guardarEdicionCitaCompras(id){
+  if(!requirePerm("editar_cita")) return;
+  const v = visitas.find(x => String(x.id) === String(id));
+  if(!v) return;
+
+  const provInput = document.getElementById("ccProvSearch");
+  const proveedorCodigo = provInput?.dataset.codigo || v.proveedorCodigo || "";
+  const proveedorNombre = (provInput?.value || "").trim();
+  const persona = (document.getElementById("ccPersona")?.value || "").trim();
+  const area = (document.getElementById("ccAreaEdit")?.value || "").trim();
+  const motivo = (document.getElementById("ccMotivo")?.value || "").trim();
+  const fechaHora = (document.getElementById("ccFechaHora")?.value || "").trim();
+  const ocNo = (document.getElementById("ccOc")?.value || "").trim();
+  const facturaNo = (document.getElementById("ccFac")?.value || "").trim();
+
+  if(!proveedorNombre || !area || !motivo || !fechaHora){
+    toast("Campos obligatorios","Proveedor, Área, Motivo y Fecha","warn");
+    return;
+  }
+
+  // respeta tu capacidad por área/hora excluyendo la misma cita
+  if(existeCitaEnHorarioExcluding(fechaHora, area, v.id)){
+    toast("Horario no disponible","Ya existe el máximo de citas para esa área en ese horario.","warn");
+    return;
+  }
+
+  v.proveedorCodigo = proveedorCodigo;
+  v.proveedor = proveedorNombre;
+  v.personaVisita = persona;
+  v.area = area;
+  v.motivo = motivo;
+  v.fechaHora = fechaHora;
+  v.fechaHoraTs = new Date(fechaHora).getTime();
+  v.ocNo = ocNo;
+  v.facturaNo = facturaNo;
+
+  v.updatedTs = Date.now();
+
+  await saveVisitas();
+  if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
+    await cloudUpsertVisita(v);
+  }
+
+  toast("Actualizado","La cita fue actualizada.","ok",2200);
+  await renderCitasCompras();
+  await loadCitasCompras(); // refresca tabla con filtros actuales
+}
+async function cancelarCitaCompras(id){
+  if(!requirePerm("cancelar_cita","No tienes permiso para cancelar citas.")) return;
+
+  const v = visitas.find(x => String(x.id) === String(id));
+  if(!v){
+    toast("No encontrado","No se encontró la cita.","warn");
+    return;
+  }
+
+  if(v.status === Status.CANCELADO || v.status === Status.FINALIZADO){
+    toast("No permitido","Esa cita ya no se puede cancelar.","warn");
+    return;
+  }
+
+  const motivo = prompt("Motivo de cancelación (opcional):") || "";
+
+  v.status = Status.CANCELADO;
+  v.qrActivo = false;
+  v.canceladoTs = Date.now();
+  v.canceladoPor = currentUser?.email || "";
+  v.canceladoMotivo = motivo.trim();
+  v.updatedTs = Date.now();
+
+  await saveVisitas();
+  if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
+    await cloudUpsertVisita(v);
+  }
+
+  toast("Cancelado","La cita fue cancelada y el QR se desactivó.","ok",2400);
+  await renderCitasCompras();
+  await loadCitasCompras();
+}
 
     async function loadHistDay(){
       const dateStr = (document.getElementById("histDate")?.value || "").trim();
@@ -3780,6 +4298,41 @@ function renderProveedores(lista){
           break;
 
         case "print": window.print(); break;
+      
+        case "ccLoad":
+  await loadCitasCompras();
+  break;
+
+case "ccEdit":
+  await renderEditarCitaCompras(id);
+  break;
+
+case "ccSaveEdit":
+  await guardarEdicionCitaCompras(id);
+  break;
+
+case "ccCancel":
+  if(confirm("¿Cancelar esta cita? El QR quedará inactivo.")){
+    await cancelarCitaCompras(id);
+  }
+  break;
+
+case "citasComprasBack":
+  await renderCitasCompras();
+  await loadCitasCompras();
+  break;
+    
+  case "ccChipArea": {
+  const a = el.dataset.area || "";
+  const sel = document.getElementById("ccArea");
+  if(!sel) break;
+
+  if(a === "__ALL__") sel.value = "";
+  else sel.value = a;
+
+  await loadCitasCompras();
+  break;
+}
       }
     });
 
