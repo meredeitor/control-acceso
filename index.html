@@ -262,6 +262,18 @@
   pointer-events: none;
 }
 
+.oc-pill{
+  max-width: 260px;          /* ajústalo a tu kanban */
+  white-space: normal;       /* PERMITE salto de línea */
+  word-break: break-word;    /* rompe palabras largas */
+  line-height: 1.2;
+}
+.material-pill{
+  max-width: 260px;          /* mismo ancho que OC para consistencia */
+  white-space: normal;       /* permite salto de línea */
+  word-break: break-word;    /* rompe palabras largas */
+  line-height: 1.2;
+}
 </style>
 </head>
 
@@ -333,6 +345,19 @@
   </span>
   <span class="sb-txt">Reportes</span>
 </div>
+<div class="sb-btn" data-sb="reporte_cambios">
+  <span class="sb-ic" aria-hidden="true">
+    <!-- ICONO: historial / auditoría -->
+    <svg viewBox="0 0 24 24">
+      <path d="M3 3v18h18"/>
+      <path d="M7 7h10"/>
+      <path d="M7 11h10"/>
+      <path d="M7 15h6"/>
+    </svg>
+  </span>
+  <span class="sb-txt">Cambios en Citas</span>
+</div>
+
 <div class="sb-btn" data-sb="config" id="sbConfigToggle">
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M19.4 15a7.8 7.8 0 0 0 .1-1 7.8 7.8 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a8 8 0 0 0-1.7-1L15 3h-6l-.3 2.4a8 8 0 0 0-1.7 1l-2.4-1-2 3.4L4.6 13a7.8 7.8 0 0 0-.1 1 7.8 7.8 0 0 0 .1 1L2.6 16.6l2 3.4 2.4-1a8 8 0 0 0 1.7 1L9 21h6l.3-2.4a8 8 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></span>
         <span class="sb-txt">Configuración</span>
@@ -608,6 +633,73 @@ const PIN_SESSION_KEY = "adminPinOkTs";
     // Helpers
     // -------------------------
     
+    function renderReporteCambios(){
+  const registros = visitas
+    .filter(v => Array.isArray(v.historialCambios))
+    .flatMap(v =>
+      v.historialCambios.map(h => ({
+        citaId: v.id,
+        proveedor: v.proveedor,
+        ...h
+      }))
+    )
+    .sort((a,b) => b.ts - a.ts);
+
+  appEl.innerHTML = `
+    <div class="card">
+      <h2>📜 Reporte de Cambios en Citas</h2>
+      <div class="divider"></div>
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Cita</th>
+            <th>Proveedor</th>
+            <th>Campo</th>
+            <th>Antes</th>
+            <th>Después</th>
+            <th>Usuario</th>
+            <th>Rol</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${registros.map(r => `
+            <tr>
+              <td>${new Date(r.ts).toLocaleString()}</td>
+              <td>${r.citaId}</td>
+              <td>${esc(r.proveedor)}</td>
+              <td>${esc(r.campo)}</td>
+              <td>${esc(r.antes)}</td>
+              <td><b>${esc(r.despues)}</b></td>
+              <td>${esc(r.usuario)}</td>
+              <td>${esc(r.rol)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+    function registrarCambio(v, campo, antes, despues, accion="editar"){
+  if(String(antes ?? "") === String(despues ?? "")) return;
+
+  if(!Array.isArray(v.historialCambios)){
+    v.historialCambios = [];
+  }
+
+  v.historialCambios.push({
+    ts: Date.now(),
+    campo,
+    antes: antes ?? "",
+    despues: despues ?? "",
+    usuario: currentUser?.email || "",
+    rol: currentUser?.role || "",
+    accion
+  });
+}
+
     async function normalizarUsuariosViejos(){
   if(!currentUser || currentUser.role !== ROLES.ADMIN){
     toast("Seguridad","Solo ADMIN puede normalizar usuarios","bad");
@@ -1412,6 +1504,12 @@ if(key === "proveedores"){
     await doLogout();
     return;
   }
+  if (key === 'reporte_cambios') {
+  setActiveSb('reporte_cambios');
+  sbClose();
+  renderReporteCambios();
+  return;
+}
 
 });
 
@@ -2052,6 +2150,18 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
               <span class="pill"><span class="dot info"></span>${esc(v.area || "Área")}</span>
               <span class="pill"><span class="dot warn"></span>${esc(cita)}</span>
               <span class="pill"><span class="dot ${docColor}"></span>Docs</span>
+              ${v.ocNo ? `
+  <span class="pill oc-pill" title="Orden de Compra">
+    <span class="dot info"></span>
+    OC: ${esc(v.ocNo)}
+  </span>
+` : ""}
+              ${v.materialRecibir ? `
+  <span class="pill material-pill" title="Material a recibir">
+    <span class="dot info"></span>
+    ${esc(v.materialRecibir)}
+  </span>
+` : ""}
               <span class="badge-dictamen ${esc(dict)}">
   <span class="bdot"></span> ${esc(dictLabel)}
 </span>
@@ -2566,6 +2676,14 @@ async function guardarEdicionCitaCompras(id){
     toast("Horario no disponible","Ya existe el máximo de citas para esa área en ese horario.","warn");
     return;
   }
+
+  registrarCambio(v, "proveedor", v.proveedor, proveedorNombre);
+  registrarCambio(v, "personaVisita", v.personaVisita, persona);
+  registrarCambio(v, "area", v.area, area);
+  registrarCambio(v, "motivo", v.motivo, motivo);
+  registrarCambio(v, "fechaHora", v.fechaHora, fechaHora);
+  registrarCambio(v, "ocNo", v.ocNo, ocNo);
+  registrarCambio(v, "facturaNo", v.facturaNo, facturaNo);
 
   v.proveedorCodigo = proveedorCodigo;
   v.proveedor = proveedorNombre;
@@ -3194,6 +3312,14 @@ async function renderNuevo(){
           <input id="facturaNo" maxlength="100"/>
         </div>
         <div>
+        <label>Material a recibir</label>
+        <textarea
+        id="materialRecibir"
+        rows="2"
+        placeholder="Ej. Piel res, color negro, 120 pies"
+        ></textarea>
+</div>
+        <div>
           <label>Fecha y hora *</label>
           <input type="datetime-local" id="fechaHora"/>
         </div>
@@ -3286,6 +3412,8 @@ function setupProveedorAutocomplete(){
   const fechaHora = document.getElementById("fechaHora").value;
   const ocNo = document.getElementById("ocNo").value.trim();
   const facturaNo = document.getElementById("facturaNo").value.trim();
+  const materialRecibir =
+  document.getElementById("materialRecibir").value.trim();
 
   if(!proveedorCodigo || !area || !motivo || !fechaHora ){
     toast("Campos obligatorios","Proveedor, Persona, Área, Motivo y Fecha","warn");
@@ -3310,6 +3438,7 @@ if(existeCitaEnHorario(fechaHora, area)){
   fechaHoraTs,
   ocNo,
   facturaNo,
+  materialRecibir,
   status: "programado",
   createdByUid: currentUser.uid,
   createdByEmail: currentUser.email,
@@ -3360,7 +3489,22 @@ if(existeCitaEnHorario(fechaHora, area)){
 
             <div style="color:var(--muted);font-size:12px;">Cita</div>
             <div style="font-weight:700;"><b>${esc(new Date(v.fechaHora).toLocaleString())}</b></div>
-          </div>
+          
+            <div style="height:10px"></div>
+
+<div class="pill" style="display:flex; justify-content:space-between;">
+  <span style="color:var(--muted)">No. Orden de Compra</span>
+  <b style="color:var(--text)">${esc(v.ocNo || "-")}</b>
+</div>
+
+<div style="height:8px"></div>
+
+<div class="pill" style="display:flex; justify-content:space-between;">
+  <span style="color:var(--muted)">No. Factura</span>
+  <b style="color:var(--text)">${esc(v.facturaNo || "-")}</b>
+</div>
+          
+            </div>
 
           <div class="divider"></div>
 
@@ -3857,6 +4001,12 @@ ${isGuardia ? `
     return;
   }
 
+  registrarCambio(v, "guardNombre", v.guardNombre, guard);
+  registrarCambio(v, "gafeteNo", v.gafeteNo, gafete);
+  registrarCambio(v, "ocNo", v.ocNo, ocNo);
+  registrarCambio(v, "facturaNo", v.facturaNo, facturaNo);
+  registrarCambio(v, "status", v.status, Status.DENTRO, "transición");
+
   v.guardNombre = guard;
   v.gafeteNo = gafete;
 
@@ -3957,6 +4107,10 @@ ${isGuardia ? `
       const estado = (document.getElementById("dictamenEstado")?.value || "pendiente").trim();
       const notas  = (document.getElementById("dictamenNotas")?.value || "").trim();
       const incidencia = document.getElementById("dictamenIncidencia")?.value || "";
+
+      registrarCambio(v, "dictamen.estado", v.dictamen?.estado, estado, "dictamen");
+      registrarCambio(v, "dictamen.incidencia", v.dictamen?.incidencia, incidencia, "dictamen");
+      registrarCambio(v, "status", v.status, Status.DESPACHADO, "transición");
 
       v.dictamen = v.dictamen || {};
       v.dictamen.estado = estado;
@@ -4389,6 +4543,10 @@ function renderProveedores(lista){
           break;
         }
 
+        case "reporteCambios":
+        renderReporteCambios();
+        break;
+        
         case "normalizarUsuarios":
   if(!requirePerm("admin_roles","Solo ADMIN puede normalizar usuarios")) return;
 
