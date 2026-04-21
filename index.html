@@ -2030,6 +2030,17 @@ function renderRegisterForm(){
         const cita = v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-";
         const dict = (v.dictamen?.estado || "pendiente").toLowerCase();
         const dictLabel = (v.dictamen?.estado || "pendiente").toUpperCase();
+        const incKey = (v.dictamen?.incidencia || "").trim();
+const INC_LABEL = {
+  "SIN_INCIDENCIAS": "Sin Incidencias",
+  "ERROR_ADMINISTRATIVO": "ERROR ADMINISTRATIVO",
+  "SIN_DOCUMENTOS": "SIN DOCUMENTOS",
+  "FALTANTES": "FALTANTES",
+  "EXCEDENTES": "EXCEDENTES",
+  "FUERA_DE_ESPECIFICACION": "FUERA DE ESPECIFICACIÓN"
+};
+const incLabel = INC_LABEL[incKey] || "";
+const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
         let docColor="bad";
         if(v.ocNo && v.facturaNo) docColor="ok";
         else if(v.ocNo || v.facturaNo) docColor="warn";
@@ -2041,7 +2052,22 @@ function renderRegisterForm(){
               <span class="pill"><span class="dot info"></span>${esc(v.area || "Área")}</span>
               <span class="pill"><span class="dot warn"></span>${esc(cita)}</span>
               <span class="pill"><span class="dot ${docColor}"></span>Docs</span>
-              <span class="badge-dictamen ${esc(dict)}"><span class="bdot"></span> ${esc(dictLabel)}</span>
+              <span class="badge-dictamen ${esc(dict)}">
+  <span class="bdot"></span> ${esc(dictLabel)}
+</span>
+${incLabel ? `
+  <span class="pill" style="
+    margin-left:-6px;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    padding: 4px 10px;
+    ${showInc ? "background: rgba(250,204,21,.14); border-color: rgba(250,204,21,.35); color:#fde68a;" 
+              : "background: rgba(148,163,184,.10); border-color: rgba(148,163,184,.20); color: var(--muted);"}
+  ">
+    <span class="dot ${showInc ? "warn" : "muted"}"></span>
+    ${esc(incLabel)}
+  </span>
+` : ""}
               ${v.gafeteNo ? `<span class="pill"><span class="dot info"></span>Gafete: ${esc(v.gafeteNo)}</span>` : ""}
               ${v.incidenciasSalida ? `<span class="pill"><span class="dot warn"></span>Incidencia</span>` : ""}
             </div>
@@ -3296,95 +3322,192 @@ if(existeCitaEnHorario(fechaHora, area)){
 // -------------------------
     // QR
     // -------------------------
-    function renderQR(id){
-      const v = visitas.find(x => x.id == id);
-      if(!v) return renderHome();
+   function renderQR(id){
+  const v = visitas.find(x => x.id == id);
+  if(!v) return renderHome();
 
-      if(!hasPerm("ver_qr") && currentUser.role !== ROLES.PROVEEDOR){
-        toast("Acceso denegado","Tu rol no puede ver QR.","bad",2600);
-        return renderHome();
-      }
+  if(!hasPerm("ver_qr") && currentUser.role !== ROLES.PROVEEDOR){
+    toast("Acceso denegado","Tu rol no puede ver QR.","bad",2600);
+    return renderHome();
+  }
 
-      appEl.innerHTML = `
-        <div class="card printable">
-          <h2 style="margin:0 0 6px;">QR de la Cita</h2>
-          <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">Escanea en recepción para el acceso.</p>
+  appEl.innerHTML = `
+    <div class="card printable">
+      <h2 style="margin:0 0 6px;">QR de la Cita</h2>
+      <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">Escanea en recepción para el acceso.</p>
 
-          <div class="row" style="align-items:flex-start;">
-            <div style="flex:0 0 280px;">
-              <div id="qrcode" style="background:white; padding:10px; border-radius:14px; display:inline-block;"></div>
-            </div>
+      <div class="row" style="align-items:flex-start;">
+        <div style="flex:0 0 280px;">
+          <div id="qrcode" style="background:white; padding:10px; border-radius:14px; display:inline-block;"></div>
+        </div>
 
-            <div style="flex:1; min-width:220px;">
-              <div class="pill" style="margin-bottom:10px;">
-                <span class="dot info"></span> ID:
-                <b style="color:var(--text); margin-left:6px;">${esc(String(v.id))}</b>
-              </div>
+        <div style="flex:1; min-width:220px;">
+          <div class="pill" style="margin-bottom:10px;">
+            <span class="dot info"></span> ID:
+            <b style="color:var(--text); margin-left:6px;">${esc(String(v.id))}</b>
+          </div>
 
-              <div class="card" style="box-shadow:none;">
-                <div style="color:var(--muted);font-size:12px;">Proveedor</div>
-                <div style="font-weight:800;">${esc(v.proveedor)}</div>
-                <div style="height:8px"></div>
-                <div style="color:var(--muted);font-size:12px;">Empresa</div>
-                <div style="font-weight:700;">${esc(v.empresa)}</div>
-                <div style="height:8px"></div>
-                <div style="color:var(--muted);font-size:12px;">Cita</div>
-                <div style="font-weight:700;"><b>${esc(new Date(v.fechaHora).toLocaleString())}</b></div>
-              </div>
+          <div class="card" style="box-shadow:none;">
+            <div style="color:var(--muted);font-size:12px;">Proveedor</div>
+            <div style="font-weight:800;">${esc(v.proveedor)}</div>
 
-              <div class="divider"></div>
+            <div style="height:8px"></div>
 
-<div class="pill"
-     style="
-       background: rgba(250,204,21,.15);
-       border-color: rgba(250,204,21,.45);
-       color: #fde68a;
-       font-size: 12px;
-       font-weight: 600;
-     ">
-  <span class="dot warn"></span>
-  <b>Nota:</b> No olvides traer tu <u>Orden de Compra</u> y <u>Factura</u>
-</div>
+            <div style="color:var(--muted);font-size:12px;">Empresa</div>
+            <div style="font-weight:700;">${esc(v.empresa)}</div>
 
+            <div style="height:8px"></div>
 
-              <div class="row" style="margin-top:12px; flex-wrap:wrap;">
-                ${_returnToEditMode ? `
-  <button class="secondary" data-action="volverAEditarCita">Volver a edición</button>
-` : ""}
-                <button class="secondary" data-action="print">
-                 Guardar / Imprimir
-                </button>
-                <button class="secondary" data-action="home">
-                Volver
-                </button>
-              </div>
-            </div>
+            <div style="color:var(--muted);font-size:12px;">Cita</div>
+            <div style="font-weight:700;"><b>${esc(new Date(v.fechaHora).toLocaleString())}</b></div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="pill"
+            style="
+              background: rgba(250,204,21,.15);
+              border-color: rgba(250,204,21,.45);
+              color: #fde68a;
+              font-size: 12px;
+              font-weight: 600;
+            ">
+            <span class="dot warn"></span>
+            <b>Nota:</b> No olvides traer tu <u>Orden de Compra</u> y <u>Factura</u>
+          </div>
+
+          <div class="row" style="margin-top:12px; flex-wrap:wrap;">
+            ${_returnToEditMode ? `
+              <button class="secondary" data-action="volverAEditarCita">Volver a edición</button>
+            ` : ""}
+
+            <!-- ✅ NUEVO: Guardar/Compartir QR -->
+            <button class="secondary" id="btnGuardarQR" type="button">Guardar QR</button>
+            <button class="secondary" id="btnCompartirQR" type="button">Compartir QR</button>
+
+            <button class="secondary" data-action="print">
+              Guardar / Imprimir
+            </button>
+            <button class="secondary" data-action="home">
+              Volver
+            </button>
           </div>
         </div>
-      `;
+      </div>
+    </div>
+  `;
 
-      try{
-        if(!window.QRCode){
-          toast("QR","La librería aún está cargando. Intenta de nuevo.","warn",2200);
-          return;
-        }
-        const box = document.getElementById("qrcode");
-        box.innerHTML = "";
-        new QRCode(box, {
-          text: String(v.id),
-          width: 260,
-          height: 260,
-          colorDark: "#111827",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.M
-        });
-      }catch(e){
-        console.warn(e);
-        toast("QR","No se pudo generar el QR.","bad",3600);
-      }
+  try{
+    if(!window.QRCode){
+      toast("QR","La librería aún está cargando. Intenta de nuevo.","warn",2200);
+      return;
     }
 
-    // -------------------------
+    const box = document.getElementById("qrcode");
+    box.innerHTML = "";
+
+    // Genera QR
+    new QRCode(box, {
+      text: String(v.id),
+      width: 260,
+      height: 260,
+      colorDark: "#111827",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.M
+    });
+
+    // ===== Guardar/Compartir (tomado de kiosk.html, adaptado) =====
+    const canvas = box.querySelector("canvas");
+    const img = box.querySelector("img");
+
+    const qrDataUrl =
+      canvas?.toDataURL("image/png") ||
+      img?.src ||
+      null;
+
+    // 📌 Texto completo a compartir (TODOS los datos solicitados)
+    const citaFmt = v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-"; // usa el mismo origen que ya muestras
+    const ocFmt = (v.ocNo && String(v.ocNo).trim()) ? String(v.ocNo).trim() : "-";
+    const provFmt = (v.proveedor && String(v.proveedor).trim()) ? String(v.proveedor).trim() : "-";
+
+    const shareText =
+`✅ Datos de tu cita
+• Proveedor: ${provFmt}
+• OC: ${ocFmt}
+• Horario: ${citaFmt}
+
+⚠️ No olvides tu OC y Factura.`;
+
+    // Guardar QR
+    const btnGuardar = document.getElementById("btnGuardarQR");
+    if(btnGuardar){
+      btnGuardar.onclick = () => {
+        if(!qrDataUrl) return alert("No se pudo generar el QR");
+        const a = document.createElement("a");
+        a.href = qrDataUrl;
+        a.download = `QR-${String(v.id)}.png`;
+        a.click();
+      };
+    }
+
+    // Compartir QR + texto con todos los datos
+    const btnCompartir = document.getElementById("btnCompartirQR");
+    if(btnCompartir){
+      btnCompartir.onclick = async () => {
+        // Si no soporta share, al menos copiamos texto para pegar en WhatsApp/correo
+        if(!navigator.share){
+          try{
+            await navigator.clipboard.writeText(shareText);
+            alert("Tu dispositivo no soporta 'Compartir'. Se copió el texto al portapapeles. Ahora pega en WhatsApp/Correo y adjunta el QR guardado.");
+          }catch{
+            alert("Tu dispositivo no soporta 'Compartir'. Copia manualmente los datos y adjunta el QR guardado.");
+          }
+          return;
+        }
+
+        if(!qrDataUrl){
+          // igual comparte texto aunque no haya imagen (raro, pero posible si falla el QR)
+          await navigator.share({
+            title: "QR de la Cita",
+            text: shareText
+          });
+          return;
+        }
+
+        try{
+          const blob = await (await fetch(qrDataUrl)).blob();
+          const file = new File([blob], `QR-${String(v.id)}.png`, { type: "image/png" });
+
+          // Evita fallos en dispositivos que no pueden compartir archivos
+          if(navigator.canShare && !navigator.canShare({ files: [file] })){
+            // comparte solo texto (y sugiere guardar imagen)
+            await navigator.share({
+              title: "Datos de la Cita",
+              text: shareText
+            });
+            toast("Compartir", "Tu dispositivo no permite compartir archivos. Se compartió el texto; guarda el QR y adjúntalo manualmente.", "warn", 3600);
+            return;
+          }
+
+          await navigator.share({
+            title: "QR de la Cita",
+            text: shareText,     // ✅ AQUÍ van TODOS los datos
+            files: [file]
+          });
+        }catch(e){
+          console.warn("Compartir cancelado o falló:", e);
+          // Cancelado por el usuario o error — no hacer toast agresivo
+        }
+      };
+    }
+
+  }catch(e){
+    console.warn(e);
+    toast("QR","No se pudo generar el QR.","bad",3600);
+  }
+}
+
+// -------------------------
     // Scanner (GUARDIA/ADMIN)
     // -------------------------
     let qrScanner = null;
@@ -3546,6 +3669,18 @@ async function renderAdminProveedores(){
       const dict = (v.dictamen?.estado || "pendiente").toLowerCase();
       const dictLabel = (v.dictamen?.estado || "pendiente").toUpperCase();
 
+      const incKey = (v.dictamen?.incidencia || "").trim();
+const INC_LABEL = {
+  "SIN_INCIDENCIAS": "Sin Incidencias",
+  "ERROR_ADMINISTRATIVO": "ERROR ADMINISTRATIVO",
+  "SIN_DOCUMENTOS": "SIN DOCUMENTOS",
+  "FALTANTES": "FALTANTES",
+  "EXCEDENTES": "EXCEDENTES",
+  "FUERA_DE_ESPECIFICACION": "FUERA DE ESPECIFICACIÓN"
+};
+const incLabel = INC_LABEL[incKey] || "";
+const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
+
       appEl.innerHTML = `
         <div class="card printable">
           <div class="row" style="justify-content:space-between; align-items:flex-start;">
@@ -3561,7 +3696,22 @@ async function renderAdminProveedores(){
                 }
                 ${v.guardNombre ? `<span class="pill"><span class="dot ok"></span>Guardia: ${esc(v.guardNombre)}</span>` : ""}
                 ${v.gafeteNo ? `<span class="pill"><span class="dot info"></span>Gafete: ${esc(v.gafeteNo)}</span>` : ""}
-                <span class="badge-dictamen ${esc(dict)}"><span class="bdot"></span>${esc(dictLabel)}</span>
+                <span class="badge-dictamen ${esc(dict)}">
+  <span class="bdot"></span>${esc(dictLabel)}
+</span>
+${incLabel ? `
+  <span class="pill" style="
+    margin-left:-6px;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    padding: 4px 10px;
+    ${showInc ? "background: rgba(250,204,21,.14); border-color: rgba(250,204,21,.35); color:#fde68a;" 
+              : "background: rgba(148,163,184,.10); border-color: rgba(148,163,184,.20); color: var(--muted);"}
+  ">
+    <span class="dot ${showInc ? "warn" : "muted"}"></span>
+    ${esc(incLabel)}
+  </span>
+` : ""}
                 ${v.incidenciasSalida ? `<span class="pill"><span class="dot warn"></span>Incidencias</span>` : ""}
               </div>
             </div>
@@ -3642,7 +3792,7 @@ async function renderAdminProveedores(){
 
     function renderEntrada(id){
   if(!requirePerm("registrar_entrada","Solo GUARDIA o ADMIN pueden registrar entrada.")) return;
-
+  const isGuardia = currentUser?.role === ROLES.GUARDIA;
   const v = visitas.find(x => x.id == id);
   if(!v) return renderDashboardHoy();
 
@@ -3660,8 +3810,18 @@ async function renderAdminProveedores(){
       <input id="gafeteNo" value="${esc(v.gafeteNo || "")}" />
 
       <!-- ✅ NUEVO -->
-      <label>No. Orden de Compra</label>
-      <input id="ocNo" placeholder="OC-12345" maxlength="100" value="${esc(v.ocNo || "")}" />
+     <label>No. Orden de Compra</label>
+<input id="ocNo"
+  maxlength="100"
+  value="${esc(v.ocNo || "")}"
+  ${isGuardia ? "disabled" : ""}
+/>
+
+${isGuardia ? `
+  <div style="color:var(--muted); font-size:12px; margin-top:6px;">
+    La Orden de Compra solo puede ser modificada por Compras o Admin.
+  </div>
+` : ""}
 
       <!-- ✅ NUEVO -->
       <label>No. Factura</label>
@@ -3754,6 +3914,17 @@ async function renderAdminProveedores(){
             <option value="rechazado">Rechazado</option>
           </select>
 
+          <label>Incidencias</label>
+          <select id="dictamenIncidencia">
+            <option value="">— Selecciona —</option>
+            <option value="SIN_INCIDENCIAS">Sin Incidencias</option>
+            <option value="ERROR_ADMINISTRATIVO">Error Administrativo</option>
+            <option value="SIN_DOCUMENTOS">Sin documentos</option>
+            <option value="FALTANTES">Faltantes</option>
+            <option value="EXCEDENTES">Excedentes</option>
+            <option value="FUERA_DE_ESPECIFICACION">Fuera de especificación</option>
+          </select>
+
           <label>Observaciones</label>
           <textarea id="dictamenNotas" rows="3" placeholder="Daños, faltantes, observaciones...">${esc(v.dictamen?.notas || "")}</textarea>
 
@@ -3769,10 +3940,13 @@ async function renderAdminProveedores(){
         </div>
       `;
 
-      setTimeout(()=> {
-        const sel = document.getElementById("dictamenEstado");
-        if(sel) sel.value = dictSel;
-      }, 0);
+     setTimeout(() => {
+     const sel = document.getElementById("dictamenEstado");
+     if (sel) sel.value = dictSel;
+
+     const inc = document.getElementById("dictamenIncidencia");
+     if (inc) inc.value = v.dictamen?.incidencia || "";
+     }, 0);
     }
 
     async function despachar(id){
@@ -3782,10 +3956,12 @@ async function renderAdminProveedores(){
 
       const estado = (document.getElementById("dictamenEstado")?.value || "pendiente").trim();
       const notas  = (document.getElementById("dictamenNotas")?.value || "").trim();
+      const incidencia = document.getElementById("dictamenIncidencia")?.value || "";
 
       v.dictamen = v.dictamen || {};
       v.dictamen.estado = estado;
       v.dictamen.notas = notas;
+      v.dictamen.incidencia = incidencia;
       v.dictamen.ts = Date.now();
       v.dictamen.por = currentUser?.nombre || "";
 
