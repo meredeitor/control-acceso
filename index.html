@@ -1383,6 +1383,17 @@ if(sbConfigChip){
   const comprasCitas = sidebarEl.querySelector('[data-sb="citas_compras"]');
 if(comprasCitas) comprasCitas.style.display = hasPerm('ver_citas_compras') ? '' : 'none';
 
+// 🆕 Reporte de Cambios: SOLO CONTRALORIA y ADMIN
+const btnCambios = sidebarEl.querySelector('[data-sb="reporte_cambios"]');
+if (btnCambios) {
+  const canSeeCambios =
+    currentUser &&
+    (currentUser.role === ROLES.ADMIN ||
+     currentUser.role === ROLES.CONTRALORIA);
+
+  btnCambios.style.display = canSeeCambios ? '' : 'none';
+}
+
 }
 
   // ===============================
@@ -1505,6 +1516,21 @@ if(key === "proveedores"){
     return;
   }
   if (key === 'reporte_cambios') {
+  const canAccess =
+    currentUser &&
+    (currentUser.role === ROLES.ADMIN ||
+     currentUser.role === ROLES.CONTRALORIA);
+
+  if (!canAccess) {
+    toast(
+      "Acceso denegado",
+      "Solo Contraloría y Admin pueden ver el historial de cambios.",
+      "bad",
+      3200
+    );
+    return;
+  }
+
   setActiveSb('reporte_cambios');
   sbClose();
   renderReporteCambios();
@@ -4744,6 +4770,7 @@ window.addEventListener("offline",updateNet);
         role: prof.role,
         nombre: prof.email
       };
+      
       localStorage.setItem(LS_USER, JSON.stringify(currentUser));
 
       paintHeader();
