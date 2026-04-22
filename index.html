@@ -566,6 +566,7 @@ let chartEstadoInstance = null;
 let chartDictamenInstance = null;
 let chartTiempoInstance = null;
 let chartIncidenciasInstance = null;
+let chartPuntualidadInstance = null;
 
 async function ensureProveedoresLoaded(){
   if (proveedoresLoaded || proveedoresLoading) return;
@@ -946,7 +947,8 @@ function avgTiempoPorArea(visitas){
 function incidenciasPorArea(visitas){
   const out = {};
   visitas.forEach(v => {
-    if(v.incidenciasSalida){
+    const inc = (v.dictamen?.incidencia || "SIN_INCIDENCIAS").trim();
+    if(inc && inc !== "SIN_INCIDENCIAS"){
       const area = v.area || "Sin área";
       out[area] = (out[area] || 0) + 1;
     }
@@ -957,7 +959,6 @@ function incidenciasPorArea(visitas){
 // 8️⃣ KPIs generales
 function calcKPIs(visitas){
   const total = visitas.length;
-
   let totalTiempo = 0;
   let conteoTiempo = 0;
   let rechazos = 0;
@@ -968,20 +969,22 @@ function calcKPIs(visitas){
       totalTiempo += (v.salidaTs - v.entradaTs);
       conteoTiempo++;
     }
+
     if(v.dictamen?.estado === "rechazado"){
       rechazos++;
     }
-    if(v.incidenciasSalida){
+
+    // ✅ Incidencias tomadas de Revisión de Calidad
+    const inc = (v.dictamen?.incidencia || "SIN_INCIDENCIAS").trim();
+    if(inc && inc !== "SIN_INCIDENCIAS"){
       incidencias++;
     }
   });
 
   return {
     total,
-    tiempoPromedioMin:
-      conteoTiempo ? Math.round((totalTiempo / conteoTiempo) / 60000) : 0,
-    pctRechazo:
-      total ? Math.round((rechazos / total) * 100) : 0,
+    tiempoPromedioMin: conteoTiempo ? Math.round((totalTiempo / conteoTiempo) / 60000) : 0,
+    pctRechazo: total ? Math.round((rechazos / total) * 100) : 0,
     incidencias,
   };
 }
@@ -1224,25 +1227,51 @@ function renderChartTiempoPorArea(visitas){
 }
 
 function renderChartIncidenciasPorArea(visitas){
-  const byArea = incidenciasPorArea(visitas); // { "Avíos": 3, "Aduana Peleteria": 1 }
+  const byArea = incidenciasPorArea(visitas); // ✅ ya basado en Calidad
 
   // Ordena desc por incidencias
   const entries = Object.entries(byArea)
-    .map(([area, n]) => [area, Number(n) || 0])
-    .filter(([,n]) => n > 0)
-    .sort((a,b) => b[1] - a[1]);
+    .map(([area, n]) => [area || "Sin área", Number(n) || 0])
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1]);
 
   const ctx = document.getElementById("chartIncidencias");
   if(!ctx) return;
 
-  // Destruye instancia previa
+  // ✅ Destruye instancia previa
   if(chartIncidenciasInstance){
-    chartIncidenciasInstance.destroy();
+    try { chartIncidenciasInstance.destroy(); } catch(e){}
     chartIncidenciasInstance = null;
   }
 
-  // Si no hay incidencias, deja el canvas vacío
+  // ✅ Placeholder si no hay incidencias
   if(entries.length === 0){
+    chartIncidenciasInstance = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: ["Sin incidencias (Calidad)"],
+        datasets: [{
+          label: "Incidencias",
+          data: [0],
+          backgroundColor: "rgba(148,163,184,.45)",
+          borderColor: "rgba(148,163,184,.75)",
+          borderWidth: 1,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: () => " 0 incidencia(s)" } }
+        },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 } },
+          x: { ticks: { maxRotation: 0, autoSkip: false } }
+        }
+      }
+    });
     return;
   }
 
@@ -1256,9 +1285,10 @@ function renderChartIncidenciasPorArea(visitas){
       datasets: [{
         label: "Incidencias",
         data: values,
-        backgroundColor: "rgba(250,204,21,.8)", // warn
+        backgroundColor: "rgba(250,204,21,.8)",
         borderColor: "rgba(250,204,21,1)",
-        borderWidth: 1
+        borderWidth: 1,
+        borderRadius: 6
       }]
     },
     options: {
@@ -1266,21 +1296,103 @@ function renderChartIncidenciasPorArea(visitas){
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: (c) => ` ${c.raw} incidencia(s)`
-          }
-        }
+        tooltip: { callbacks: { label: (c) => ` ${c.raw} incidencia(s)` } }
       },
       scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { stepSize: 1 }
+        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+        x: { ticks: { maxRotation: 0, autoSkip: false } }
+      }
+    }
+  });
+}
+
+function renderChartPuntualidad(aTiempo, tarde, noShow){
+  const canvas = document.getElementById("chartPuntualidad");
+  if(!canvas){
+    console.warn("chartPuntualidad: no existe el canvas #chartPuntualidad");
+    return;
+  }
+
+  // ✅ Chart.js disponible?
+  if(!window.Chart){
+    toast("Chart.js", "La librería Chart.js aún no está lista. Intenta de nuevo.", "warn", 3200);
+    console.warn("window.Chart no existe (Chart.js no cargó)");
+    return;
+  }
+
+  const ctx = canvas.getContext("2d");
+  if(!ctx) return;
+
+  // ✅ Destruye instancia previa
+  if(chartPuntualidadInstance){
+    try{ chartPuntualidadInstance.destroy(); }catch(e){}
+    chartPuntualidadInstance = null;
+  }
+
+  const at = Number(aTiempo) || 0;
+  const ta = Number(tarde) || 0;
+  const ns = Number(noShow) || 0;
+  const total = at + ta + ns;
+
+  // Placeholder si no hay datos
+  if(total === 0){
+    chartPuntualidadInstance = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: ["Sin datos"],
+        datasets: [{
+          data: [1],
+          backgroundColor: ["rgba(148,163,184,.35)"],
+          borderColor: "rgba(255,255,255,.10)",
+          borderWidth: 1,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "62%",
+        plugins: {
+          legend: { position: "bottom", labels: { color: "#e5e7eb", boxWidth: 10 } },
+          tooltip: { callbacks: { label: () => " Sin datos" } }
+        }
+      }
+    });
+    return;
+  }
+
+  chartPuntualidadInstance = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["A tiempo", "Tarde", "No show"],
+      datasets: [{
+        data: [at, ta, ns],
+        backgroundColor: [
+          "rgba(34,197,94,.85)",   // ok
+          "rgba(250,204,21,.85)",  // warn
+          "rgba(239,68,68,.85)"    // bad
+        ],
+        borderColor: "rgba(255,255,255,.10)",
+        borderWidth: 1,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "62%",
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: { color: "#e5e7eb", boxWidth: 10 }
         },
-        x: {
-          ticks: {
-            maxRotation: 0,
-            autoSkip: false
+        tooltip: {
+          callbacks: {
+            label: (c) => {
+              const val = c.raw || 0;
+              const pct = total ? Math.round((val/total)*100) : 0;
+              return ` ${c.label}: ${val} (${pct}%)`;
+            }
           }
         }
       }
@@ -2830,14 +2942,53 @@ async function cancelarCitaCompras(id){
     }
 
 function renderReportes(){
-  // Permiso mínimo (luego lo afinamos)
   if(!hasPerm("ver_dashboard")){
     toast("Acceso denegado", "No tienes permiso para ver reportes.", "bad");
     return;
   }
 
   const todayISO = new Date().toISOString().slice(0,10);
-  const weekAgo = new Date(Date.now() - 6*24*60*60*1000).toISOString().slice(0,10);
+  const weekAgo  = new Date(Date.now() - 6*24*60*60*1000).toISOString().slice(0,10);
+
+  // ⚙️ tolerancia para puntualidad
+  const LATE_GRACE_MIN = 10;
+
+  function _safeSetText(id, val){
+    const el = document.getElementById(id);
+    if(el) el.textContent = val;
+  }
+  function _safeSetColor(id, cssVar){
+    const el = document.getElementById(id);
+    if(el) el.style.color = cssVar;
+  }
+
+  // Placeholder si no hay incidencias (evita canvas vacío)
+  function _renderPlaceholderBar(canvasId, label="Sin datos", color="rgba(148,163,184,.40)"){
+    const ctx = document.getElementById(canvasId);
+    if(!ctx || !window.Chart) return;
+
+    if(canvasId === "chartIncidencias" && chartIncidenciasInstance){
+      try{ chartIncidenciasInstance.destroy(); }catch{}
+      chartIncidenciasInstance = null;
+    }
+
+    chartIncidenciasInstance = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: [label],
+        datasets: [{ data:[0], backgroundColor: color, borderWidth: 0 }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display:false } },
+        scales: {
+          y: { beginAtZero:true, ticks:{ stepSize:1 } },
+          x: { ticks:{ autoSkip:false, maxRotation:0 } }
+        }
+      }
+    });
+  }
 
   appEl.innerHTML = `
     <div class="card">
@@ -2845,7 +2996,7 @@ function renderReportes(){
         <div>
           <h2 style="margin:0 0 4px;">📊 Reportes</h2>
           <div style="color:var(--muted); font-size:12px;">
-            Análisis de visitas, tiempos y calidad
+            Análisis de visitas, tiempos, calidad y puntualidad
           </div>
         </div>
         <div class="row">
@@ -2855,20 +3006,16 @@ function renderReportes(){
 
       <div class="divider"></div>
 
-      <!-- ===================== -->
       <!-- Filtros -->
-      <!-- ===================== -->
       <div class="row" style="gap:12px; flex-wrap:wrap;">
         <div style="min-width:180px;">
           <label>Fecha inicio</label>
           <input type="date" id="repFrom" value="${weekAgo}">
         </div>
-
         <div style="min-width:180px;">
           <label>Fecha fin</label>
           <input type="date" id="repTo" value="${todayISO}">
         </div>
-
         <div style="min-width:220px;">
           <label>Área</label>
           <select id="repArea">
@@ -2876,7 +3023,6 @@ function renderReportes(){
             ${AREAS.map(a => `<option value="${a}">${a}</option>`).join("")}
           </select>
         </div>
-
         <div style="align-self:flex-end;">
           <button id="repApply">Aplicar</button>
         </div>
@@ -2884,107 +3030,175 @@ function renderReportes(){
 
       <div class="divider"></div>
 
-      <!-- ===================== -->
-      <!-- KPIs -->
-      <!-- ===================== -->
-      <div class="grid cols-5" style="margin-bottom:18px;">
-        <div class="card"><h3>Total visitas</h3><div class="big" id="kpiTotal">—</div></div>
-        <div class="card"><h3>Tiempo promedio</h3><div class="big" id="kpiTiempo">—</div></div>
-        <div class="card"><h3>% Rechazo</h3><div class="big" id="kpiRechazo">—</div></div>
-        <div class="card"><h3>Incidencias</h3><div class="big" id="kpiIncidencias">—</div></div>
-        <div class="card"><h3>Visitas hoy</h3><div class="big" id="kpiHoy">—</div></div>
+      <!-- ✅ KPIs: auto-fit para que SIEMPRE quepan -->
+      <div style="
+        display:grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap:12px;
+        margin-bottom:18px;
+      ">
+        ${kpiCard("Total visitas","kpiTotal")}
+        ${kpiCard("Tiempo promedio","kpiTiempo")}
+        ${kpiCard("% Rechazo","kpiRechazo")}
+        ${kpiCard("Incidencias (Calidad)","kpiIncidencias")}
+        ${kpiCard("Visitas hoy","kpiHoy")}
+        ${kpiCard("A tiempo","kpiATiempo", `Tolerancia: ${LATE_GRACE_MIN} min`)}
+        ${kpiCard("Tarde","kpiTarde", `Posterior a cita + ${LATE_GRACE_MIN} min`)}
+        ${kpiCard("No asistieron (Programado)","kpiNoShow", "Solo citas vencidas sin llegada")}
       </div>
 
-      <!-- ===================== -->
-      <!-- Gráficas -->
-      <!-- ===================== -->
-      <div class="grid cols-5">
-        <div class="col" style="grid-column:span 2;  height:220px;">
+      <!-- ✅ Gráficas: alturas responsivas y sin overflow -->
+      <div style="
+        display:grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap:12px;
+      ">
+        <div class="col" style="height:clamp(220px, 30vw, 260px); overflow:hidden;">
           <h3>Visitas por área</h3>
-          <canvas id="chartArea"></canvas>
+          <canvas id="chartArea" style="width:100%;height:100%;"></canvas>
         </div>
 
-        <div class="col" style="grid-column:span 2; height:220px;">
+        <div class="col" style="height:clamp(220px, 30vw, 260px); overflow:hidden;">
           <h3>Estado de visitas</h3>
-          <canvas id="chartEstado"></canvas>
+          <canvas id="chartEstado" style="width:100%;height:100%;"></canvas>
         </div>
 
-        <div class="col" style="height:220px;">
+        <div class="col" style="height:clamp(220px, 30vw, 260px); overflow:hidden;">
           <h3>Dictamen calidad</h3>
-          <canvas id="chartDictamen"></canvas>
+          <canvas id="chartDictamen" style="width:100%;height:100%;"></canvas>
         </div>
 
-       <div class="col" style="grid-column:span 3; height:240px;">
-         <h3>Tiempo promedio por área</h3>
-         <canvas id="chartTiempo"></canvas>
+        <div class="col" style="height:clamp(240px, 34vw, 300px); overflow:hidden;">
+          <h3>Tiempo promedio por área</h3>
+          <canvas id="chartTiempo" style="width:100%;height:100%;"></canvas>
         </div>
 
-        <div class="col" style="grid-column:span 2; height:220px;">
-          <h3>Incidencias por área</h3>
-          <canvas id="chartIncidencias"></canvas>
+        <div class="col" style="height:clamp(240px, 34vw, 300px); overflow:hidden;">
+          <h3>Incidencias por área (Calidad)</h3>
+          <canvas id="chartIncidencias" style="width:100%;height:100%;"></canvas>
         </div>
 
+        <div class="col" style="height:clamp(240px, 34vw, 300px); overflow:hidden;">
+        <h3>Puntualidad</h3>
+        <canvas id="chartPuntualidad" style="width:100%;height:100%;"></canvas>
+        </div>
       </div>
     </div>
   `;
 
-  // Hook del botón (lógica vendrá en el paso 2)
- document.getElementById("repApply").onclick = () => {
-  const from = document.getElementById("repFrom").value;
-  const to   = document.getElementById("repTo").value;
-  const area = document.getElementById("repArea").value;
-
-  if(!from || !to){
-    toast("Filtros incompletos", "Selecciona rango de fechas", "warn");
-    return;
+  // helper local para tarjetas KPI (evita overflow y se adapta)
+  function kpiCard(title, id, sub=""){
+    return `
+      <div class="card">
+        <h3>${title}</h3>
+        <div id="${id}" style="
+          font-weight:800;
+          font-size:clamp(18px, 4vw, 28px);
+          line-height:1.05;
+          word-break:break-word;
+          white-space:normal;
+        ">—</div>
+        ${sub ? `<div style="color:var(--muted);font-size:11px;margin-top:6px;">${sub}</div>` : ""}
+      </div>
+    `;
   }
 
-  const fromTs = new Date(from + "T00:00:00").getTime();
-  const toTs   = new Date(to   + "T23:59:59").getTime();
+  document.getElementById("repApply").onclick = async () => {
+    const from = document.getElementById("repFrom").value;
+    const to   = document.getElementById("repTo").value;
+    const area = document.getElementById("repArea").value;
 
-  let data = filterVisitasByRange(visitas, fromTs, toTs);
-  data = filterByArea(data, area);
+    if(!from || !to){
+      toast("Filtros incompletos", "Selecciona rango de fechas", "warn");
+      return;
+    }
 
-// KPIs
-// =====================
-const kpi = calcKPIs(data);
+    const fromTs  = new Date(from + "T00:00:00").getTime();
+    const toTs    = new Date(to   + "T23:59:59").getTime();
+    const nowTs   = Date.now();
+    const graceMs = LATE_GRACE_MIN * 60 * 1000;
 
-// Total de visitas
-document.getElementById("kpiTotal").textContent = kpi.total;
+    // ✅ Cargar rango desde nube
+    if(navigator.onLine){
+      try{
+        const cloudRange = await cloudFetchByRange(fromTs, toTs);
+        visitas = mergeById(visitas, cloudRange);
+        saveVisitasLocal();
+      }catch(e){
+        console.warn("Reportes: cloudFetchByRange falló", e);
+        toast("Reportes", "No se pudo cargar el rango desde la nube (Rules/Internet).", "warn", 3600);
+      }
+    } else {
+      toast("Sin conexión", "Mostrando solo lo disponible en local.", "warn", 2600);
+    }
 
-// Tiempo promedio general
-document.getElementById("kpiTiempo").textContent =
-  kpi.tiempoPromedioMin ? `${kpi.tiempoPromedioMin} min` : "—";
+    // Base por rango + área (sin cancelados)
+    let data = filterVisitasByRange(visitas, fromTs, toTs);
+    data = filterByArea(data, area);
+    if(typeof Status !== "undefined" && Status.CANCELADO){
+      data = data.filter(v => v.status !== Status.CANCELADO);
+    }
 
-// % Rechazo de calidad
-document.getElementById("kpiRechazo").style.color =
-  kpi.pctRechazo > 10 ? "var(--bad)" : "var(--ok)";
+    // KPIs base (incidencias ya deben venir de Calidad si actualizaste calcKPIs)
+    const kpi = calcKPIs(data);
+    _safeSetText("kpiTotal", String(kpi.total ?? 0));
+    _safeSetText("kpiTiempo", kpi.tiempoPromedioMin ? `${kpi.tiempoPromedioMin} min` : "—");
 
-// Incidencias
-document.getElementById("kpiIncidencias").style.color =
-  kpi.incidencias > 0 ? "var(--warn)" : "var(--muted)";
+    _safeSetText("kpiRechazo", `${kpi.pctRechazo ?? 0}%`);
+    _safeSetColor("kpiRechazo", (kpi.pctRechazo ?? 0) > 10 ? "var(--bad)" : "var(--ok)");
 
+    _safeSetText("kpiIncidencias", String(kpi.incidencias ?? 0));
+    _safeSetColor("kpiIncidencias", (kpi.incidencias ?? 0) > 0 ? "var(--warn)" : "var(--muted)");
 
-// Visitas HOY (no depende de filtros)
-const hoy = new Date();
-const visitasHoy = visitas.filter(v =>
-  typeof v.fechaHoraTs === "number" &&
-  isSameDay(v.fechaHoraTs, hoy)
-);
-document.getElementById("kpiHoy").textContent = visitasHoy.length;
+    // Visitas HOY
+    const hoy = new Date();
+    const visitasHoy = visitas.filter(v =>
+      typeof v.fechaHoraTs === "number" &&
+      isSameDay(v.fechaHoraTs, hoy)
+    );
+    _safeSetText("kpiHoy", String(visitasHoy.length));
 
+    // Puntualidad
+    const llegadas = data.filter(v =>
+      typeof v.fechaHoraTs === "number" &&
+      typeof v.llegadaTs === "number"
+    );
+    const aTiempo = llegadas.filter(v => (v.llegadaTs - v.fechaHoraTs) <= graceMs).length;
+    const tarde   = llegadas.filter(v => (v.llegadaTs - v.fechaHoraTs) >  graceMs).length;
 
-  // ✅ GRÁFICOS
-  renderChartVisitasPorArea(data);
-  renderChartEstados(data);
-  renderChartDictamen(data);
-  renderChartTiempoPorArea(data);
-  renderChartIncidenciasPorArea(data);
+    _safeSetText("kpiATiempo", String(aTiempo));
+    _safeSetColor("kpiATiempo", aTiempo > 0 ? "var(--ok)" : "var(--muted)");
 
-};
+    _safeSetText("kpiTarde", String(tarde));
+    _safeSetColor("kpiTarde", tarde > 0 ? "var(--warn)" : "var(--muted)");
+
+    // No asistieron
+    const noShow = data.filter(v =>
+      String(v.status).toLowerCase() === "programado" &&
+      typeof v.fechaHoraTs === "number" &&
+      v.fechaHoraTs < (nowTs - graceMs) &&
+      !v.llegadaTs
+    ).length;
+
+    _safeSetText("kpiNoShow", String(noShow));
+    _safeSetColor("kpiNoShow", noShow > 0 ? "var(--bad)" : "var(--muted)");
+
+    // Gráficas
+    renderChartVisitasPorArea(data);
+    renderChartEstados(data);
+    renderChartDictamen(data);
+    renderChartTiempoPorArea(data);
+    // Incidencias: si 0, placeholder (no canvas en blanco)
+    if((kpi.incidencias ?? 0) > 0){
+      renderChartIncidenciasPorArea(data);
+    } else {
+      _renderPlaceholderBar("chartIncidencias", "Sin incidencias (Calidad)");
+    }
+    renderChartPuntualidad(aTiempo, tarde, noShow);
+  };
 }
 
-    // -------------------------
+// -------------------------
     // Admin roles screen
     // -------------------------
     let _adminUsersCache = [];
@@ -4120,41 +4334,80 @@ ${isGuardia ? `
      const sel = document.getElementById("dictamenEstado");
      if (sel) sel.value = dictSel;
 
+     
      const inc = document.getElementById("dictamenIncidencia");
-     if (inc) inc.value = v.dictamen?.incidencia || "";
+     if (inc) inc.value = (v.dictamen?.incidencia || "SIN_INCIDENCIAS");
      }, 0);
     }
 
-    async function despachar(id){
-      if(!requirePerm("despachar","Solo CALIDAD o ADMIN pueden despachar.")) return;
-      const v = visitas.find(x => x.id == id);
-      if(!v) return renderDashboardHoy();
+   async function despachar(id){
+  if(!requirePerm("despachar","Solo CALIDAD o ADMIN pueden despachar.")) return;
 
-      const estado = (document.getElementById("dictamenEstado")?.value || "pendiente").trim();
-      const notas  = (document.getElementById("dictamenNotas")?.value || "").trim();
-      const incidencia = document.getElementById("dictamenIncidencia")?.value || "";
+  const v = visitas.find(x => x.id == id);
+  if(!v) return renderDashboardHoy();
 
-      registrarCambio(v, "dictamen.estado", v.dictamen?.estado, estado, "dictamen");
-      registrarCambio(v, "dictamen.incidencia", v.dictamen?.incidencia, incidencia, "dictamen");
-      registrarCambio(v, "status", v.status, Status.DESPACHADO, "transición");
+  // -------------------------
+  // Lectura de formulario
+  // -------------------------
+  const estado = (document.getElementById("dictamenEstado")?.value || "pendiente").trim();
+  const notas  = (document.getElementById("dictamenNotas")?.value || "").trim();
 
-      v.dictamen = v.dictamen || {};
-      v.dictamen.estado = estado;
-      v.dictamen.notas = notas;
-      v.dictamen.incidencia = incidencia;
-      v.dictamen.ts = Date.now();
-      v.dictamen.por = currentUser?.nombre || "";
+  // ✅ Default seguro: siempre guardar SIN_INCIDENCIAS si no hay selección
+  const incidencia =
+    (document.getElementById("dictamenIncidencia")?.value || "SIN_INCIDENCIAS").trim() || "SIN_INCIDENCIAS";
 
-      v.status = Status.DESPACHADO;
-      v.updatedTs = Date.now();
+  // ✅ VALIDACIÓN CLAVE:
+  // Rechazado requiere incidencia distinta a SIN_INCIDENCIAS
+  if(estado.toLowerCase() === "rechazado" && incidencia === "SIN_INCIDENCIAS"){
+    toast(
+      "Validación",
+      "Si el dictamen es RECHAZADO, debes seleccionar una incidencia (no puede ser 'Sin incidencias').",
+      "warn",
+      4200
+    );
+    return; // ⛔ no cambia estatus, no guarda
+  }
 
-      await saveVisitas();
-      if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE) await cloudUpsertVisita(v);
-      toast("Despachado",`Se movió a 'Despachados'. Dictamen: ${estado.toUpperCase()}`,"ok",2200);
-      renderDashboardHoy();
-    }
+  // -------------------------
+  // Auditoría de cambios
+  // -------------------------
+  registrarCambio(v, "dictamen.estado", v.dictamen?.estado, estado, "dictamen");
+  registrarCambio(v, "dictamen.incidencia", v.dictamen?.incidencia, incidencia, "dictamen");
+  registrarCambio(v, "status", v.status, Status.DESPACHADO, "transición");
 
-    function renderSalida(id){
+  // -------------------------
+  // Guardado de dictamen
+  // -------------------------
+  v.dictamen = v.dictamen || {};
+  v.dictamen.estado = estado;
+  v.dictamen.notas = notas;
+  v.dictamen.incidencia = incidencia;   // ✅ siempre definido
+  v.dictamen.ts = Date.now();
+  v.dictamen.por = currentUser?.nombre || "";
+
+  // -------------------------
+  // Cambio de estatus
+  // -------------------------
+  v.status = Status.DESPACHADO;
+  v.updatedTs = Date.now();
+
+  await saveVisitas();
+
+  if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE){
+    await cloudUpsertVisita(v);
+  }
+
+  toast(
+    "Despachado",
+    `Se movió a 'Despachados'. Dictamen: ${estado.toUpperCase()}`,
+    "ok",
+    2200
+  );
+
+  renderDashboardHoy();
+}
+    
+function renderSalida(id){
       if(!requirePerm("registrar_salida","No tienes permiso para registrar salida.")) return;
       cleanup();
       const v = visitas.find(x => x.id == id);
