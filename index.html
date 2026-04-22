@@ -634,21 +634,71 @@ const PIN_SESSION_KEY = "adminPinOkTs";
     // Helpers
     // -------------------------
     
-    function renderReporteCambios(){
-  const registros = visitas
-    .filter(v => Array.isArray(v.historialCambios))
-    .flatMap(v =>
-      v.historialCambios.map(h => ({
-        citaId: v.id,
-        proveedor: v.proveedor,
-        ...h
-      }))
-    )
-    .sort((a,b) => b.ts - a.ts);
+   function renderReporteCambios(){
+  let rolFiltro = ""; // estado local del filtro
+
+  function filtrarYRenderizar(){
+    const registros = visitas
+      .filter(v => Array.isArray(v.historialCambios))
+      .flatMap(v =>
+        v.historialCambios.map(h => ({
+          citaId: v.id,
+          proveedor: v.proveedor,
+          ...h
+        }))
+      )
+      .filter(r => !rolFiltro || r.rol === rolFiltro)
+      .sort((a,b) => b.ts - a.ts);
+
+    const tbody = document.getElementById("repCambiosBody");
+    if(!tbody) return;
+
+    tbody.innerHTML = registros.map(r => `
+      <tr>
+        <td>${new Date(r.ts).toLocaleString()}</td>
+        <td>${esc(r.citaId)}</td>
+        <td>${esc(r.proveedor)}</td>
+        <td>${esc(r.campo)}</td>
+        <td>${esc(r.antes)}</td>
+        <td><b>${esc(r.despues)}</b></td>
+        <td>${esc(r.usuario)}</td>
+        <td><span class="pill">${esc(r.rol)}</span></td>
+      </tr>
+    `).join("");
+  }
 
   appEl.innerHTML = `
     <div class="card">
-      <h2>📜 Reporte de Cambios en Citas</h2>
+      <div class="row" style="justify-content:space-between;">
+        <div>
+          <h2>📜 Reporte de Cambios en Citas</h2>
+          <div style="color:var(--muted);font-size:12px;">
+            Auditoría de modificaciones por usuario y rol
+          </div>
+        </div>
+        <div class="row">
+          <button class="secondary" data-action="home">Volver</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ✅ FILTRO POR ROL -->
+      <div class="row" style="gap:12px;align-items:flex-end;">
+        <div style="min-width:220px;">
+          <label>Filtrar por rol</label>
+          <select id="repRol">
+            <option value="">Todos</option>
+            <option value="admin">ADMIN</option>
+            <option value="compras">COMPRAS</option>
+            <option value="calidad">CALIDAD</option>
+            <option value="guardia">GUARDIA</option>
+            <option value="contraloria">CONTRALORÍA</option>
+            <option value="pendiente">PENDIENTE</option>
+          </select>
+        </div>
+      </div>
+
       <div class="divider"></div>
 
       <table class="table">
@@ -664,23 +714,22 @@ const PIN_SESSION_KEY = "adminPinOkTs";
             <th>Rol</th>
           </tr>
         </thead>
-        <tbody>
-          ${registros.map(r => `
-            <tr>
-              <td>${new Date(r.ts).toLocaleString()}</td>
-              <td>${r.citaId}</td>
-              <td>${esc(r.proveedor)}</td>
-              <td>${esc(r.campo)}</td>
-              <td>${esc(r.antes)}</td>
-              <td><b>${esc(r.despues)}</b></td>
-              <td>${esc(r.usuario)}</td>
-              <td>${esc(r.rol)}</td>
-            </tr>
-          `).join("")}
-        </tbody>
+        <tbody id="repCambiosBody"></tbody>
       </table>
     </div>
   `;
+
+  // eventos
+  const selRol = document.getElementById("repRol");
+  if(selRol){
+    selRol.onchange = () => {
+      rolFiltro = selRol.value;
+      filtrarYRenderizar();
+    };
+  }
+
+  // render inicial
+  filtrarYRenderizar();
 }
 
     function registrarCambio(v, campo, antes, despues, accion="editar"){
