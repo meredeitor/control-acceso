@@ -274,10 +274,110 @@
   word-break: break-word;    /* rompe palabras largas */
   line-height: 1.2;
 }
+/* =========================
+   Modal (dialog) genérico
+========================= */
+.modal-overlay{
+  position:fixed; inset:0;
+  background: rgba(0,0,0,.55);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:99999;
+  padding:14px;
+}
+.modal-overlay.show{ display:flex; }
+
+.modal{
+  width:min(980px, 96vw);
+  max-height:min(80vh, 720px);
+  overflow:auto;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.12);
+  background: linear-gradient(180deg, rgba(17,28,51,.98), rgba(15,23,42,.98));
+  box-shadow: 0 22px 60px rgba(0,0,0,.55);
+}
+.modal .modal-head{
+  position:sticky; top:0;
+  background: linear-gradient(180deg, rgba(17,28,51,.98), rgba(15,23,42,.92));
+  border-bottom:1px solid rgba(255,255,255,.10);
+  padding:12px 12px 10px;
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  justify-content:space-between;
+}
+.modal .modal-head h3{
+  margin:0;
+  font-size:14px;
+}
+.modal .modal-head small{
+  display:block;
+  margin-top:4px;
+  color: var(--muted);
+  font-size:12px;
+}
+.modal .modal-body{
+  padding:12px;
+}
+.modal .modal-actions{
+  display:flex; gap:10px; align-items:center;
+}
 </style>
 </head>
 
 <body>
+  <!-- Modal: Incidencias (Calidad) -->
+<div class="modal-overlay" id="incCalModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="incCalTitle">⚠️ Incidencias (Calidad)</h3>
+        <small id="incCalSubtitle">—</small>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary" id="incCalCloseBtn">Cerrar</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="incCalTableWrap"></div>
+    </div>
+  </div>
+</div>
+  <!-- Modal: No asistieron -->
+<div class="modal-overlay" id="noShowModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="noShowTitle">🚫 No asistieron</h3>
+        <small id="noShowSubtitle">—</small>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary" id="noShowCloseBtn">Cerrar</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="noShowTableWrap"></div>
+    </div>
+  </div>
+</div>
+<!-- Modal: Llegadas tarde -->
+<div class="modal-overlay" id="lateModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="lateTitle">⏰ Proveedores que llegaron tarde</h3>
+        <small id="lateSubtitle">—</small>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary" id="lateCloseBtn">Cerrar</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="lateTableWrap"></div>
+    </div>
+  </div>
+</div>
 
 <div class="sb-overlay" id="sbOverlay"></div>
 <aside class="sidebar" id="sidebar">
@@ -476,7 +576,7 @@
 
   const COL_VISITAS = "visitas";
   const COL_USERS = "users";
-
+  const QR_LATE_BLOCK_MIN = 30; // ⛔ bloqueo duro por retraso
 /* =========================
    Roles
 ========================= */
@@ -484,6 +584,7 @@
   const ROLES = {
     PENDIENTE: "pendiente",
     ADMIN: "admin",
+    JEFE_COMPRAS: "jefe_compras", // ✅ NUEVO
     COMPRAS: "compras",
     GUARDIA: "guardia",
     CALIDAD: "calidad",
@@ -525,6 +626,17 @@ const PERMISOS = {
     "despachar",
     "ver_qr"
   ],
+
+[ROLES.JEFE_COMPRAS]: [
+  "ver_dashboard",
+  "ver_historial",
+  "crear_cita",
+  "ver_citas_compras",
+  "exportar_excel",
+  "ver_qr",
+  "reactivar_qr",
+  "admin_proveedores"
+],
 
   [ROLES.COMPRAS]: [
     "ver_dashboard",
@@ -2270,11 +2382,15 @@ function renderRegisterForm(){
       const term = (qSearch.value || "").trim().toLowerCase();
 
       // ✅ SOLO HOY: filtra por fechaHoraTs
-      const todayList = visitas.filter(v =>
-      typeof v.fechaHoraTs === "number" &&
-      isSameDay(v.fechaHoraTs, today) &&
-      v.status !== Status.CANCELADO
-      );
+     const todayList = visitas
+  .filter(v =>
+    typeof v.fechaHoraTs === "number" &&
+    isSameDay(v.fechaHoraTs, today) &&
+    v.status !== Status.CANCELADO
+  )
+  // ✅ ORDEN POR HORARIO: de más temprano a más tarde
+  .sort((a, b) => a.fechaHoraTs - b.fechaHoraTs);
+
 
       const filtered = !term ? todayList : todayList.filter(v =>
         (v.proveedor||"").toLowerCase().includes(term) ||
@@ -3001,7 +3117,7 @@ function renderReportes(){
   const weekAgo  = new Date(Date.now() - 6*24*60*60*1000).toISOString().slice(0,10);
 
   // ⚙️ tolerancia para puntualidad
-  const LATE_GRACE_MIN = 10;
+  const LATE_GRACE_MIN = 30;
 
   function _safeSetText(id, val){
     const el = document.getElementById(id);
@@ -3010,6 +3126,37 @@ function renderReportes(){
   function _safeSetColor(id, cssVar){
     const el = document.getElementById(id);
     if(el) el.style.color = cssVar;
+  }
+
+  function _fmtDateTime(ts){
+    return typeof ts === "number" ? new Date(ts).toLocaleString() : "-";
+  }
+
+  function _openLateProvidersDialog(rows){
+    const dialog = document.getElementById("lateProvidersDialog");
+    const tbody = document.getElementById("lateProvidersBody");
+    const total = document.getElementById("lateProvidersCount");
+    if(!dialog || !tbody || !total) return;
+
+    total.textContent = String(rows.length);
+    tbody.innerHTML = rows.length
+      ? rows.map(v => `
+          <tr>
+            <td>${esc(v.proveedor || "-")}</td>
+            <td>${esc(v.empresa || "-")}</td>
+            <td>${esc(v.area || "-")}</td>
+            <td>${esc(_fmtDateTime(v.fechaHoraTs))}</td>
+            <td>${esc(_fmtDateTime(v.llegadaTs))}</td>
+            <td>${esc(Math.round((v.llegadaTs - v.fechaHoraTs) / 60000))} min</td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="6" style="text-align:center;color:var(--muted);">No hay proveedores tardios en el rango seleccionado.</td></tr>`;
+
+    if(typeof dialog.showModal === "function"){
+      dialog.showModal();
+    }else{
+      dialog.setAttribute("open", "open");
+    }
   }
 
   // Placeholder si no hay incidencias (evita canvas vacío)
@@ -3138,21 +3285,34 @@ function renderReportes(){
 
   // helper local para tarjetas KPI (evita overflow y se adapta)
   function kpiCard(title, id, sub=""){
-    return `
-      <div class="card">
-        <h3>${title}</h3>
-        <div id="${id}" style="
-          font-weight:800;
-          font-size:clamp(18px, 4vw, 28px);
-          line-height:1.05;
-          word-break:break-word;
-          white-space:normal;
-        ">—</div>
-        ${sub ? `<div style="color:var(--muted);font-size:11px;margin-top:6px;">${sub}</div>` : ""}
-      </div>
-    `;
-  }
 
+// Clickeables: Tarde, NoShow e Incidencias
+const clickable = (id === "kpiTarde" || id === "kpiNoShow" || id === "kpiIncidencias");
+
+const action =
+  (id === "kpiTarde") ? "repOpenLate" :
+  (id === "kpiNoShow") ? "repOpenNoShow" :
+  (id === "kpiIncidencias") ? "repOpenIncCalidad" :
+  "";
+
+  return `
+    <div class="card"
+      ${clickable ? `data-action="${action}"` : ""} 
+      style="${clickable ? "cursor:pointer;" : ""}">
+      <h3>${title}</h3>
+      <div id="${id}" style="
+        font-weight:800;
+        font-size:clamp(18px, 4vw, 28px);
+        line-height:1.05;
+        word-break:break-word;
+        white-space:normal;
+      ">—</div>
+      ${sub ? `<div style="color:var(--muted);font-size:11px;margin-top:6px;">${sub}</div>` : ""}
+      ${clickable ? `<div style="color:var(--muted);font-size:11px;margin-top:6px;">Haz clic para ver detalle</div>` : ""}
+    </div>
+  `;
+}
+ 
   document.getElementById("repApply").onclick = async () => {
     const from = document.getElementById("repFrom").value;
     const to   = document.getElementById("repTo").value;
@@ -3162,6 +3322,7 @@ function renderReportes(){
       toast("Filtros incompletos", "Selecciona rango de fechas", "warn");
       return;
     }
+
 
     const fromTs  = new Date(from + "T00:00:00").getTime();
     const toTs    = new Date(to   + "T23:59:59").getTime();
@@ -3200,6 +3361,51 @@ function renderReportes(){
     _safeSetText("kpiIncidencias", String(kpi.incidencias ?? 0));
     _safeSetColor("kpiIncidencias", (kpi.incidencias ?? 0) > 0 ? "var(--warn)" : "var(--muted)");
 
+    
+// =========================
+// Incidencias (Calidad): detalle para modal
+// =========================
+const INC_LABEL = {
+  "SIN_INCIDENCIAS": "Sin Incidencias",
+  "ERROR_ADMINISTRATIVO": "ERROR ADMINISTRATIVO",
+  "SIN_DOCUMENTOS": "SIN DOCUMENTOS",
+  "FALTANTES": "FALTANTES",
+  "EXCEDENTES": "EXCEDENTES",
+  "FUERA_DE_ESPECIFICACION": "FUERA DE ESPECIFICACIÓN"
+};
+
+const incList = data
+  .filter(v => {
+    const inc = (v.dictamen?.incidencia || "SIN_INCIDENCIAS").trim();
+    return inc && inc !== "SIN_INCIDENCIAS";
+  })
+  .map(v => {
+    const incKey = (v.dictamen?.incidencia || "SIN_INCIDENCIAS").trim();
+    return {
+      id: v.id,
+      proveedor: v.proveedor || "",
+      empresa: v.empresa || "",
+      area: v.area || "",
+      citaTs: (typeof v.fechaHoraTs === "number") ? v.fechaHoraTs : null,
+      dictamenEstado: (v.dictamen?.estado || "pendiente"),
+      incidenciaKey: incKey,
+      incidenciaLabel: INC_LABEL[incKey] || incKey,
+      notas: v.dictamen?.notas || "",
+      dictamenPor: v.dictamen?.por || "",
+      dictamenTs: (typeof v.dictamen?.ts === "number") ? v.dictamen.ts : null
+    };
+  })
+  // orden: dictamen más reciente primero, si no por cita
+  .sort((a,b) => (b.dictamenTs || 0) - (a.dictamenTs || 0) || (b.citaTs || 0) - (a.citaTs || 0));
+
+window.__repIncCalidad = {
+  from,
+  to,
+  area,
+  rows: incList
+};
+
+
     // Visitas HOY
     const hoy = new Date();
     const visitasHoy = visitas.filter(v =>
@@ -3210,11 +3416,35 @@ function renderReportes(){
 
     // Puntualidad
     const llegadas = data.filter(v =>
-      typeof v.fechaHoraTs === "number" &&
-      typeof v.llegadaTs === "number"
-    );
-    const aTiempo = llegadas.filter(v => (v.llegadaTs - v.fechaHoraTs) <= graceMs).length;
-    const tarde   = llegadas.filter(v => (v.llegadaTs - v.fechaHoraTs) >  graceMs).length;
+  typeof v.fechaHoraTs === "number" &&
+  typeof v.llegadaTs === "number"
+);
+
+const tardeList = llegadas
+  .filter(v => (v.llegadaTs - v.fechaHoraTs) > graceMs)
+  .map(v => ({
+    id: v.id,
+    proveedor: v.proveedor || "",
+    empresa: v.empresa || "",
+    area: v.area || "",
+    citaTs: v.fechaHoraTs,
+    llegadaTs: v.llegadaTs,
+    minutosTarde: Math.max(0, Math.round((v.llegadaTs - v.fechaHoraTs) / 60000))
+  }))
+  .sort((a,b) => b.minutosTarde - a.minutosTarde);
+
+// ✅ guardamos el detalle para el modal (en window para que sea accesible)
+window.__repLate = {
+  from,
+  to,
+  area,
+  graceMin: LATE_GRACE_MIN,
+  rows: tardeList
+};
+
+const aTiempo = llegadas.filter(v => (v.llegadaTs - v.fechaHoraTs) <= graceMs).length;
+const tarde = tardeList.length;
+
 
     _safeSetText("kpiATiempo", String(aTiempo));
     _safeSetColor("kpiATiempo", aTiempo > 0 ? "var(--ok)" : "var(--muted)");
@@ -3223,15 +3453,39 @@ function renderReportes(){
     _safeSetColor("kpiTarde", tarde > 0 ? "var(--warn)" : "var(--muted)");
 
     // No asistieron
-    const noShow = data.filter(v =>
-      String(v.status).toLowerCase() === "programado" &&
-      typeof v.fechaHoraTs === "number" &&
-      v.fechaHoraTs < (nowTs - graceMs) &&
-      !v.llegadaTs
-    ).length;
+    // No asistieron (Programado): citas vencidas sin llegada (QR)
+const noShowList = data
+  .filter(v =>
+    String(v.status).toLowerCase() === "programado" &&
+    typeof v.fechaHoraTs === "number" &&
+    v.fechaHoraTs < (nowTs - graceMs) &&
+    !v.llegadaTs
+  )
+  .map(v => ({
+    id: v.id,
+    proveedor: v.proveedor || "",
+    empresa: v.empresa || "",
+    area: v.area || "",
+    citaTs: v.fechaHoraTs,
+    minutosVencida: Math.max(0, Math.round((nowTs - v.fechaHoraTs) / 60000))
+  }))
+  // orden: más vencida primero
+  .sort((a,b) => b.minutosVencida - a.minutosVencida);
 
-    _safeSetText("kpiNoShow", String(noShow));
-    _safeSetColor("kpiNoShow", noShow > 0 ? "var(--bad)" : "var(--muted)");
+// ✅ guardamos el detalle para el modal
+window.__repNoShow = {
+  from,
+  to,
+  area,
+  graceMin: LATE_GRACE_MIN,
+  nowTs,
+  rows: noShowList
+};
+
+const noShow = noShowList.length;
+
+_safeSetText("kpiNoShow", String(noShow));
+_safeSetColor("kpiNoShow", noShow > 0 ? "var(--bad)" : "var(--muted)");
 
     // Gráficas
     renderChartVisitasPorArea(data);
@@ -3247,6 +3501,243 @@ function renderReportes(){
     renderChartPuntualidad(aTiempo, tarde, noShow);
   };
 }
+
+// =========================
+// Modal: detalle de "No asistieron"
+// =========================
+function openNoShowModal(){
+  const modal = document.getElementById("noShowModal");
+  const closeBtn = document.getElementById("noShowCloseBtn");
+  const title = document.getElementById("noShowTitle");
+  const sub = document.getElementById("noShowSubtitle");
+  const wrap = document.getElementById("noShowTableWrap");
+
+  if(!modal || !wrap) return;
+
+  const rep = window.__repNoShow || { rows: [] };
+  const rows = rep.rows || [];
+
+  title.textContent = "🚫 No asistieron (Programado)";
+  sub.textContent =
+    `Rango: ${rep.from || "—"} a ${rep.to || "—"} | Área: ${rep.area || "Todas"} | ` +
+    `Regla: cita vencida > ${rep.graceMin ?? "—"} min sin llegada | Total: ${rows.length}`;
+
+  if(!rows.length){
+    wrap.innerHTML = `<div class="pill"><span class="dot muted"></span>No hay “No asistieron” para los filtros actuales.</div>`;
+  }else{
+    wrap.innerHTML = `
+      <table class="table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Proveedor</th>
+            <th>Empresa</th>
+            <th>Área</th>
+            <th>Cita (programada)</th>
+            <th>Min. vencida</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r, i) => `
+            <tr>
+              <td>${i+1}</td>
+              <td><b>${esc(r.proveedor)}</b></td>
+              <td>${esc(r.empresa)}</td>
+              <td>${esc(r.area)}</td>
+              <td>${new Date(r.citaTs).toLocaleString()}</td>
+              <td>
+                <span class="pill" style="background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.35); color:#fca5a5;">
+                  <span class="dot bad"></span>${r.minutosVencida}
+                </span>
+              </td>
+              <td><code>${esc(r.id)}</code></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  modal.classList.add("show");
+
+  // cerrar por botón
+  if(closeBtn){
+    closeBtn.onclick = () => modal.classList.remove("show");
+  }
+
+  // cerrar al dar clic fuera
+  modal.onclick = (e) => {
+    if(e.target === modal) modal.classList.remove("show");
+  };
+
+  // cerrar con ESC
+  document.onkeydown = (e) => {
+    if(e.key === "Escape") modal.classList.remove("show");
+  };
+}
+
+// =========================
+// Modal: detalle de "Tarde"
+// =========================
+function openLateModal(){
+  const modal = document.getElementById("lateModal");
+  const closeBtn = document.getElementById("lateCloseBtn");
+  const title = document.getElementById("lateTitle");
+  const sub = document.getElementById("lateSubtitle");
+  const wrap = document.getElementById("lateTableWrap");
+
+  if(!modal || !wrap) return;
+
+  const rep = window.__repLate || { rows: [] };
+  const rows = rep.rows || [];
+
+  title.textContent = "⏰ Proveedores que llegaron tarde";
+  sub.textContent = `Rango: ${rep.from || "—"} a ${rep.to || "—"} | Área: ${rep.area || "Todas"} | Tolerancia: ${rep.graceMin ?? "—"} min | Total: ${rows.length}`;
+
+  if(!rows.length){
+    wrap.innerHTML = `<div class="pill"><span class="dot muted"></span>No hay registros de tardanza para los filtros actuales.</div>`;
+  }else{
+    wrap.innerHTML = `
+      <table class="table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Proveedor</th>
+            <th>Empresa</th>
+            <th>Área</th>
+            <th>Cita</th>
+            <th>Llegada</th>
+            <th>Min. tarde</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r, i) => `
+            <tr>
+              <td>${i+1}</td>
+              <td><b>${esc(r.proveedor)}</b></td>
+              <td>${esc(r.empresa)}</td>
+              <td>${esc(r.area)}</td>
+              <td>${new Date(r.citaTs).toLocaleString()}</td>
+              <td>${new Date(r.llegadaTs).toLocaleString()}</td>
+              <td><span class="pill" style="background: rgba(250,204,21,.12); border-color: rgba(250,204,21,.35); color:#fde68a;">
+                    <span class="dot warn"></span>${r.minutosTarde}
+                  </span></td>
+              <td><code>${esc(r.id)}</code></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  modal.classList.add("show");
+
+  // cerrar por botón
+  if(closeBtn){
+    closeBtn.onclick = () => modal.classList.remove("show");
+  }
+
+  // cerrar al dar clic fuera
+  modal.onclick = (e) => {
+    if(e.target === modal) modal.classList.remove("show");
+  };
+
+  // cerrar con ESC
+  document.onkeydown = (e) => {
+    if(e.key === "Escape") modal.classList.remove("show");
+  };
+}
+
+
+// =========================
+// Modal: detalle de "Incidencias (Calidad)"
+// =========================
+function openIncCalModal(){
+  const modal = document.getElementById("incCalModal");
+  const closeBtn = document.getElementById("incCalCloseBtn");
+  const title = document.getElementById("incCalTitle");
+  const sub = document.getElementById("incCalSubtitle");
+  const wrap = document.getElementById("incCalTableWrap");
+
+  if(!modal || !wrap) return;
+
+  const rep = window.__repIncCalidad || { rows: [] };
+  const rows = rep.rows || [];
+
+  title.textContent = "⚠️ Incidencias (Calidad)";
+  sub.textContent = `Rango: ${rep.from || "—"} a ${rep.to || "—"} | Área: ${rep.area || "Todas"} | Total: ${rows.length}`;
+
+  const badgeDict = (estado) => {
+    const e = String(estado || "pendiente").toLowerCase();
+    if(e === "aceptado") return `<span class="badge-dictamen aceptado"><span class="bdot"></span>ACEPTADO</span>`;
+    if(e === "rechazado") return `<span class="badge-dictamen rechazado"><span class="bdot"></span>RECHAZADO</span>`;
+    return `<span class="badge-dictamen pendiente"><span class="bdot"></span>PENDIENTE</span>`;
+  };
+
+  if(!rows.length){
+    wrap.innerHTML = `<div class="pill"><span class="dot muted"></span>No hay incidencias para los filtros actuales. (Presiona “Aplicar”)</div>`;
+  } else {
+    wrap.innerHTML = `
+      <table class="table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Proveedor</th>
+            <th>Empresa</th>
+            <th>Área</th>
+            <th>Incidencia</th>
+            <th>Dictamen</th>
+            <th>Dictamen ts</th>
+            <th>Notas</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r,i)=>`
+            <tr>
+              <td>${i+1}</td>
+              <td><b>${esc(r.proveedor)}</b></td>
+              <td>${esc(r.empresa)}</td>
+              <td>${esc(r.area)}</td>
+              <td>
+                <span class="pill" style="background: rgba(250,204,21,.12); border-color: rgba(250,204,21,.35); color:#fde68a;">
+                  <span class="dot warn"></span>${esc(r.incidenciaLabel)}
+                </span>
+              </td>
+              <td>${badgeDict(r.dictamenEstado)}</td>
+              <td>${r.dictamenTs ? new Date(r.dictamenTs).toLocaleString() : "-"}</td>
+              <td style="max-width:320px; white-space:normal; word-break:break-word; color:var(--muted);">
+                ${esc(r.notas || "")}
+              </td>
+              <td><code>${esc(r.id)}</code></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  modal.classList.add("show");
+
+  if(closeBtn) closeBtn.onclick = () => modal.classList.remove("show");
+  modal.onclick = (e) => { if(e.target === modal) modal.classList.remove("show"); };
+  document.onkeydown = (e) => { if(e.key === "Escape") modal.classList.remove("show"); };
+}
+
+
+// Listener del KPI Tarde (solo dentro de Reportes)
+appEl.addEventListener("click", (e) => {
+  const late = e.target.closest('[data-action="repOpenLate"]');
+  if(late) return openLateModal();
+
+  const ns = e.target.closest('[data-action="repOpenNoShow"]');
+  if(ns) return openNoShowModal();
+
+  const inc = e.target.closest('[data-action="repOpenIncCalidad"]');
+  if(inc) return openIncCalModal();
+});
 
 // -------------------------
     // Admin roles screen
@@ -4001,15 +4492,43 @@ if(existeCitaEnHorario(fechaHora, area)){
       }
 
       if(v.status === Status.PROGRAMADO){
-        v.status = Status.LLEGADO;
-        v.llegadaTs = Date.now();
-        v.updatedTs = Date.now();
-        await saveVisitas();
-        if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE) await cloudUpsertVisita(v);
-        toast("Llegada registrada","Se movió a 'Llegaron'.","ok",2200);
-        renderDashboardHoy();
-      }
+  const now = Date.now();
+  const diffMin = Math.round((now - v.fechaHoraTs) / 60000);
 
+  // ⛔ BLOQUEO DURO POR RETRASO > 30 MIN
+ if(diffMin > QR_LATE_BLOCK_MIN){
+  v.qrActivo = false;
+
+  // ✅ guarda motivo/mins para mostrar el toast correcto después
+  v.qrDesactivadoMotivo = "RETRASO";
+  v.qrDesactivadoMin = diffMin;
+  v.qrDesactivadoTs = Date.now();
+
+  v.updatedTs = Date.now();
+  await saveVisitas();
+  if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE){
+    await cloudUpsertVisita(v);
+  }
+
+  toast("Acceso bloqueado",
+    `Retraso de ${diffMin} min. El QR fue desactivado y requiere autorización de ADMIN.`,
+    "bad", 4200
+  );
+  return renderDashboardHoy();
+}
+
+  // ✅ llegada NORMAL
+  v.status = Status.LLEGADO;
+  v.llegadaTs = now;
+  v.updatedTs = now;
+  await saveVisitas();
+  if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE){
+    await cloudUpsertVisita(v);
+  }
+
+  toast("Llegada registrada","Se movió a 'Llegaron'.","ok",2200);
+  return renderDashboardHoy();
+}
       
 // 🟢 LLEGADO → ENTRADA (GUARDIA)
   if(v.status === Status.LLEGADO && hasPerm("registrar_entrada")){
@@ -4226,10 +4745,71 @@ ${incLabel ? `
 
     function renderEntrada(id){
   if(!requirePerm("registrar_entrada","Solo GUARDIA o ADMIN pueden registrar entrada.")) return;
+
   const isGuardia = currentUser?.role === ROLES.GUARDIA;
   const v = visitas.find(x => x.id == id);
-  if(!v) return renderDashboardHoy();
 
+  // ✅ FIX #1: evitar crash si no existe la cita en memoria
+  if(!v){
+    toast("No encontrado","No se encontró la cita en memoria. Sincroniza o regresa al dashboard.","warn", 3600);
+    return renderDashboardHoy();
+  }
+
+  // ✅ Validación defensiva: fechaHoraTs debe existir para calcular retraso
+  if(typeof v.fechaHoraTs !== "number"){
+    toast("Datos incompletos","Esta cita no tiene fechaHoraTs válida. Requiere revisión por ADMIN.","warn", 4200);
+    return renderDashboardHoy();
+  }
+
+  // ⛔ Bloqueo por QR desactivado
+ if(!v.qrActivo){
+  // ✅ Si fue desactivado por retraso, muestra el toast con minutos
+  if(v.qrDesactivadoMotivo === "RETRASO"){
+    const mins = Number(v.qrDesactivadoMin) || Math.round((Date.now() - v.fechaHoraTs) / 60000);
+    toast(
+      "Acceso bloqueado",
+      `Retraso de ${mins} min. El QR fue desactivado y requiere autorización de ADMIN.`,
+      "bad",
+      4200
+    );
+  } else {
+    // ✅ Caso genérico: desactivado por cancelación/salida/etc.
+    toast(
+      "Acceso bloqueado",
+      "El QR de esta cita está desactivado. Requiere reactivación por ADMIN.",
+      "bad",
+      4200
+    );
+  }
+  return renderDashboardHoy();
+}
+
+  // ⛔ Bloqueo por retraso > 30 min (y desactivar QR)
+  const delayMin = Math.round((Date.now() - v.fechaHoraTs) / 60000);
+  if(delayMin > QR_LATE_BLOCK_MIN){
+
+    // ✅ FIX #2: apagar QR y persistir (best effort)
+    v.qrActivo = false;
+    v.updatedTs = Date.now();
+
+    // guarda local (no await)
+    saveVisitas();
+
+    // guarda nube best-effort
+    if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
+      cloudUpsertVisita(v).catch(()=>{});
+    }
+
+    toast(
+      "Acceso bloqueado",
+      `Retraso de ${delayMin} min. El QR fue desactivado y requiere autorización de ADMIN.`,
+      "bad",
+      4200
+    );
+    return renderDashboardHoy();
+  }
+
+  // ✅ Si pasa validaciones, render normal del form (tu UI original)
   appEl.innerHTML = `
     <div class="card">
       <h2 style="margin:0 0 6px;">Registrar Entrada</h2>
@@ -4244,24 +4824,24 @@ ${incLabel ? `
       <input id="gafeteNo" value="${esc(v.gafeteNo || "")}" />
 
       <!-- ✅ NUEVO -->
-     <label>No. Orden de Compra</label>
-<input id="ocNo"
-  maxlength="100"
-  value="${esc(v.ocNo || "")}"
-  ${isGuardia ? "disabled" : ""}
-/>
-
-${isGuardia ? `
-  <div style="color:var(--muted); font-size:12px; margin-top:6px;">
-    La Orden de Compra solo puede ser modificada por Compras o Admin.
-  </div>
-` : ""}
+      <label>No. Orden de Compra</label>
+      <input id="ocNo"
+        maxlength="100"
+        value="${esc(v.ocNo || "")}"
+        ${isGuardia ? "disabled" : ""}
+      />
+      ${isGuardia ? `
+        <div style="color:var(--muted); font-size:12px; margin-top:6px;">
+          La Orden de Compra solo puede ser modificada por Compras o Admin.
+        </div>
+      ` : ""}
 
       <!-- ✅ NUEVO -->
       <label>No. Factura</label>
       <input id="facturaNo" placeholder="FAC-88921" maxlength="100" value="${esc(v.facturaNo || "")}" />
 
       <div class="divider"></div>
+
       <div class="row">
         <button class="ok" data-action="confirmarEntrada" data-id="${id}">
           Confirmar Entrada
@@ -4274,47 +4854,104 @@ ${isGuardia ? `
   `;
 }
 
+    function renderEntrada(id){
+  if(!requirePerm("registrar_entrada","Solo GUARDIA o ADMIN pueden registrar entrada.")) return;
 
-    async function confirmarEntrada(id){
+  const isGuardia = currentUser?.role === ROLES.GUARDIA;
   const v = visitas.find(x => x.id == id);
-  if(!v) return renderDashboardHoy();
 
-  const guard = document.getElementById("guardia").value.trim();
-  const gafete = document.getElementById("gafeteNo").value.trim();
-
-  // ✅ NUEVO
-  const ocNo = document.getElementById("ocNo").value.trim();
-  const facturaNo = document.getElementById("facturaNo").value.trim();
-
-  if(!guard || !gafete){
-    toast("Datos requeridos","Captura guardia y gafete.","warn",3200);
-    return;
+  // ✅ Evita crash si no existe la cita en memoria
+  if(!v){
+    toast("No encontrado","No se encontró la cita en memoria. Sincroniza o regresa al dashboard.","warn", 3600);
+    return renderDashboardHoy();
   }
 
-  registrarCambio(v, "guardNombre", v.guardNombre, guard);
-  registrarCambio(v, "gafeteNo", v.gafeteNo, gafete);
-  registrarCambio(v, "ocNo", v.ocNo, ocNo);
-  registrarCambio(v, "facturaNo", v.facturaNo, facturaNo);
-  registrarCambio(v, "status", v.status, Status.DENTRO, "transición");
-
-  v.guardNombre = guard;
-  v.gafeteNo = gafete;
-
-  // ✅ GUARDAR / ACTUALIZAR
-  v.ocNo = ocNo;
-  v.facturaNo = facturaNo;
-
-  v.status = Status.DENTRO;
-  v.entradaTs = Date.now();
-  v.updatedTs = Date.now();
-
-  await saveVisitas();
-  if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE){
-    await cloudUpsertVisita(v);
+  // ✅ Validación defensiva: se necesita fechaHoraTs para calcular retraso
+  if(typeof v.fechaHoraTs !== "number"){
+    toast("Datos incompletos","Esta cita no tiene fechaHoraTs válida. Requiere revisión por ADMIN.","warn", 4200);
+    return renderDashboardHoy();
   }
 
-  toast("Entrada registrada","Datos y documentos actualizados.","ok",2200);
-  renderDashboardHoy();
+  // ⛔ QR DESACTIVADO → TOAST OBLIGATORIO AL INTENTAR REGISTRAR ENTRADA
+  // (Esto es lo que pediste: aunque el botón exista, al click aquí se bloquea con toast)
+  if(!v.qrActivo){
+    toast(
+      "Acceso bloqueado",
+      "El QR de esta cita está desactivado. Requiere reactivación por ADMIN.",
+      "bad",
+      4200
+    );
+    return renderDashboardHoy();
+  }
+
+  // ⛔ Bloqueo por retraso > 30 min (y desactivar QR)
+  const delayMin = Math.round((Date.now() - v.fechaHoraTs) / 60000);
+  if(delayMin > QR_LATE_BLOCK_MIN){
+
+    // Apaga QR y persiste (best effort)
+    v.qrActivo = false;
+    v.updatedTs = Date.now();
+
+    // guarda local (best effort)
+    saveVisitas();
+
+    // guarda nube (best effort)
+    if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
+      cloudUpsertVisita(v).catch(()=>{});
+    }
+
+    toast(
+      "Acceso bloqueado",
+      `Retraso de ${delayMin} min. El QR fue desactivado y requiere autorización de ADMIN.`,
+      "bad",
+      4200
+    );
+    return renderDashboardHoy();
+  }
+
+  // ✅ Si pasa validaciones, render normal del form (tu UI original)
+  appEl.innerHTML = `
+    <div class="card">
+      <h2 style="margin:0 0 6px;">Registrar Entrada</h2>
+      <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
+        Captura guardia y gafete. Puedes confirmar OC y Factura si vienen con el proveedor.
+      </p>
+
+      <label>Nombre del guardia *</label>
+      <input id="guardia" value="${esc(v.guardNombre || currentUser.nombre || "")}" />
+
+      <label>No. de Gafete *</label>
+      <input id="gafeteNo" value="${esc(v.gafeteNo || "")}" />
+
+      <!-- ✅ NUEVO -->
+      <label>No. Orden de Compra</label>
+      <input id="ocNo"
+        maxlength="100"
+        value="${esc(v.ocNo || "")}"
+        ${isGuardia ? "disabled" : ""}
+      />
+      ${isGuardia ? `
+        <div style="color:var(--muted); font-size:12px; margin-top:6px;">
+          La Orden de Compra solo puede ser modificada por Compras o Admin.
+        </div>
+      ` : ""}
+
+      <!-- ✅ NUEVO -->
+      <label>No. Factura</label>
+      <input id="facturaNo" placeholder="FAC-88921" maxlength="100" value="${esc(v.facturaNo || "")}" />
+
+      <div class="divider"></div>
+
+      <div class="row">
+        <button class="ok" data-action="confirmarEntrada" data-id="${id}">
+          Confirmar Entrada
+        </button>
+        <button class="secondary" data-action="ficha" data-id="${id}">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  `;
 }
 
     function renderFichaCalidad(v){
@@ -4504,10 +5141,22 @@ function renderSalida(id){
   const v = visitas.find(x => x.id == id);
   if(!v) return;
 
+  // ✅ Reactiva QR
   v.qrActivo = true;
+
+  // ✅ Limpieza del motivo (por si fue desactivado por RETRASO u otro motivo)
+  // (si no existen, delete no hace nada)
+  delete v.qrDesactivadoMotivo;
+  delete v.qrDesactivadoMin;
+  delete v.qrDesactivadoTs;
+
+  // (Opcional, por si en algún momento guardaste "qrDesactivadoPor")
+  // delete v.qrDesactivadoPor;
+
   v.updatedTs = Date.now();
 
   await saveVisitas();
+
   if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE){
     await cloudUpsertVisita(v);
   }
@@ -4602,79 +5251,148 @@ sbConfigChip.style.borderColor =
     // -------------------------
     // Excel export (HOY o historial)
     // -------------------------
-    function exportExcelFor(list, suffix=""){
-      if(!requirePerm("exportar_excel","Tu rol no puede exportar Excel.")) return;
-      if(!window.XLSX){
-        toast("Excel","Aún no carga XLSX. Intenta de nuevo.","warn",2500);
-        return;
-      }
-    const headers = [
-        "ID","Proveedor","Empresa","Persona a visitar","Área","Motivo",
-        "Teléfono","Correo","Fecha Cita","Estado","QR Activo",
-        "Guardia (Entrada)","No Gafete","Llegada (QR)","Entrada","Salida",
-        "Dictamen","Dictamen por","Dictamen notas","Dictamen ts",
-        "Salida por","Incidencias salida",
-        "No OC","No Factura"
-      ];
+   function exportExcelFor(list, suffix = ""){
+  if(!requirePerm("exportar_excel","Tu rol no puede exportar Excel.")) return;
+  if(!window.XLSX){
+    toast("Excel","Aún no carga XLSX. Intenta de nuevo.","warn",2500);
+    return;
+  }
 
-      const rows = list.map(v => ([
-        v.id,
-        v.proveedor || "",
-        v.empresa || "",
-        v.personaVisita || "",
-        v.area || "",
-        v.motivo || "",
-        v.telefono || "",
-        v.correo || "",
-        v.fechaHora || "",
-        v.status || "",
-        v.qrActivo ? "Sí" : "No",
-        v.guardNombre || "",
-        v.gafeteNo || "",
-        v.llegadaTs ? new Date(v.llegadaTs).toLocaleString() : "",
-        v.entradaTs ? new Date(v.entradaTs).toLocaleString() : "",
-        v.salidaTs ? new Date(v.salidaTs).toLocaleString() : "",
-        (v.dictamen?.estado || "pendiente").toUpperCase(),
-        v.dictamen?.por || "",
-        v.dictamen?.notas || "",
-        v.dictamen?.ts ? new Date(v.dictamen.ts).toLocaleString() : "",
-        v.salidaPor || "",
-        v.incidenciasSalida || "",
-        v.ocNo || "",
-        v.facturaNo || ""
-      ]));
+  const headers = [
+    "ID",
+    "Proveedor",
+    "Persona a visitar",
+    "Área",
+    "Motivo",
+    "Fecha cita",
+    "Estatus",
+    "QR activo",
+    "Llegada (QR)",
+    "Guardia entrada",
+    "Gafete",
+    "Entrada",
+    "Dictamen calidad",
+    "Incidencia calidad",
+    "Notas calidad",
+    "Despachado por",
+    "Salida",
+    "Incidencias salida",
+    "No. OC",
+    "No. Factura"
+  ];
 
-      const data = [headers, ...rows];
-      const ws = XLSX.utils.aoa_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Visitas");
+  const rows = list.map(v => ([
+    v.id || "",
+    v.proveedor || "",
+    v.personaVisita || "",
+    v.area || "",
+    v.motivo || "",
+    v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "",
+    v.status || "",
+    v.qrActivo ? "Sí" : "No",
+    v.llegadaTs ? new Date(v.llegadaTs).toLocaleString() : "",
+    v.guardNombre || "",
+    v.gafeteNo || "",
+    v.entradaTs ? new Date(v.entradaTs).toLocaleString() : "",
+    (v.dictamen?.estado || "").toUpperCase(),
+    v.dictamen?.incidencia || "",
+    v.dictamen?.notas || "",
+    v.dictamen?.por || "",
+    v.salidaTs ? new Date(v.salidaTs).toLocaleString() : "",
+    v.incidenciasSalida || "",
+    v.ocNo || "",
+    v.facturaNo || ""
+  ]));
 
-      const filename = `visitas_${suffix || new Date().toISOString().slice(0,10)}.xlsx`;
-      XLSX.writeFile(wb, filename);
-      toast("Excel","Archivo descargado.","ok",2200);
-    }
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Visitas");
 
-    function exportPdfFor(list, suffix=""){
-  if(!requirePerm('exportar_excel','Tu rol no puede exportar.')) return;
+  const filename = `visitas_${suffix || new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, filename);
+
+  toast("Excel","Archivo descargado.","ok",2200);
+}
+    
+    function exportPdfFor(list, suffix = ""){
+  if(!requirePerm("exportar_excel","Tu rol no puede exportar.")) return;
+
   const title = `Visitas_${suffix || new Date().toISOString().slice(0,10)}`;
-  const rows = (list||[]).map(v=>({
-    id: v.id, proveedor: v.proveedor||'', empresa: v.empresa||'', area: v.area||'',
-    cita: v.fechaHora ? new Date(v.fechaHora).toLocaleString() : '',
-    estado: v.status||'', qr: v.qrActivo ? 'Sí' : 'No', oc: v.ocNo||'', factura: v.facturaNo||''
+
+  const rows = list.map(v => ({
+    proveedor: v.proveedor || "",
+    area: v.area || "",
+    cita: v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "",
+    status: v.status || "",
+    entrada: v.entradaTs ? new Date(v.entradaTs).toLocaleString() : "",
+    salida: v.salidaTs ? new Date(v.salidaTs).toLocaleString() : "",
+    dictamen: (v.dictamen?.estado || "").toUpperCase(),
+    incidencia: v.dictamen?.incidencia || v.incidenciasSalida || "",
+    docs: `${v.ocNo || "-"} / ${v.facturaNo || "-"}`
   }));
-  const w = window.open('', '_blank');
-  if(!w){ toast('Pop-up bloqueado','Permite pop-ups para generar PDF.','warn',4200); return; }
+
+  const w = window.open("", "_blank");
+  if(!w){
+    toast("PDF","Permite pop‑ups para generar PDF.","warn",4200);
+    return;
+  }
+
   w.document.open();
-  w.document.write(`<!doctype html><html><head><meta charset='utf-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/>
+  w.document.write(`
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
 <title>${title}</title>
-<style>body{font-family:Arial,system-ui; padding:18px;}h1{font-size:16px;margin:0 0 10px;}small{color:#555;}table{width:100%; border-collapse:collapse; margin-top:10px;}th,td{border:1px solid #ddd; padding:6px 8px; font-size:11px; text-align:left;}th{background:#f3f4f6;}@media print{button{display:none;} body{padding:0;} }</style></head><body>
-<button onclick='window.print()' style='padding:8px 10px; margin-bottom:8px;'>Imprimir / Guardar PDF</button>
-<h1>${title}</h1><small>Total: ${rows.length}</small>
-<table><thead><tr><th>ID</th><th>Proveedor</th><th>Empresa</th><th>Área</th><th>Cita</th><th>Estado</th><th>QR</th><th>OC</th><th>Factura</th></tr></thead><tbody>
-${rows.map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(r.proveedor)}</td><td>${esc(r.empresa)}</td><td>${esc(r.area)}</td><td>${esc(r.cita)}</td><td>${esc(r.estado)}</td><td>${esc(r.qr)}</td><td>${esc(r.oc)}</td><td>${esc(r.factura)}</td></tr>`).join('')}
-</tbody></table></body></html>`);
+<style>
+body{font-family:Arial,system-ui;padding:18px;}
+h1{font-size:16px;margin:0 0 10px;}
+table{width:100%;border-collapse:collapse;}
+th,td{border:1px solid #ddd;padding:6px;font-size:11px;}
+th{background:#f3f4f6;}
+@media print{button{display:none;}}
+</style>
+</head>
+<body>
+<button onclick="window.print()">Imprimir / Guardar PDF</button>
+<h1>${title}</h1>
+<p>Total: ${rows.length}</p>
+<table>
+<thead>
+<tr>
+  <th>Proveedor</th>
+  <th>Área</th>
+  <th>Cita</th>
+  <th>Estatus</th>
+  <th>Entrada</th>
+  <th>Salida</th>
+  <th>Dictamen</th>
+  <th>Incidencias</th>
+  <th>OC / Factura</th>
+</tr>
+</thead>
+<tbody>
+${rows.map(r => `
+<tr>
+  <td>${esc(r.proveedor)}</td>
+  <td>${esc(r.area)}</td>
+  <td>${esc(r.cita)}</td>
+  <td>${esc(r.status)}</td>
+  <td>${esc(r.entrada)}</td>
+  <td>${esc(r.salida)}</td>
+  <td>${esc(r.dictamen)}</td>
+  <td>${esc(r.incidencia)}</td>
+  <td>${esc(r.docs)}</td>
+</tr>
+`).join("")}
+</tbody>
+</table>
+</body>
+</html>
+`);
   w.document.close();
-  toast('PDF','Se abrió la vista imprimible. Usa Guardar como PDF.','ok',2600);
+
+  toast("PDF","Vista imprimible generada.","ok",2600);
 }
 
 async function guardarProveedor(){
