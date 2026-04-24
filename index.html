@@ -37,7 +37,7 @@
       border-bottom:1px solid var(--border);
     }
     .topbar{
-      max-width:1250px; margin:0 auto; padding:14px 14px 10px;
+      max-width:1360px; margin:0 auto; padding:14px 14px 10px;
       display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;
     }
     .title{ display:flex; gap:10px; align-items:center; min-width:240px; }
@@ -51,7 +51,7 @@
     .title h1{ font-size:16px; margin:0; line-height:1.1; }
     .title small{ display:block; color:var(--muted); font-size:12px; margin-top:2px; }
     .actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
-    .container{ max-width:1250px; margin:0 auto; padding:16px 14px 80px; }
+    .container{ max-width:1360px; margin:0 auto; padding:16px 14px 80px; }
     .card{
       background: linear-gradient(180deg, rgba(17,28,51,.95), rgba(15,23,42,.92));
       border:1px solid var(--border);
@@ -407,6 +407,30 @@ html[data-theme="light"] header{
   );
   backdrop-filter: blur(8px);
   border-bottom:1px solid var(--border);
+}
+
+/* Modals */
+html[data-theme="light"] .modal-overlay{
+  background: rgba(15,23,42,.18);
+}
+html[data-theme="light"] .modal{
+  color: var(--text);
+  border:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,.99), rgba(241,245,249,.98));
+  box-shadow:0 22px 60px rgba(15,23,42,.14);
+}
+html[data-theme="light"] .modal .modal-head{
+  background: linear-gradient(180deg, rgba(255,255,255,.99), rgba(248,250,252,.96));
+  border-bottom:1px solid var(--border);
+}
+html[data-theme="light"] .modal .modal-body{
+  color: var(--text);
+}
+html[data-theme="light"] .modal .table th{
+  background: rgba(241,245,249,.95);
+}
+html[data-theme="light"] .modal .table tr:hover td{
+  background: rgba(226,232,240,.55);
 }
 
 /* Buttons */
