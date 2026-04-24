@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -37,7 +37,7 @@
       border-bottom:1px solid var(--border);
     }
     .topbar{
-      max-width:1100px; margin:0 auto; padding:14px 14px 10px;
+      max-width:1250px; margin:0 auto; padding:14px 14px 10px;
       display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;
     }
     .title{ display:flex; gap:10px; align-items:center; min-width:240px; }
@@ -51,7 +51,7 @@
     .title h1{ font-size:16px; margin:0; line-height:1.1; }
     .title small{ display:block; color:var(--muted); font-size:12px; margin-top:2px; }
     .actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
-    .container{ max-width:1100px; margin:0 auto; padding:16px 14px 80px; }
+    .container{ max-width:1250px; margin:0 auto; padding:16px 14px 80px; }
     .card{
       background: linear-gradient(180deg, rgba(17,28,51,.95), rgba(15,23,42,.92));
       border:1px solid var(--border);
@@ -142,6 +142,23 @@
     .tarjeta strong{ display:block; font-size:14px; }
     .tarjeta small{ color:var(--muted); display:block; margin-top:2px; }
     .meta{ margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; color:var(--muted); font-size:12px; }
+    .history-grid{ grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); }
+    .history-grid > *{ min-width:0; }
+    .history-card,
+    .history-card *{ min-width:0; }
+    .history-card strong,
+    .history-card small{
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
+    .history-card .pill,
+    .history-card .badge-dictamen{
+      max-width:100%;
+      white-space:normal;
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
+    #histWrap{ min-width:0; overflow-x:auto; }
 
     .two{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
     @media (max-width:760px){ .two{ grid-template-columns:1fr; } }
@@ -323,6 +340,344 @@
 .modal .modal-actions{
   display:flex; gap:10px; align-items:center;
 }
+
+/* ============================
+   TEMA CLARO – estilo APP VISITANTES
+   ============================ */
+html[data-theme="light"]{
+  --bg:#f6f8fc;
+  --panel:#ffffff;
+  --panel2:#f1f5f9;
+
+  --text:#0f172a;
+  --muted:#64748b;
+
+  --brand:#2563eb;
+  --ok:#16a34a;
+  --warn:#d97706;
+  --bad:#dc2626;
+  --info:#0284c7;
+
+  --border:rgba(15,23,42,.10);
+  --shadow:0 10px 24px rgba(0,0,0,.08);
+  --focus:0 0 0 3px rgba(37,99,235,.25);
+}
+
+/* Fondo general */
+html[data-theme="light"] body{
+  background: #f6f8fc;
+  color: var(--text);
+}
+
+/* Cards */
+html[data-theme="light"] .card,
+html[data-theme="light"] .tarjeta{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 10px 24px rgba(0,0,0,.08);
+}
+
+/* Inputs */
+html[data-theme="light"] input,
+html[data-theme="light"] select,
+html[data-theme="light"] textarea{
+  background:#fff;
+  color:var(--text);
+  border:1px solid rgba(203,213,245,1);
+}
+
+/* Sidebar */
+html[data-theme="light"] .sidebar{
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,.98),
+    rgba(248,250,255,.96)
+  );
+  border-right:1px solid var(--border);
+  box-shadow:0 20px 50px rgba(2,6,23,.10);
+}
+
+/* Header */
+html[data-theme="light"] header{
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,.92),
+    rgba(255,255,255,.82)
+  );
+  backdrop-filter: blur(8px);
+  border-bottom:1px solid var(--border);
+}
+
+/* Buttons */
+html[data-theme="light"] button.secondary{
+  background:#e5e7eb;
+  color:#0f172a;
+}
+
+html[data-theme="light"] .pill{
+  background: rgba(255,255,255,.7);
+  border:1px solid var(--border);
+  color: var(--muted);
+}
+/* ============================
+   Sidebar – Botones gris clarito
+   (estilo APP VISITANTES)
+   ============================ */
+
+html[data-theme="light"] .sb-btn{
+  background: rgba(2,6,23,.03);      /* gris MUY suave */
+  color:#0f172a;
+  border:1px solid transparent;
+  border-radius:14px;
+  transition:
+    background .15s ease,
+    border-color .15s ease,
+    transform .06s ease;
+}
+
+/* Hover → azul suave */
+html[data-theme="light"] .sb-btn:hover{
+  background: rgba(37,99,235,.08);
+  border-color: rgba(37,99,235,.22);
+}
+
+/* Activo */
+html[data-theme="light"] .sb-btn[aria-current="page"]{
+  background: rgba(37,99,235,.12);
+  border-color: rgba(37,99,235,.28);
+}
+
+/* Click */
+html[data-theme="light"] .sb-btn:active{
+  transform: translateY(1px);
+}
+
+/* Texto del botón */
+html[data-theme="light"] .sb-txt{
+  font-weight:800;
+  font-size:13px;
+}
+
+/* Chip lateral (contador/estado) */
+html[data-theme="light"] .sb-chip{
+  background: rgba(255,255,255,.7);
+  border:1px solid rgba(15,23,42,.10);
+  color:#475569;
+}
+/* ============================
+   QUITAR TODO GRIS SOBRANTE
+   Dashboard / Kanban
+   ============================ */
+
+html[data-theme="light"] .kanban,
+html[data-theme="light"] .kanban-col,
+html[data-theme="light"] .column,
+html[data-theme="light"] .col,
+html[data-theme="light"] .list,
+html[data-theme="light"] .stack,
+html[data-theme="light"] .panel {
+  background: #fff !important;
+}
+/* ============================
+   FIX DEFINITIVO – CONFIGURACIÓN
+   Submenús claros (no gris oscuro)
+   ============================ */
+
+/* Contenedor del submenú */
+html[data-theme="light"] .sb-sub{
+  background: transparent !important;
+  margin-left: 10px;
+  padding-left: 6px;
+  border-left: 2px solid rgba(15,23,42,.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Botones INTERNOS del submenú */
+html[data-theme="light"] .sb-sub .sb-btn{
+  background: rgba(2,6,23,.03); /* gris clarito */
+  border: 1px solid transparent;
+}
+
+/* Hover en submenú */
+html[data-theme="light"] .sb-sub .sb-btn:hover{
+  background: rgba(37,99,235,.08);
+  border-color: rgba(37,99,235,.22);
+}
+
+/* Activo */
+html[data-theme="light"] .sb-sub .sb-btn[aria-current="page"]{
+  background: rgba(37,99,235,.12);
+  border-color: rgba(37,99,235,.28);
+}
+/* ============================
+   Submenús COLAPSADOS por defecto
+   ============================ */
+
+.sb-sub{
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    max-height .25s ease,
+    opacity .2s ease;
+}
+
+/* Cuando está abierto */
+.sb-sub.open{
+  max-height: 500px;      /* suficiente para el contenido */
+  opacity: 1;
+  pointer-events: auto;
+}
+/* ============================
+   PILL TEXTOS EN NEGRO (TEMA CLARO)
+   ============================ */
+
+/* Regla general */
+html[data-theme="light"] .pill,
+html[data-theme="light"] .pill * {
+  color: #0f172a !important;
+}
+
+/* Asegurar textos secundarios dentro de pills */
+html[data-theme="light"] .pill span,
+html[data-theme="light"] .pill b,
+html[data-theme="light"] .pill small {
+  color: #0f172a !important;
+}
+
+/* Mantener DOTS de color (no texto) */
+html[data-theme="light"] .pill .dot{
+  color: inherit;
+}
+
+/* Pills especiales (ACEPTADO, PENDIENTE, INFO, BAD)
+   TEXTO CAFÉ OSCURO – Tema claro */
+html[data-theme="light"] .pill.ok,
+html[data-theme="light"] .pill.warn,
+html[data-theme="light"] .pill.bad,
+html[data-theme="light"] .pill.info,
+html[data-theme="light"] .pill.ok *,
+html[data-theme="light"] .pill.warn *,
+html[data-theme="light"] .pill.bad *,
+html[data-theme="light"] .pill.info *{
+  color: #000000 !important; /* negro*/
+}
+/* =================================================
+   ✅ AJUSTES FINALES – RESPONSIVE + THEMES
+   ================================================= */
+
+/* ---------- RESPONSIVE BREAKPOINTS ---------- */
+@media (max-width: 900px){
+  .sidebar{
+    transform: translateX(-102%);
+    position: fixed;
+    z-index: 50;
+  }
+  .sidebar.open{
+    transform: translateX(0);
+  }
+  .main-wrap{
+    margin-left: 0 !important;
+  }
+  .sb-overlay{
+    display: block;
+  }
+}
+
+@media (max-width: 600px){
+  .topbar{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .actions{
+    justify-content: space-between;
+  }
+  .kpis,
+  .kanban{
+    grid-template-columns: 1fr !important;
+  }
+  button,
+  input,
+  select{
+    min-height: 44px;
+    font-size: 15px;
+  }
+}
+
+/* ---------- CONTENEDORES BLANCOS ---------- */
+html[data-theme="light"] .main-wrap,
+html[data-theme="light"] main.container,
+html[data-theme="light"] #app{
+  background:#ffffff;
+}
+
+/* quitar grises intermedios */
+html[data-theme="light"] .kanban,
+html[data-theme="light"] .kanban-col,
+html[data-theme="light"] .column,
+html[data-theme="light"] .list,
+html[data-theme="light"] .panel{
+  background: transparent !important;
+}
+
+/* ---------- SIDEBAR BOTONES CLAROS ---------- */
+html[data-theme="light"] .sb-btn{
+  background: rgba(2,6,23,.03);
+  border:1px solid transparent;
+}
+html[data-theme="light"] .sb-btn:hover{
+  background: rgba(37,99,235,.08);
+  border-color: rgba(37,99,235,.22);
+}
+html[data-theme="light"] .sb-btn[aria-current="page"]{
+  background: rgba(37,99,235,.12);
+  border-color: rgba(37,99,235,.28);
+}
+
+/* ---------- SUBMENÚS COLAPSADOS ---------- */
+.sb-sub{
+  max-height:0;
+  overflow:hidden;
+  opacity:0;
+  pointer-events:none;
+  transition:max-height .25s ease, opacity .2s ease;
+}
+.sb-sub.open{
+  max-height:500px;
+  opacity:1;
+  pointer-events:auto;
+}
+
+/* ---------- SUBMENÚ CLARO ---------- */
+html[data-theme="light"] .sb-sub{
+  background: transparent !important;
+  margin-left:10px;
+  padding-left:6px;
+  border-left:2px solid rgba(15,23,42,.08);
+}
+
+/* ---------- PILLS TEXTO NEGRO ---------- */
+html[data-theme="light"] .pill,
+html[data-theme="light"] .pill *{
+  color:#0f172a !important;
+}
+
+/* ---------- PILLS ESPECIALES TEXTO CAFÉ ---------- */
+html[data-theme="light"] .pill.ok,
+html[data-theme="light"] .pill.warn,
+html[data-theme="light"] .pill.bad,
+html[data-theme="light"] .pill.info,
+html[data-theme="light"] .pill.ok *,
+html[data-theme="light"] .pill.warn *,
+html[data-theme="light"] .pill.bad *,
+html[data-theme="light"] .pill.info *{
+  color:#4a2f14 !important;
+}
 </style>
 </head>
 
@@ -389,20 +744,22 @@
     </div>
   </div>
   <div class="sb-section">
-    <h4>Navegación</h4>
-    <div class="sb-nav" id="sbNav">
-      <div class="sb-btn" data-sb="dashboard" aria-current="page">
-        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M9 22V12h6v10"/></svg></span>
-        <span class="sb-txt">Dashboard</span>
-      </div>
+  <h4>Navegación</h4>
+
+  <div class="sb-nav" id="sbNav">
+
+    <div class="sb-btn" data-sb="dashboard" aria-current="page">
+       <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M9 22V12h6v10"/></svg></span>
+       <span class="sb-txt">Dashboard</span>
     </div>
 
-      <div class="sb-btn" data-sb="nuevo">
-        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span>
-        <span class="sb-txt">Nueva cita</span>
-      </div>
-      <div class="sb-btn" data-sb="citas_compras">
-  <span class="sb-ic" aria-hidden="true">
+    <div class="sb-btn" data-sb="nuevo">
+      <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span>
+      <span class="sb-txt">Nueva cita</span>
+    </div>
+
+    <div class="sb-btn" data-sb="citas_compras">
+      <span class="sb-ic" aria-hidden="true">
     <svg viewBox="0 0 24 24">
       <path d="M3 5h18"/>
       <path d="M7 3v4"/>
@@ -413,29 +770,33 @@
     </svg>
   </span>
   <span class="sb-txt">Citas (Compras)</span>
-</div>
-      <div class="sb-btn" data-sb="historial">
-        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 5h14"/><path d="M3 12h14"/><path d="M3 19h14"/><path d="M19 5v14"/><path d="M19 12h2"/></svg></span>
+    </div>
+
+    <div class="sb-btn" data-sb="historial">
+     <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 5h14"/><path d="M3 12h14"/><path d="M3 19h14"/><path d="M19 5v14"/><path d="M19 12h2"/></svg></span>
         <span class="sb-txt">Historial</span>
+    </div>
+
+    <div class="sb-btn" data-sb="export" id="sbExportToggle">
+      <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></span>
+      <span class="sb-txt">Exportar</span>
+      <span class="sb-chip" id="sbExportChip">Excel/PDF</span>
+    </div>
+
+    <!-- submenú export -->
+    <div class="sb-sub" id="sbExportSub">
+      <div class="sb-btn" data-sb="export_excel">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h6"/></svg></span>
+        <span class="sb-txt">Excel</span>
       </div>
-      
- <div class="sb-btn" data-sb="export" id="sbExportToggle">
-  <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></span>
-  <span class="sb-txt">Exportar</span>
-  <span class="sb-chip" id="sbExportChip">Excel/PDF</span>
- </div>
- <div class="sb-sub" id="sbExportSub">
-  <div class="sb-btn" data-sb="export_excel">
-    <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h6"/></svg></span>
-    <span class="sb-txt">Excel</span>
-  </div>
-  <div class="sb-btn" data-sb="export_pdf">
-    <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h4"/></svg></span>
-    <span class="sb-txt">PDF</span>
-  </div>
- </div>
- <div class="sb-btn" data-sb="reportes">
-  <span class="sb-ic" aria-hidden="true">
+      <div class="sb-btn" data-sb="export_pdf">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h4"/></svg></span>
+        <span class="sb-txt">PDF</span>
+      </div>
+    </div>
+
+    <div class="sb-btn" data-sb="reportes">
+       <span class="sb-ic" aria-hidden="true">
     <svg viewBox="0 0 24 24">
       <path d="M3 3v18h18"/>
       <path d="M7 16v-6"/>
@@ -444,9 +805,9 @@
     </svg>
   </span>
   <span class="sb-txt">Reportes</span>
-</div>
-<div class="sb-btn" data-sb="reporte_cambios">
-  <span class="sb-ic" aria-hidden="true">
+    </div>
+    <div class="sb-btn" data-sb="reporte_cambios">
+      <span class="sb-ic" aria-hidden="true">
     <!-- ICONO: historial / auditoría -->
     <svg viewBox="0 0 24 24">
       <path d="M3 3v18h18"/>
@@ -456,19 +817,17 @@
     </svg>
   </span>
   <span class="sb-txt">Cambios en Citas</span>
-</div>
+    </div>
 
-<div class="sb-btn" data-sb="config" id="sbConfigToggle">
-        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M19.4 15a7.8 7.8 0 0 0 .1-1 7.8 7.8 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a8 8 0 0 0-1.7-1L15 3h-6l-.3 2.4a8 8 0 0 0-1.7 1l-2.4-1-2 3.4L4.6 13a7.8 7.8 0 0 0-.1 1 7.8 7.8 0 0 0 .1 1L2.6 16.6l2 3.4 2.4-1a8 8 0 0 0 1.7 1L9 21h6l.3-2.4a8 8 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></span>
+    <div class="sb-btn" data-sb="config" id="sbConfigToggle">
+      <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M19.4 15a7.8 7.8 0 0 0 .1-1 7.8 7.8 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a8 8 0 0 0-1.7-1L15 3h-6l-.3 2.4a8 8 0 0 0-1.7 1l-2.4-1-2 3.4L4.6 13a7.8 7.8 0 0 0-.1 1 7.8 7.8 0 0 0 .1 1L2.6 16.6l2 3.4 2.4-1a8 8 0 0 0 1.7 1L9 21h6l.3-2.4a8 8 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></span>
         <span class="sb-txt">Configuración</span>
         <span class="sb-chip" id="sbConfigChip">ADMIN</span>
-      </div>
-      
-     
+    </div>
 
-      <div class="sb-sub" id="sbConfigSub">
-        <div class="sb-btn" data-sb="proveedores">
-           <span class="sb-ic" aria-hidden="true">
+    <div class="sb-sub" id="sbConfigSub">
+      <div class="sb-btn" data-sb="proveedores">
+          <span class="sb-ic" aria-hidden="true">
             <svg viewBox="0 0 24 24">
              <path d="M3 7h18v10H3z"/>
              <path d="M9 7V5h6v2"/>
@@ -476,21 +835,26 @@
             </svg>
            </span>
           <span class="sb-txt">Proveedores</span>
-        </div>
-        <div class="sb-btn" data-sb="roles">
-          <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M19 8h2"/><path d="M20 7v2"/></svg></span>
-          <span class="sb-txt">Roles</span>
-        </div>
-        <div class="sb-btn" data-sb="activarqr">
-          <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h6v6H5z"/><path d="M13 5h6v6h-6z"/><path d="M5 13h6v6H5z"/><path d="M14 14h1"/><path d="M17 13h2v2h-2z"/><path d="M13 18h6"/></svg></span>
-          <span class="sb-txt">Activar QR</span>
-        </div>
-        <div class="sb-btn" data-sb="eliminarfinalizados">
-          <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 16h10l1-16"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span>
-          <span class="sb-txt">Eliminar finalizados</span>
-        </div>
+      </div>
+      <div class="sb-btn" data-sb="roles">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M19 8h2"/><path d="M20 7v2"/></svg></span>
+        <span class="sb-txt">Roles</span>
+      </div>
+      <div class="sb-btn" data-sb="activarqr">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h6v6H5z"/><path d="M13 5h6v6h-6z"/><path d="M5 13h6v6H5z"/><path d="M14 14h1"/><path d="M17 13h2v2h-2z"/><path d="M13 18h6"/></svg></span>
+        <span class="sb-txt">Activar QR</span>
+      </div>
+      <div class="sb-btn" data-sb="eliminarfinalizados">
+         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 16h10l1-16"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span>
+         <span class="sb-txt">Eliminar finalizados</span>
       </div>
     </div>
+
+  </div>
+</div>
+
+
+  
   </div>
   <div style="margin-top:auto; padding:0 6px 6px;">
     <div class="sb-btn" data-sb="logout" style="background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.25);">
@@ -521,6 +885,7 @@
       </span>
       <span class="pill" id="userPill" style="display:none;"></span>
       <input id="qSearch" placeholder="Buscar proveedor / empresa..." style="max-width:260px;" />
+    <button class="secondary" id="btnTheme">Tema</button>
     </div>
   </div>
 </header>
@@ -532,7 +897,23 @@
   </div>
 </div>
 <script type="module">
-  
+  function setTheme(mode){
+  document.documentElement.setAttribute("data-theme", mode);
+  localStorage.setItem("ui_theme", mode);
+}
+
+function initTheme(){
+  const saved = localStorage.getItem("ui_theme");
+  setTheme(saved || "dark");
+}
+
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute("data-theme") || "dark";
+  setTheme(cur === "light" ? "dark" : "light");
+}
+
+initTheme();
+document.getElementById("btnTheme")?.addEventListener("click", toggleTheme);
   // =========================
   // Firebase (CDN modular)
   // =========================
@@ -1896,25 +2277,22 @@ function fmt(ts){
     }
 
    function mergeById(localArr, cloudArr){
-  const cloudIds = new Set(cloudArr.map(v => String(v.id)));
   const map = new Map();
 
-  // 1️⃣ solo conserva locales que SIGUEN existiendo en la nube
+  // Conserva locales para no perder capturas offline antes de subirlas.
   for(const v of localArr){
     const id = String(v.id);
-    if(cloudIds.has(id)){
-      map.set(id, v);
-    }
+    map.set(id, v);
   }
 
-  // 2️⃣ aplica nube (siempre manda)
+  // La nube pisa al local cuando ambos comparten id.
   for(const v of cloudArr){
     map.set(String(v.id), v);
   }
 
-  // 3️⃣ ordena por fecha
+  // Ordena por la marca mas reciente disponible.
   return Array.from(map.values())
-    .sort((a,b) => (b.createdTs || 0) - (a.createdTs || 0));
+    .sort((a,b) => ((b.updatedTs || b.createdTs || 0) - (a.updatedTs || a.createdTs || 0)));
 }
 
     // -------------------------
@@ -2446,7 +2824,7 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
         if(v.ocNo && v.facturaNo) docColor="ok";
         else if(v.ocNo || v.facturaNo) docColor="warn";
         return `
-          <div class="tarjeta" data-action="ficha" data-id="${esc(v.id)}">
+          <div class="tarjeta history-card" data-action="ficha" data-id="${esc(v.id)}">
             <strong>${esc(v.proveedor)}</strong>
             <small>${esc(v.empresa)}</small>
             <div class="meta">
@@ -3067,7 +3445,7 @@ async function cancelarCitaCompras(id){
         const dict = (v.dictamen?.estado || "pendiente").toLowerCase();
         const dictLabel = (v.dictamen?.estado || "pendiente").toUpperCase();
         return `
-          <div class="tarjeta" data-action="ficha" data-id="${esc(v.id)}">
+          <div class="tarjeta history-card" data-action="ficha" data-id="${esc(v.id)}">
             <strong>${esc(v.proveedor)}</strong>
             <small>${esc(v.empresa)}</small>
             <div class="meta">
@@ -3083,7 +3461,7 @@ async function cancelarCitaCompras(id){
           <span class="dot brand"></span> Día: <b style="color:var(--text);">${d.toLocaleDateString()}</b>
         </div>
 
-        <div class="grid cols-5" style="margin-bottom:18px">
+        <div class="grid cols-5 history-grid" style="margin-bottom:18px">
           <div class="card"><h3>Programados</h3><div class="big">${programados.length}</div></div>
           <div class="card"><h3>Llegaron</h3><div class="big">${llegados.length}</div></div>
           <div class="card"><h3>Dentro</h3><div class="big">${dentro.length}</div></div>
@@ -3091,7 +3469,7 @@ async function cancelarCitaCompras(id){
           <div class="card"><h3>Finalizados</h3><div class="big">${finalizados.length}</div></div>
         </div>
 
-        <div class="grid cols-5">
+        <div class="grid cols-5 history-grid">
           ${col("Programados","info",programados)}
           ${col("Llegaron","warn",llegados)}
           ${col("Dentro","ok",dentro)}
@@ -4163,9 +4541,9 @@ function setupProveedorAutocomplete(){
 
     results.innerHTML = matches.map(p => `
       <div class="pill proveedor-opt"
-           data-codigo="${p.codigo}"
-           data-nombre="${p.razonSocial}">
-        <b>${p.codigo}</b> — ${p.razonSocial}
+           data-codigo="${esc(p.codigo)}"
+           data-nombre="${esc(p.razonSocial)}">
+        <b>${esc(p.codigo)}</b> - ${esc(p.razonSocial)}
       </div>
     `).join("");
   });
@@ -5162,7 +5540,7 @@ async function confirmarEntrada(id) {
   toast("Entrada registrada", "El proveedor fue marcado como DENTRO.", "ok", 2200);
   renderDashboardHoy();
 }
-    
+
     async function confirmarSalida(id){
       const v = visitas.find(x => x.id == id);
       if(!v) return renderDashboardHoy();
@@ -5572,8 +5950,8 @@ function renderProveedores(lista){
     ">
       ${ordenados.map(p => `
         <li class="pill" style="justify-content:space-between;">
-          <span><b>${p.codigo}</b></span>
-          <span>${p.razonSocial}</span>
+          <span><b>${esc(p.codigo)}</b></span>
+          <span>${esc(p.razonSocial)}</span>
         </li>
       `).join("")}
     </ul>
