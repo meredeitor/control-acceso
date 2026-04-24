@@ -5117,6 +5117,52 @@ function renderSalida(id){
       `;
     }
 
+async function confirmarEntrada(id) {
+  if (!requirePerm("registrar_entrada", "No tienes permiso para registrar entrada.")) return;
+
+  const v = visitas.find(x => x.id == id);
+  if (!v) {
+    toast("No encontrado", "La cita no existe.", "bad");
+    return renderDashboardHoy();
+    }
+
+  // Validar campos obligatorios
+  const guardia = document.getElementById("guardia")?.value.trim();
+  const gafeteNo = document.getElementById("gafeteNo")?.value.trim();
+  const ocNo = document.getElementById("ocNo")?.value.trim();
+  const facturaNo = document.getElementById("facturaNo")?.value.trim();
+
+  if (!guardia || !gafeteNo) {
+    toast("Datos obligatorios", "Guardia y gafete son requeridos.", "warn");
+    return;
+  }
+
+  // Guardar datos de entrada
+  v.guardNombre = guardia;
+  v.gafeteNo = gafeteNo;
+  if (ocNo) v.ocNo = ocNo;
+  if (facturaNo) v.facturaNo = facturaNo;
+
+  v.entradaTs = Date.now();
+  v.status = "dentro";
+  v.updatedTs = Date.now();
+
+  // Guardado local
+  await saveVisitas();
+
+  // Guardado nube (si aplica)
+  if (navigator.onLine && currentUser.role !== ROLES.PENDIENTE) {
+    try {
+      await cloudUpsertVisita(v);
+    } catch (e) {
+      console.warn("Error al guardar en nube:", e);
+    }
+  }
+
+  toast("Entrada registrada", "El proveedor fue marcado como DENTRO.", "ok", 2200);
+  renderDashboardHoy();
+}
+    
     async function confirmarSalida(id){
       const v = visitas.find(x => x.id == id);
       if(!v) return renderDashboardHoy();
