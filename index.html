@@ -206,6 +206,12 @@
   transform: translateX(0);
   transition: transform .22s ease;
   display:flex; flex-direction:column; gap:10px;
+
+  
+height: 100vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
 }
 .sidebar .sb-brand{ display:flex; align-items:center; gap:10px; padding:10px 10px 8px; }
 .sidebar .sb-logo{
@@ -702,6 +708,24 @@ html[data-theme="light"] .pill.bad *,
 html[data-theme="light"] .pill.info *{
   color:#4a2f14 !important;
 }
+/* Scrollbar oscuro para el sidebar */
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
 </style>
 </head>
 
@@ -811,8 +835,12 @@ html[data-theme="light"] .pill.info *{
     <div class="sb-sub" id="sbExportSub">
       <div class="sb-btn" data-sb="export_excel">
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h6"/></svg></span>
-        <span class="sb-txt">Excel</span>
+        <span class="sb-txt">Excel (solo hoy)</span>
       </div>
+      <div class="sb-btn" data-sb="export_excel_all">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h6"/></svg></span>
+        <span class="sb-txt">Excel (hasta hoy)</span>
+        </div>
       <div class="sb-btn" data-sb="export_pdf">
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h4"/></svg></span>
         <span class="sb-txt">PDF</span>
@@ -872,12 +900,18 @@ html[data-theme="light"] .pill.info *{
          <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 16h10l1-16"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span>
          <span class="sb-txt">Eliminar finalizados</span>
       </div>
+      <div class="sb-btn" data-sb="depurar_base">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 16h10l1-16"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span>
+        <span class="sb-txt">Depurar (≤ hoy)</span>
+      </div>
+      <div class="sb-btn" data-sb="depurar_30d">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 16h10l1-16"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span>
+        <span class="sb-txt">Depurar (+30 días)</span>
+      </div>
     </div>
 
   </div>
 </div>
-
-
   
   </div>
   <div style="margin-top:auto; padding:0 6px 6px;">
@@ -909,9 +943,22 @@ html[data-theme="light"] .pill.info *{
       </span>
       <span class="pill" id="userPill" style="display:none;"></span>
       <input id="qSearch" placeholder="Buscar proveedor / empresa..." style="max-width:260px;" />
-    <button class="secondary" id="btnTheme">Tema</button>
+     
+<button
+  class="secondary"
+  id="btnActualizarDashboard"
+  title="Actualizar dashboard"
+  onclick="renderDashboardHoy()"
+>
+  🔄
+</button>
+
+      <button class="secondary" id="btnTheme">Tema</button>
     </div>
   </div>
+  
+
+
 </header>
 <div class="container">
   <div id="app"></div>
@@ -2158,6 +2205,21 @@ if(key === "proveedores"){
     await reactivarQR(String(id).trim());
     return;
   }
+  if (key === "export_excel_all") {
+  sbClose();
+  await exportExcelHastaHoy();
+  return;
+ } 
+ if (key === "depurar_base") {
+  sbClose();
+  await depurarBaseHastaHoy();
+  return;
+}
+if (key === "depurar_30d") {
+  sbClose();
+  await depurarBaseRetencion30Dias();
+  return;
+}
   if(key === 'export_excel'){
   setActiveSb('export');
   sbClose();
@@ -2524,6 +2586,125 @@ async function pushRecentToCloud(){
 }
 }
 
+async function depurarBaseHastaHoy() {
+  if (!requirePerm("eliminar", "Solo ADMIN puede depurar la base.")) return;
+  if (!requireAdminPin("depurar la base de datos")) return;
+
+  const ok = confirm(
+    "⚠️ DEPURACIÓN DE BASE DE DATOS\n\n" +
+    "Se eliminarán TODOS los registros con fecha ≤ HOY.\n" +
+    "✅ Se conservarán SOLO las citas FUTURAS.\n\n" +
+    "¿Deseas continuar?"
+  );
+  if (!ok) return;
+
+  const hoyTs = new Date().setHours(23, 59, 59, 999);
+
+  const aBorrar = visitas.filter(v =>
+    typeof v.fechaHoraTs === "number" &&
+    v.fechaHoraTs <= hoyTs
+  );
+
+  if (!aBorrar.length) {
+    toast("Depuración", "No hay registros a eliminar.", "info");
+    return;
+  }
+
+  toast("Depurando", `Borrando ${aBorrar.length} registros…`, "warn", 3000);
+
+  // 🔥 Borra documentos locales (IndexedDB)
+  for (const v of aBorrar) {
+    if (v.ocFileKey) await idbDelDoc(v.ocFileKey).catch(() => {});
+    if (v.facturaFileKey) await idbDelDoc(v.facturaFileKey).catch(() => {});
+  }
+
+  // 🔥 Borra en Firestore (best effort)
+  if (navigator.onLine) {
+    await Promise.all(
+      aBorrar.map(v => cloudDeleteVisita(v.id).catch(() => {}))
+    );
+  }
+
+  // ✅ Mantener SOLO futuras
+  visitas = visitas.filter(v =>
+    typeof v.fechaHoraTs === "number" &&
+    v.fechaHoraTs > hoyTs
+  );
+
+  saveVisitasLocal();
+
+  toast(
+    "Depuración completa",
+    `Se eliminaron ${aBorrar.length} registros.`,
+    "ok",
+    3000
+  );
+
+  renderDashboardHoy();
+}
+
+async function depurarBaseRetencion30Dias() {
+  if (!requirePerm("eliminar", "Solo ADMIN puede depurar la base.")) return;
+  if (!requireAdminPin("depurar registros mayores a 30 días")) return;
+
+  const RETENCION_DIAS = 30;
+  const limiteTs = Date.now() - (RETENCION_DIAS * 24 * 60 * 60 * 1000);
+
+  const confirmacion = confirm(
+    `⚠️ DEPURACIÓN DE BASE DE DATOS\n\n` +
+    `Se eliminarán TODOS los registros con más de ${RETENCION_DIAS} días.\n\n` +
+    `✅ Se conservará historial desde los últimos ${RETENCION_DIAS} días (incluye futuros).\n\n` +
+    `¿Deseas continuar?`
+  );
+  if (!confirmacion) return;
+
+  const aEliminar = visitas.filter(v =>
+    typeof v.fechaHoraTs === "number" &&
+    v.fechaHoraTs < limiteTs
+  );
+
+  if (!aEliminar.length) {
+    toast("Depuración", "No hay registros antiguos para eliminar.", "info");
+    return;
+  }
+
+  toast(
+    "Depurando base",
+    `Eliminando ${aEliminar.length} registros antiguos…`,
+    "warn",
+    3000
+  );
+
+  // 🔥 Limpiar documentos asociados (IndexedDB)
+  for (const v of aEliminar) {
+    if (v.ocFileKey) await idbDelDoc(v.ocFileKey).catch(() => {});
+    if (v.facturaFileKey) await idbDelDoc(v.facturaFileKey).catch(() => {});
+  }
+
+  // 🔥 Eliminar en Firestore (best effort)
+  if (navigator.onLine) {
+    await Promise.all(
+      aEliminar.map(v => cloudDeleteVisita(v.id).catch(() => {}))
+    );
+  }
+
+  // ✅ Mantener SOLO registros dentro de la retención
+  visitas = visitas.filter(v =>
+    typeof v.fechaHoraTs === "number" &&
+    v.fechaHoraTs >= limiteTs
+  );
+
+  saveVisitasLocal();
+
+  toast(
+    "Depuración finalizada",
+    `Se eliminaron ${aEliminar.length} registros mayores a ${RETENCION_DIAS} días.`,
+    "ok",
+    3200
+  );
+
+  renderDashboardHoy();
+}
 // -------------------------
 // Auto-Sync (cada 2 min cuando está visible)
 // -------------------------
@@ -5699,6 +5880,37 @@ sbConfigChip.style.borderColor =
     // -------------------------
     // Excel export (HOY o historial)
     // -------------------------
+    async function exportExcelHastaHoy() {
+  if (!requirePerm("exportar_excel", "No tienes permiso para exportar.")) return;
+
+  const hoy = new Date();
+  const hoyTs = hoy.setHours(23, 59, 59, 999);
+
+  toast("Exportando", "Cargando datos hasta hoy…", "info", 2000);
+
+  let data = [];
+
+  try {
+    // Preferir nube si hay conexión
+    if (navigator.onLine) {
+      const snap = await cloudFetchByRange(0, hoyTs);
+      data = snap;
+    } else {
+      // respaldo local
+      data = visitas.filter(v =>
+        typeof v.fechaHoraTs === "number" &&
+        v.fechaHoraTs <= hoyTs
+      );
+    }
+  } catch (e) {
+    console.error(e);
+    toast("Error", "No se pudo cargar la información.", "bad");
+    return;
+  }
+
+  exportExcelFor(data, "HASTA_HOY");
+}
+
    function exportExcelFor(list, suffix = ""){
   if(!requirePerm("exportar_excel","Tu rol no puede exportar Excel.")) return;
   if(!window.XLSX){
