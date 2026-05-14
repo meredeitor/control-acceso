@@ -4658,12 +4658,12 @@ async function renderNuevo(){
          
         <div>
           <label>No. Orden de Compra</label>
-          <input id="ocNo" maxlength="100"/>
+          <input id="ocNo" maxlength="200"/>
         </div>
 
         <div>
           <label>No. Factura</label>
-          <input id="facturaNo" maxlength="100"/>
+          <input id="facturaNo" maxlength="200"/>
         </div>
         <div>
         <label>Material a recibir</label>
@@ -5399,7 +5399,7 @@ ${incLabel ? `
       <!-- ✅ NUEVO -->
       <label>No. Orden de Compra</label>
       <input id="ocNo"
-        maxlength="100"
+        maxlength="200"
         value="${esc(v.ocNo || "")}"
         ${isGuardia ? "disabled" : ""}
       />
@@ -5411,7 +5411,7 @@ ${incLabel ? `
 
       <!-- ✅ NUEVO -->
       <label>No. Factura</label>
-      <input id="facturaNo" placeholder="FAC-88921" maxlength="100" value="${esc(v.facturaNo || "")}" />
+      <input id="facturaNo" placeholder="FAC-88921" maxlength="200" value="${esc(v.facturaNo || "")}" />
 
       <div class="divider"></div>
 
@@ -5499,7 +5499,7 @@ ${incLabel ? `
       <!-- ✅ NUEVO -->
       <label>No. Orden de Compra</label>
       <input id="ocNo"
-        maxlength="100"
+        maxlength="200"
         value="${esc(v.ocNo || "")}"
         ${isGuardia ? "disabled" : ""}
       />
@@ -5511,7 +5511,7 @@ ${incLabel ? `
 
       <!-- ✅ NUEVO -->
       <label>No. Factura</label>
-      <input id="facturaNo" placeholder="FAC-88921" maxlength="100" value="${esc(v.facturaNo || "")}" />
+      <input id="facturaNo" placeholder="FAC-88921" maxlength="200" value="${esc(v.facturaNo || "")}" />
 
       <div class="divider"></div>
 
