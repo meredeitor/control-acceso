@@ -297,6 +297,26 @@ height: 100vh;
   word-break: break-word;    /* rompe palabras largas */
   line-height: 1.2;
 }
+.qr-info{ min-width:0; }
+.qr-detail-card{ min-width:0; overflow:hidden; }
+.qr-detail-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  max-width:100%;
+  white-space:normal;
+}
+.qr-detail-row > span{ flex:0 0 auto; }
+.qr-detail-row > b{
+  flex:1 1 auto;
+  min-width:0;
+  text-align:right;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+  white-space:normal;
+  line-height:1.25;
+}
 /* =========================
    Modal (dialog) genérico
 ========================= */
@@ -4824,13 +4844,13 @@ if(existeCitaEnHorario(fechaHora, area)){
           <div id="qrcode" style="background:white; padding:10px; border-radius:14px; display:inline-block;"></div>
         </div>
 
-        <div style="flex:1; min-width:220px;">
+        <div class="qr-info" style="flex:1; min-width:220px;">
           <div class="pill" style="margin-bottom:10px;">
             <span class="dot info"></span> ID:
             <b style="color:var(--text); margin-left:6px;">${esc(String(v.id))}</b>
           </div>
 
-          <div class="card" style="box-shadow:none;">
+          <div class="card qr-detail-card" style="box-shadow:none;">
             <div style="color:var(--muted);font-size:12px;">Proveedor</div>
             <div style="font-weight:800;">${esc(v.proveedor)}</div>
 
@@ -4846,14 +4866,14 @@ if(existeCitaEnHorario(fechaHora, area)){
           
             <div style="height:10px"></div>
 
-<div class="pill" style="display:flex; justify-content:space-between;">
+<div class="pill qr-detail-row">
   <span style="color:var(--muted)">No. Orden de Compra</span>
   <b style="color:var(--text)">${esc(v.ocNo || "-")}</b>
 </div>
 
 <div style="height:8px"></div>
 
-<div class="pill" style="display:flex; justify-content:space-between;">
+<div class="pill qr-detail-row">
   <span style="color:var(--muted)">No. Factura</span>
   <b style="color:var(--text)">${esc(v.facturaNo || "-")}</b>
 </div>
