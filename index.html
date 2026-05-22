@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Control de Acceso Proveedores</title>
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" href="icon-192.png" />
   <meta name="theme-color" content="#0f172a" />
 
   <!-- Cargar librerías pesadas sin bloquear render -->
@@ -36,18 +37,16 @@
       backdrop-filter: blur(8px);
       border-bottom:1px solid var(--border);
     }
-    .topbar{
-      max-width:1250px; margin:0 auto; padding:14px 14px 10px;
-      display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;
-    }
+    .topbar{ max-width:1250px; margin:0 auto; padding:14px 16px 10px;
+    display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
     .title{ display:flex; gap:10px; align-items:center; min-width:240px; }
     .logo{
-      width:36px; height:36px; border-radius:10px;
-      background: linear-gradient(135deg, var(--brand), #60a5fa);
-      box-shadow:0 10px 25px rgba(59,130,246,.25);
-      display:flex; align-items:center; justify-content:center;
-      font-weight:800; letter-spacing:.5px;
-    }
+     width:36px; height:36px; border-radius:10px;
+     background: linear-gradient(135deg, #2563eb, #60a5fa);
+     box-shadow:0 10px 22px rgba(37,99,235,.18);
+     display:flex; align-items:center; justify-content:center;
+     font-weight:900; letter-spacing:.5px; color:#fff;
+   }
     .title h1{ font-size:16px; margin:0; line-height:1.1; }
     .title small{ display:block; color:var(--muted); font-size:12px; margin-top:2px; }
     .actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
@@ -63,7 +62,7 @@
     .grid{ display:grid; gap:12px; }
     .grid.cols-5{ grid-template-columns: repeat(5, minmax(220px, 1fr)); }
     @media (max-width:1100px){ .grid.cols-5{ grid-template-columns: repeat(3, minmax(220px, 1fr)); } }
-    @media (max-width:720px){ .grid.cols-5{ grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width:720px){ .grid.cols-5{ grid-template-columns: repeat(1, 1fr); } }
     @media (max-width:500px){ .grid.cols-5{ grid-template-columns: 1fr; } }
 
     input, textarea, select{
@@ -638,26 +637,7 @@ html[data-theme="light"] .pill.info *{
   }
 }
 
-@media (max-width: 600px){
-  .topbar{
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-  .actions{
-    justify-content: space-between;
-  }
-  .kpis,
-  .kanban{
-    grid-template-columns: 1fr !important;
-  }
-  button,
-  input,
-  select{
-    min-height: 44px;
-    font-size: 15px;
-  }
-}
+
 
 /* ---------- CONTENEDORES BLANCOS ---------- */
 html[data-theme="light"] .main-wrap,
@@ -744,6 +724,16 @@ html[data-theme="light"] .pill.info *{
 
 .sidebar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.32);
+}
+
+.title{
+  font-size:20px;
+  font-weight:700;
+}
+
+.big{
+  font-size:32px;
+  font-weight:900;
 }
 
 </style>
@@ -962,15 +952,13 @@ html[data-theme="light"] .pill.info *{
         <span id="netText">En línea</span>
       </span>
       <span class="pill" id="userPill" style="display:none;"></span>
-      <input id="qSearch" placeholder="Buscar proveedor / empresa..." style="max-width:260px;" />
       <button class="secondary" id="btnTheme">Tema</button>
     </div>
   </div>
   
-
-
 </header>
 <div class="container">
+  
   <div id="app"></div>
 </div>
 
@@ -1135,6 +1123,7 @@ let proveedoresLoaded = false;
 let proveedoresLoading = false;
 let unsubscribeVisitas = null;
 let lockView = false;
+let currentView = "login";
 let chartAreaInstance = null;
 let chartEstadoInstance = null;
 let chartDictamenInstance = null;
@@ -1172,7 +1161,8 @@ const PIN_SESSION_KEY = "adminPinOkTs";
     const $ = (sel, root=document) => root.querySelector(sel);
     const appEl = $("#app");
     const toasts = $("#toasts");
-    const qSearch = $("#qSearch");
+    let qSearch = $("#qSearch");
+    let dashboardSearchTerm = "";
     const netDot = $("#netDot");
     const netText = $("#netText");
     const actionsBar = $("#actionsBar");
@@ -1209,6 +1199,7 @@ const PIN_SESSION_KEY = "adminPinOkTs";
     // -------------------------
     
    function renderReporteCambios(){
+  currentView = "reporte_cambios";
   let rolFiltro = ""; // estado local del filtro
 
   function filtrarYRenderizar(){
@@ -1429,6 +1420,7 @@ function slotOcupado(area, slotHora, citasHoy){
 async function goNuevaCita(){
   setActiveSb('nuevo');   // ✅ CLAVE
   lockView = true;        // 🔒 bloquea auto-render
+  currentView = "nuevo";
   sbClose();
   await renderNuevo();
 }
@@ -2774,7 +2766,7 @@ window.addEventListener('visibilitychange', ()=>{
   const hamb = document.getElementById("btnHamb");
   if(!currentUser){
     userPill.style.display = "none";
-    qSearch.style.display = "none";
+    if(qSearch) qSearch.style.display = "none";
     if(hamb) hamb.style.display = "none";
     return;
   }
@@ -2782,15 +2774,21 @@ window.addEventListener('visibilitychange', ()=>{
   userPill.style.display = "";
   const dot = currentUser.role === ROLES.ADMIN ? "bad" : (currentUser.role === ROLES.PENDIENTE ? "warn" : "ok");
   userPill.innerHTML = `<span class="dot ${dot}"></span>${esc(currentUser.nombre)} • ${esc(String(currentUser.role||"").toUpperCase())}`;
-  qSearch.style.display = "";
-  qSearch.placeholder = (currentUser.role === ROLES.PROVEEDOR)
+  if(qSearch){
+    qSearch.style.display = "";
+    qSearch.placeholder = (currentUser.role === ROLES.PROVEEDOR)
     ? "Ingresa ID (del QR)..."
     : "Buscar proveedor / empresa...";
+  }
 }
 
   function renderLogin(){
-  qSearch.value = "";
-  qSearch.style.display = "none";
+  currentView = "login";
+  dashboardSearchTerm = "";
+  if(qSearch){
+    qSearch.value = "";
+    qSearch.style.display = "none";
+  }
   userPill.style.display = "none";
 
   let isRegister = false;
@@ -2939,6 +2937,7 @@ function renderRegisterForm(){
     }
 
     function renderPendiente(){
+  currentView = "pendiente";
   appEl.innerHTML = `
     <div class="card" style="max-width:520px;margin:50px auto;text-align:center;">
       <div class="logo" style="margin:0 auto 14px;">⏳</div>
@@ -2970,9 +2969,10 @@ function renderRegisterForm(){
 
     function renderDashboardHoy(){
       if(!requirePerm("ver_dashboard","Tu rol no puede ver el dashboard.")) return;
+      currentView = "dashboard";
 
       const today = new Date();
-      const term = (qSearch.value || "").trim().toLowerCase();
+      const term = (dashboardSearchTerm || "").trim().toLowerCase();
 
       // ✅ SOLO HOY: filtra por fechaHoraTs
      const todayList = visitas
@@ -3001,21 +3001,22 @@ function renderRegisterForm(){
     Escanear QR
   </button>
 ` : ""}  
-      <div class="grid cols-5" style="margin-bottom:18px">
-          <div class="card"><h3>Programados</h3><div class="big">${programados.length}</div></div>
-          <div class="card"><h3>Llegaron</h3><div class="big">${llegados.length}</div></div>
-          <div class="card"><h3>Dentro</h3><div class="big">${dentro.length}</div></div>
-          <div class="card"><h3>Despachados</h3><div class="big">${despachados.length}</div></div>
-          <div class="card"><h3>Finalizados</h3><div class="big">${finalizados.length}</div></div>
-        </div>
+      
       `;
 
       const col = (title, dotClass, items) => `
         <div class="col">
-          <h3>
-            <span><span class="dot ${dotClass}" style="margin-right:8px;"></span>${esc(title)}</span>
-            <span>${items.length}</span>
-          </h3>
+          
+<div class="card">
+  <div class="title">
+    <span class="dot ${dotClass}" style="margin-right:8px;"></span>
+    ${esc(title)}
+  </div>
+
+  <div class="big">${items.length}</div>
+</div>
+
+          <br>
           ${items.length ? items.map(card).join("") : `<div style="color:var(--muted);font-size:12px;">Sin registros</div>`}
         </div>
       `;
@@ -3086,6 +3087,12 @@ ${incLabel ? `
           <span class="dot brand"></span> Vista: <b style="color:var(--text);">${new Date().toLocaleDateString()}</b>
         </div>
         <span class="pill" style="margin-left:auto;">Total: <b style="color:var(--text); margin-left:6px;">${filtered.length}</b></span>
+        
+        <input id="dashSearch"
+         placeholder="Buscar proveedor / empresa..."
+         value="${esc(dashboardSearchTerm)}"
+         style="max-width:220px; margin-left:auto;" />
+
         ${resumen}
         <div class="grid cols-5">
           ${col("Programados","info",programados)}
@@ -3099,11 +3106,13 @@ ${incLabel ? `
  <span class="pill" style="margin-left:auto;">Total: <b style="color:var(--text); margin-left:6px;">${filtered.length}</b></span>
 </div>
       `;
+    
     }
 
     async function renderHistorial(){
  try{ setActiveSb('historial'); }catch{}
       if(!requirePerm("ver_historial","Tu rol no puede ver historial.")) return;
+      currentView = "historial";
 
       const todayISO = new Date().toISOString().slice(0,10);
 
@@ -3175,6 +3184,7 @@ let _comprasCache = []; // cache de la vista (rango cargado)
 
 async function renderCitasCompras(){
   if(!requirePerm("ver_citas_compras","Solo COMPRAS puede ver esta tabla.")) return;
+  currentView = "citas_compras";
 
   // defaults: hoy -> +30 días
   const today = new Date();
@@ -3421,6 +3431,7 @@ function paintCitasComprasTable(tableList, baseList){
 
 async function renderEditarCitaCompras(id){
   if(!requirePerm("editar_cita","No tienes permiso para editar citas.")) return;
+  currentView = "editar_cita";
   const v = visitas.find(x => String(x.id) === String(id));
   if(!v){
     toast("No encontrado","No se encontró la cita.","warn");
@@ -3484,12 +3495,12 @@ async function renderEditarCitaCompras(id){
 
         <div>
           <label>No. Orden de Compra</label>
-          <input id="ccOc" maxlength="200" value="${esc(v.ocNo||"")}">
+          <input id="ccOc" maxlength="100" value="${esc(v.ocNo||"")}">
         </div>
 
         <div>
           <label>No. Factura</label>
-          <input id="ccFac" maxlength="200" value="${esc(v.facturaNo||"")}">
+          <input id="ccFac" maxlength="100" value="${esc(v.facturaNo||"")}">
         </div>
 
         <div>
@@ -3705,6 +3716,7 @@ function renderReportes(){
     toast("Acceso denegado", "No tienes permiso para ver reportes.", "bad");
     return;
   }
+  currentView = "reportes";
 
   const todayISO = new Date().toISOString().slice(0,10);
   const weekAgo  = new Date(Date.now() - 6*24*60*60*1000).toISOString().slice(0,10);
@@ -3823,7 +3835,7 @@ function renderReportes(){
       <!-- ✅ KPIs: auto-fit para que SIEMPRE quepan -->
       <div style="
         display:grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
         gap:12px;
         margin-bottom:18px;
       ">
@@ -3840,35 +3852,35 @@ function renderReportes(){
       <!-- ✅ Gráficas: alturas responsivas y sin overflow -->
       <div style="
         display:grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         gap:12px;
       ">
-        <div class="col" style="height:clamp(220px, 30vw, 260px); overflow:hidden;">
+        <div class="col" style="height:clamp(300px, 30vw, 300px); overflow:hidden;">
           <h3>Visitas por área</h3>
           <canvas id="chartArea" style="width:100%;height:100%;"></canvas>
         </div>
 
-        <div class="col" style="height:clamp(220px, 30vw, 260px); overflow:hidden;">
+        <div class="col" style="height:clamp(300px, 30vw, 300px); overflow:hidden;">
           <h3>Estado de visitas</h3>
           <canvas id="chartEstado" style="width:100%;height:100%;"></canvas>
         </div>
 
-        <div class="col" style="height:clamp(220px, 30vw, 260px); overflow:hidden;">
+        <div class="col" style="height:clamp(300px, 30vw, 300px); overflow:hidden;">
           <h3>Dictamen calidad</h3>
           <canvas id="chartDictamen" style="width:100%;height:100%;"></canvas>
         </div>
 
-        <div class="col" style="height:clamp(240px, 34vw, 300px); overflow:hidden;">
+        <div class="col" style="height:clamp(300px, 30vw, 300px); overflow:hidden;">
           <h3>Tiempo promedio por área</h3>
           <canvas id="chartTiempo" style="width:100%;height:100%;"></canvas>
         </div>
 
-        <div class="col" style="height:clamp(240px, 34vw, 300px); overflow:hidden;">
+        <div class="col" style="height:clamp(300px, 30vw, 300px); overflow:hidden;">
           <h3>Incidencias por área (Calidad)</h3>
           <canvas id="chartIncidencias" style="width:100%;height:100%;"></canvas>
         </div>
 
-        <div class="col" style="height:clamp(240px, 34vw, 300px); overflow:hidden;">
+        <div class="col" style="height:clamp(300px, 30vw, 300px); overflow:hidden;">
         <h3>Puntualidad</h3>
         <canvas id="chartPuntualidad" style="width:100%;height:100%;"></canvas>
         </div>
@@ -4340,6 +4352,7 @@ appEl.addEventListener("click", (e) => {
     async function renderAdminRoles(){
  try{ setActiveSb('config'); }catch{}
       if(!requirePerm("admin_roles","Solo ADMIN puede administrar roles.")) return;
+      currentView = "admin_roles";
 
       appEl.innerHTML = `
         <div class="card">
@@ -4495,7 +4508,8 @@ appEl.addEventListener("click", (e) => {
     // -------------------------
     function renderProveedor(){
       if(!requirePerm("buscar_proveedor","Tu rol no puede usar el portal.")) return;
-      const term = (qSearch.value || "").trim().toLowerCase();
+      currentView = "proveedor";
+      const term = (dashboardSearchTerm || qSearch?.value || "").trim().toLowerCase();
       const results = !term ? [] : visitas.filter(v => String(v.id).toLowerCase() === term).slice(0, 10);
 
       appEl.innerHTML = `
@@ -4504,6 +4518,10 @@ appEl.addEventListener("click", (e) => {
           <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
             Escribe tu <b>ID</b> (del QR) para ver tu QR.
           </p>
+          <input id="dashSearch"
+            placeholder="Ingresa ID (del QR)..."
+            value="${esc(dashboardSearchTerm)}"
+            style="max-width:320px;" />
           <div class="divider"></div>
           ${results.length ? results.map(v => `
             <div class="tarjeta" data-action="verQR" data-id="${esc(v.id)}">
@@ -4604,6 +4622,7 @@ appEl.addEventListener("click", (e) => {
 
 async function renderNuevo(){
   if(!requirePerm("crear_cita","Solo COMPRAS o ADMIN pueden crear citas.")) return;
+  currentView = "nuevo";
 
   if(!proveedoresCache.length){
   await loadProveedores();
@@ -4678,12 +4697,12 @@ async function renderNuevo(){
          
         <div>
           <label>No. Orden de Compra</label>
-          <input id="ocNo" maxlength="200"/>
+          <input id="ocNo" maxlength="100"/>
         </div>
 
         <div>
           <label>No. Factura</label>
-          <input id="facturaNo" maxlength="200"/>
+          <input id="facturaNo" maxlength="100"/>
         </div>
         <div>
         <label>Material a recibir</label>
@@ -4826,6 +4845,7 @@ if(existeCitaEnHorario(fechaHora, area)){
     // QR
     // -------------------------
    function renderQR(id){
+  currentView = "qr";
   const v = visitas.find(x => x.id == id);
   if(!v) return renderHome();
 
@@ -5038,6 +5058,7 @@ if(existeCitaEnHorario(fechaHora, area)){
 
     function renderScanner(){
       if(!requirePerm("escanear_qr","Solo GUARDIA o ADMIN pueden escanear QR.")) return;
+      currentView = "scanner";
       cleanup();
 
       appEl.innerHTML = `
@@ -5147,6 +5168,7 @@ if(existeCitaEnHorario(fechaHora, area)){
 
 async function renderAdminProveedores(){
   if(!requirePerm("admin_proveedores","Solo ADMIN")) return;
+  currentView = "admin_proveedores";
 
   appEl.innerHTML = `
     <div class="card">
@@ -5194,6 +5216,7 @@ async function renderAdminProveedores(){
       const v = visitas.find(x => x.id == id);
       if(!v) return renderDashboardHoy();
       if(!requirePerm("ver_ficha","Tu rol no puede ver fichas.")) return;
+      currentView = "ficha";
 
       if(v.status === Status.DENTRO && (currentUser.role === ROLES.CALIDAD || currentUser.role === ROLES.ADMIN)){
         return renderFichaCalidad(v);
@@ -5336,8 +5359,9 @@ ${incLabel ? `
       `;
     }
 
-    function renderEntrada(id){
+    function renderEntradaLegacy(id){
   if(!requirePerm("registrar_entrada","Solo GUARDIA o ADMIN pueden registrar entrada.")) return;
+  currentView = "entrada";
 
   const isGuardia = currentUser?.role === ROLES.GUARDIA;
   const v = visitas.find(x => x.id == id);
@@ -5419,7 +5443,7 @@ ${incLabel ? `
       <!-- ✅ NUEVO -->
       <label>No. Orden de Compra</label>
       <input id="ocNo"
-        maxlength="200"
+        maxlength="100"
         value="${esc(v.ocNo || "")}"
         ${isGuardia ? "disabled" : ""}
       />
@@ -5431,7 +5455,7 @@ ${incLabel ? `
 
       <!-- ✅ NUEVO -->
       <label>No. Factura</label>
-      <input id="facturaNo" placeholder="FAC-88921" maxlength="200" value="${esc(v.facturaNo || "")}" />
+      <input id="facturaNo" placeholder="FAC-88921" maxlength="100" value="${esc(v.facturaNo || "")}" />
 
       <div class="divider"></div>
 
@@ -5449,6 +5473,7 @@ ${incLabel ? `
 
     function renderEntrada(id){
   if(!requirePerm("registrar_entrada","Solo GUARDIA o ADMIN pueden registrar entrada.")) return;
+  currentView = "entrada";
 
   const isGuardia = currentUser?.role === ROLES.GUARDIA;
   const v = visitas.find(x => x.id == id);
@@ -5519,7 +5544,7 @@ ${incLabel ? `
       <!-- ✅ NUEVO -->
       <label>No. Orden de Compra</label>
       <input id="ocNo"
-        maxlength="200"
+        maxlength="100"
         value="${esc(v.ocNo || "")}"
         ${isGuardia ? "disabled" : ""}
       />
@@ -5531,7 +5556,7 @@ ${incLabel ? `
 
       <!-- ✅ NUEVO -->
       <label>No. Factura</label>
-      <input id="facturaNo" placeholder="FAC-88921" maxlength="200" value="${esc(v.facturaNo || "")}" />
+      <input id="facturaNo" placeholder="FAC-88921" maxlength="100" value="${esc(v.facturaNo || "")}" />
 
       <div class="divider"></div>
 
@@ -5549,6 +5574,7 @@ ${incLabel ? `
 
     function renderFichaCalidad(v){
       if(!requirePerm("dictaminar","Solo CALIDAD o ADMIN pueden dictaminar.")) return;
+      currentView = "calidad";
       cleanup();
 
       const dictSel = (v.dictamen?.estado || "pendiente").toLowerCase();
@@ -5689,6 +5715,7 @@ ${incLabel ? `
     
 function renderSalida(id){
       if(!requirePerm("registrar_salida","No tienes permiso para registrar salida.")) return;
+      currentView = "salida";
       cleanup();
       const v = visitas.find(x => x.id == id);
       if(!v) return renderDashboardHoy();
@@ -6416,9 +6443,20 @@ case "volverAEditarCita":
 
     // Buscar (local inmediato + sync con debounce)
 let _searchTimer = null;
-qSearch.addEventListener("input", () => {
+document.addEventListener("input", (e) => {
+  const searchInput = e.target.closest("#dashSearch, #qSearch");
+  if(!searchInput) return;
   if(!currentUser) return;
+  dashboardSearchTerm = searchInput.value || "";
+  const cursorPos = searchInput.selectionStart ?? dashboardSearchTerm.length;
   renderHome();
+  requestAnimationFrame(() => {
+    const nextInput = document.getElementById(searchInput.id);
+    if(nextInput){
+      nextInput.focus();
+      nextInput.setSelectionRange(cursorPos, cursorPos);
+    }
+  });
   if(_searchTimer) clearTimeout(_searchTimer);
   _searchTimer = setTimeout(async () => {
     updateNet();
