@@ -1611,10 +1611,10 @@ function collectFacturaOcFromDom(editorId="facturasOcEditor"){
 
     if(!facturaNo && !ocNos.length) continue;
 
-    if(!facturaNo){
-      toast("Factura requerida", "Cada grupo de OC debe tener un numero de factura.", "warn", 3200);
-      return null;
-    }
+   if(!facturaNo && !ocNos.length){
+   // fila vacía → ignorar
+   continue;
+  }
 
     if(!ocNos.length){
       toast("OC requerida", `La factura ${facturaNo} necesita al menos una OC.`, "warn", 3200);
