@@ -316,6 +316,52 @@ height: 100vh;
   white-space:normal;
   line-height:1.25;
 }
+.factura-oc-editor{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.factura-oc-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.factura-oc-head label{ margin:0; }
+.factura-oc-list{
+  display:grid;
+  gap:10px;
+}
+.factura-oc-item{
+  display:grid;
+  grid-template-columns: minmax(160px, .85fr) minmax(220px, 1.4fr) auto;
+  gap:10px;
+  align-items:end;
+  padding:10px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:12px;
+  background:rgba(2,6,23,.20);
+}
+.factura-oc-item textarea{ min-height:42px; resize:vertical; }
+.factura-oc-readonly .factura-oc-item{ grid-template-columns: minmax(160px, .85fr) minmax(220px, 1.4fr); }
+.factura-oc-remove{
+  width:42px;
+  height:42px;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.factura-oc-hint{
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.35;
+}
+@media (max-width:760px){
+  .factura-oc-item{ grid-template-columns:1fr; }
+  .factura-oc-remove{ width:100%; }
+}
 /* =========================
    Modal (dialog) genérico
 ========================= */
@@ -468,6 +514,35 @@ html[data-theme="light"] .pill{
   background: rgba(255,255,255,.7);
   border:1px solid var(--border);
   color: var(--muted);
+}
+
+/* Facturas / OC - tema claro */
+html[data-theme="light"] .factura-oc-editor{
+  color: var(--text);
+}
+html[data-theme="light"] .factura-oc-item{
+  background:#f8fafc;
+  border:1px solid rgba(15,23,42,.10);
+  box-shadow:0 6px 16px rgba(15,23,42,.05);
+}
+html[data-theme="light"] .factura-oc-head label,
+html[data-theme="light"] .factura-oc-item label{
+  color:#475569;
+}
+html[data-theme="light"] .factura-oc-hint{
+  color:#64748b;
+}
+html[data-theme="light"] .factura-oc-remove{
+  background:#e5e7eb;
+  color:#0f172a;
+  border:1px solid rgba(15,23,42,.10);
+}
+html[data-theme="light"] .factura-oc-readonly .factura-oc-item{
+  background:#ffffff;
+}
+html[data-theme="light"] .factura-oc-readonly .pill{
+  background:#f8fafc;
+  border-color:rgba(15,23,42,.10);
 }
 /* ============================
    Sidebar – Botones gris clarito
@@ -1447,6 +1522,163 @@ async function goNuevaCita(){
     "\"": "&quot;",
     "'": "&#039;"
   }[ch]));
+}
+function splitDocTokens(value=""){
+  return String(value || "")
+    .split(/[\s,;|/]+/)
+    .map(x => x.trim())
+    .filter(Boolean);
+}
+
+function normalizeFacturasOc(v={}){
+  const src = Array.isArray(v.facturasOc) ? v.facturasOc : [];
+  const rels = src.map(r => ({
+    facturaNo: String(r?.facturaNo || "").trim(),
+    ocNos: Array.isArray(r?.ocNos) ? r.ocNos.map(x => String(x || "").trim()).filter(Boolean) : splitDocTokens(r?.ocNos || "")
+  })).filter(r => r.facturaNo || r.ocNos.length);
+
+  if(rels.length) return rels;
+
+  const facturas = splitDocTokens(v.facturaNo || "");
+  const ocs = splitDocTokens(v.ocNo || "");
+
+  if(facturas.length){
+    return facturas.map((facturaNo, idx) => ({
+      facturaNo,
+      ocNos: idx === 0 ? ocs : []
+    }));
+  }
+
+  if(ocs.length) return [{ facturaNo: "", ocNos: ocs }];
+  return [{ facturaNo: "", ocNos: [] }];
+}
+
+function renderFacturaOcItem(rel={}, idx=0, editorId="facturasOcEditor"){
+  const facturaNo = rel?.facturaNo || "";
+  const ocNos = Array.isArray(rel?.ocNos) ? rel.ocNos.join(", ") : String(rel?.ocNos || "");
+  return `
+    <div class="factura-oc-item" data-index="${idx}">
+      <div>
+        <label>Factura ${idx + 1}</label>
+        <input class="js-factura-no" maxlength="100" placeholder="Ej. FAC-88921" value="${esc(facturaNo)}">
+      </div>
+      <div>
+        <label>OC relacionadas</label>
+        <textarea class="js-oc-nos" rows="1" placeholder="Ej. 12345, 67890">${esc(ocNos)}</textarea>
+      </div>
+      <button class="secondary factura-oc-remove" type="button" data-action="removeFacturaOc" data-editor="${esc(editorId)}" title="Quitar factura">x</button>
+    </div>
+  `;
+}
+
+function renderFacturaOcEditor(relaciones, editorId="facturasOcEditor"){
+  const rows = (relaciones && relaciones.length ? relaciones : [{ facturaNo:"", ocNos:[] }]);
+  return `
+    <div class="factura-oc-editor" id="${esc(editorId)}">
+      <div class="factura-oc-head">
+        <div>
+          <label>Facturas y Ordenes de Compra</label>
+          <div class="factura-oc-hint">Agrega una fila por factura y escribe maximo 8 OC de 5 caracteres, separadas por coma, espacio o salto de linea.</div>
+        </div>
+        <button class="secondary" type="button" data-action="addFacturaOc" data-editor="${esc(editorId)}">Agregar factura</button>
+      </div>
+      <div class="factura-oc-list">
+        ${rows.map((r, i) => renderFacturaOcItem(r, i, editorId)).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function syncFacturasOcEditorNumbers(editor){
+  if(!editor) return;
+  editor.querySelectorAll(".factura-oc-item").forEach((row, idx) => {
+    row.dataset.index = String(idx);
+    const label = row.querySelector("label");
+    if(label) label.textContent = `Factura ${idx + 1}`;
+  });
+}
+
+function collectFacturaOcFromDom(editorId="facturasOcEditor"){
+  const editor = document.getElementById(editorId);
+  if(!editor) return { facturasOc: [], facturaNo: "", ocNo: "" };
+
+  const rows = Array.from(editor.querySelectorAll(".factura-oc-item"));
+  const facturasOc = [];
+
+  for(const row of rows){
+    const facturaNo = (row.querySelector(".js-factura-no")?.value || "").trim();
+    const ocNos = splitDocTokens(row.querySelector(".js-oc-nos")?.value || "");
+
+    if(!facturaNo && !ocNos.length) continue;
+
+    if(!facturaNo){
+      toast("Factura requerida", "Cada grupo de OC debe tener un numero de factura.", "warn", 3200);
+      return null;
+    }
+
+    if(!ocNos.length){
+      toast("OC requerida", `La factura ${facturaNo} necesita al menos una OC.`, "warn", 3200);
+      return null;
+    }
+
+    if(ocNos.length > 8){
+      toast("Limite de OC", `La factura ${facturaNo} solo puede tener maximo 8 ordenes de compra.`, "warn", 4200);
+      return null;
+    }
+
+    const invalid = ocNos.find(oc => oc.length !== 5);
+    if(invalid){
+      toast("OC invalida", `La OC ${invalid} debe tener exactamente 5 caracteres.`, "warn", 3600);
+      return null;
+    }
+
+    facturasOc.push({ facturaNo, ocNos });
+  }
+
+  return {
+    facturasOc,
+    facturaNo: facturasOc.map(r => r.facturaNo).join(", "),
+    ocNo: [...new Set(facturasOc.flatMap(r => r.ocNos))].join(", ")
+  };
+}
+
+function formatFacturasOc(v={}){
+  const rels = normalizeFacturasOc(v).filter(r => r.facturaNo || r.ocNos.length);
+  if(!rels.length) return "-";
+  return rels.map(r => `${r.facturaNo || "Sin factura"}: ${(r.ocNos || []).join(", ") || "Sin OC"}`).join(" | ");
+}
+function renderFacturasOcReadonly(v={}){
+  const rels = normalizeFacturasOc(v).filter(r => r.facturaNo || r.ocNos.length);
+  if(!rels.length){
+    return `
+      <div class="pill qr-detail-row">
+        <span style="color:var(--muted)">Factura / OC</span>
+        <b style="color:var(--text)">-</b>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="factura-oc-editor factura-oc-readonly">
+      <div class="factura-oc-head">
+        <label>Facturas y Ordenes de Compra</label>
+      </div>
+      <div class="factura-oc-list">
+        ${rels.map((r, idx) => `
+          <div class="factura-oc-item">
+            <div>
+              <label>Factura ${idx + 1}</label>
+              <div class="pill qr-detail-row"><span style="color:var(--muted)">No. Factura</span><b style="color:var(--text)">${esc(r.facturaNo || "-")}</b></div>
+            </div>
+            <div>
+              <label>OC relacionadas</label>
+              <div class="pill qr-detail-row"><span style="color:var(--muted)">OC</span><b style="color:var(--text)">${esc((r.ocNos || []).join(", ") || "-")}</b></div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
 }
 
 function toast(title, msg, type="info", ttl=2600){
@@ -3494,14 +3726,8 @@ async function renderEditarCitaCompras(id){
           </select>
         </div>
 
-        <div>
-          <label>No. Orden de Compra</label>
-          <input id="ccOc" maxlength="100" value="${esc(v.ocNo||"")}">
-        </div>
-
-        <div>
-          <label>No. Factura</label>
-          <input id="ccFac" maxlength="100" value="${esc(v.facturaNo||"")}">
+        <div style="grid-column:1/-1;">
+          ${renderFacturaOcEditor(normalizeFacturasOc(v), "ccFacturasOcEditor")}
         </div>
 
         <div>
@@ -3572,8 +3798,10 @@ async function guardarEdicionCitaCompras(id){
   const area = (document.getElementById("ccAreaEdit")?.value || "").trim();
   const motivo = (document.getElementById("ccMotivo")?.value || "").trim();
   const fechaHora = (document.getElementById("ccFechaHora")?.value || "").trim();
-  const ocNo = (document.getElementById("ccOc")?.value || "").trim();
-  const facturaNo = (document.getElementById("ccFac")?.value || "").trim();
+  const docs = collectFacturaOcFromDom("ccFacturasOcEditor");
+  if(!docs) return;
+  const ocNo = docs.ocNo;
+  const facturaNo = docs.facturaNo;
 
   if(!proveedorNombre || !area || !motivo || !fechaHora){
     toast("Campos obligatorios","Proveedor, Área, Motivo y Fecha","warn");
@@ -3593,6 +3821,7 @@ async function guardarEdicionCitaCompras(id){
   registrarCambio(v, "fechaHora", v.fechaHora, fechaHora);
   registrarCambio(v, "ocNo", v.ocNo, ocNo);
   registrarCambio(v, "facturaNo", v.facturaNo, facturaNo);
+  registrarCambio(v, "facturasOc", JSON.stringify(v.facturasOc || []), JSON.stringify(docs.facturasOc || []));
 
   v.proveedorCodigo = proveedorCodigo;
   v.proveedor = proveedorNombre;
@@ -3603,6 +3832,7 @@ async function guardarEdicionCitaCompras(id){
   v.fechaHoraTs = new Date(fechaHora).getTime();
   v.ocNo = ocNo;
   v.facturaNo = facturaNo;
+  v.facturasOc = docs.facturasOc;
 
   v.updatedTs = Date.now();
 
@@ -4697,14 +4927,8 @@ async function renderNuevo(){
           </select>
         </div>
          
-        <div>
-          <label>No. Orden de Compra</label>
-          <input id="ocNo" maxlength="100"/>
-        </div>
-
-        <div>
-          <label>No. Factura</label>
-          <input id="facturaNo" maxlength="100"/>
+        <div style="grid-column:1/-1;">
+          ${renderFacturaOcEditor([{ facturaNo:"", ocNos:[] }], "facturasOcEditor")}
         </div>
         <div>
         <label>Material a recibir</label>
@@ -4805,8 +5029,10 @@ function setupProveedorAutocomplete(){
   const area = document.getElementById("area").value;
   const motivo = document.getElementById("motivo").value;
   const fechaHora = document.getElementById("fechaHora").value;
-  const ocNo = document.getElementById("ocNo").value.trim();
-  const facturaNo = document.getElementById("facturaNo").value.trim();
+  const docs = collectFacturaOcFromDom("facturasOcEditor");
+  if(!docs) return null;
+  const ocNo = docs.ocNo;
+  const facturaNo = docs.facturaNo;
   const materialRecibir =
   document.getElementById("materialRecibir").value.trim();
 
@@ -4833,6 +5059,7 @@ if(existeCitaEnHorario(fechaHora, area)){
   fechaHoraTs,
   ocNo,
   facturaNo,
+  facturasOc: docs.facturasOc,
   materialRecibir,
   status: "programado",
   createdByUid: currentUser.uid,
@@ -4888,17 +5115,7 @@ if(existeCitaEnHorario(fechaHora, area)){
           
             <div style="height:10px"></div>
 
-<div class="pill qr-detail-row">
-  <span style="color:var(--muted)">No. Orden de Compra</span>
-  <b style="color:var(--text)">${esc(v.ocNo || "-")}</b>
-</div>
-
-<div style="height:8px"></div>
-
-<div class="pill qr-detail-row">
-  <span style="color:var(--muted)">No. Factura</span>
-  <b style="color:var(--text)">${esc(v.facturaNo || "-")}</b>
-</div>
+${renderFacturasOcReadonly(v)}
           
             </div>
 
@@ -5321,9 +5538,7 @@ ${incLabel ? `
 
           ${hasPerm("ver_documentos") ? `
             <div class="divider"></div>
-            <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">OC</span><b>${esc(v.ocNo || "-")}</b></div>
-            <div style="height:8px;"></div>
-            <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">Factura</span><b>${esc(v.facturaNo || "-")}</b></div>
+            ${renderFacturasOcReadonly(v)}
             <div class="row" style="margin-top:8px;">
               ${v.ocFileKey ? `<button class="secondary" data-action="verOC" data-id="${esc(v.id)}">Ver OC</button>` : ""}
               ${v.facturaFileKey ? `<button class="secondary" data-action="verFactura" data-id="${esc(v.id)}">Ver Factura</button>` : ""}
@@ -5441,23 +5656,7 @@ ${incLabel ? `
 
       <label>No. de Gafete *</label>
       <input id="gafeteNo" value="${esc(v.gafeteNo || "")}" />
-
-      <!-- ✅ NUEVO -->
-      <label>No. Orden de Compra</label>
-      <input id="ocNo"
-        maxlength="100"
-        value="${esc(v.ocNo || "")}"
-        ${isGuardia ? "disabled" : ""}
-      />
-      ${isGuardia ? `
-        <div style="color:var(--muted); font-size:12px; margin-top:6px;">
-          La Orden de Compra solo puede ser modificada por Compras o Admin.
-        </div>
-      ` : ""}
-
-      <!-- ✅ NUEVO -->
-      <label>No. Factura</label>
-      <input id="facturaNo" placeholder="FAC-88921" maxlength="100" value="${esc(v.facturaNo || "")}" />
+      ${renderFacturaOcEditor(normalizeFacturasOc(v), "entradaFacturasOcEditor")}
 
       <div class="divider"></div>
 
@@ -5542,23 +5741,7 @@ ${incLabel ? `
 
       <label>No. de Gafete *</label>
       <input id="gafeteNo" value="${esc(v.gafeteNo || "")}" />
-
-      <!-- ✅ NUEVO -->
-      <label>No. Orden de Compra</label>
-      <input id="ocNo"
-        maxlength="100"
-        value="${esc(v.ocNo || "")}"
-        ${isGuardia ? "disabled" : ""}
-      />
-      ${isGuardia ? `
-        <div style="color:var(--muted); font-size:12px; margin-top:6px;">
-          La Orden de Compra solo puede ser modificada por Compras o Admin.
-        </div>
-      ` : ""}
-
-      <!-- ✅ NUEVO -->
-      <label>No. Factura</label>
-      <input id="facturaNo" placeholder="FAC-88921" maxlength="100" value="${esc(v.facturaNo || "")}" />
+      ${renderFacturaOcEditor(normalizeFacturasOc(v), "entradaFacturasOcEditor")}
 
       <div class="divider"></div>
 
@@ -5593,9 +5776,7 @@ ${incLabel ? `
 
           ${hasPerm("ver_documentos") ? `
             <div class="divider"></div>
-            <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">OC</span><b>${esc(v.ocNo || "-")}</b></div>
-            <div style="height:8px;"></div>
-            <div class="pill" style="display:flex; justify-content:space-between;"><span style="color:var(--muted)">Factura</span><b>${esc(v.facturaNo || "-")}</b></div>
+            ${renderFacturasOcReadonly(v)}
             <div class="row" style="margin-top:8px;">
               ${v.ocFileKey ? `<button class="secondary" data-action="verOC" data-id="${esc(v.id)}">Ver OC</button>` : ""}
               ${v.facturaFileKey ? `<button class="secondary" data-action="verFactura" data-id="${esc(v.id)}">Ver Factura</button>` : ""}
@@ -5751,8 +5932,10 @@ async function confirmarEntrada(id) {
   // Validar campos obligatorios
   const guardia = document.getElementById("guardia")?.value.trim();
   const gafeteNo = document.getElementById("gafeteNo")?.value.trim();
-  const ocNo = document.getElementById("ocNo")?.value.trim();
-  const facturaNo = document.getElementById("facturaNo")?.value.trim();
+  const docs = collectFacturaOcFromDom("entradaFacturasOcEditor");
+  if(!docs) return;
+  const ocNo = docs.ocNo;
+  const facturaNo = docs.facturaNo;
 
   if (!guardia || !gafeteNo) {
     toast("Datos obligatorios", "Guardia y gafete son requeridos.", "warn");
@@ -5762,8 +5945,9 @@ async function confirmarEntrada(id) {
   // Guardar datos de entrada
   v.guardNombre = guardia;
   v.gafeteNo = gafeteNo;
-  if (ocNo) v.ocNo = ocNo;
-  if (facturaNo) v.facturaNo = facturaNo;
+  v.ocNo = ocNo;
+  v.facturaNo = facturaNo;
+  v.facturasOc = docs.facturasOc;
 
   v.entradaTs = Date.now();
   v.status = "dentro";
@@ -6268,6 +6452,31 @@ function renderProveedores(lista){
         case "nuevo": await goNuevaCita(); break;
 
         case "guardarProveedor": await guardarProveedor(); break;
+
+        case "addFacturaOc": {
+          const editorId = el.dataset.editor || "facturasOcEditor";
+          const editor = document.getElementById(editorId);
+          const list = editor?.querySelector(".factura-oc-list");
+          if(list){
+            const idx = list.querySelectorAll(".factura-oc-item").length;
+            list.insertAdjacentHTML("beforeend", renderFacturaOcItem({ facturaNo:"", ocNos:[] }, idx, editorId));
+          }
+          break;
+        }
+
+        case "removeFacturaOc": {
+          const editorId = el.dataset.editor || "facturasOcEditor";
+          const editor = document.getElementById(editorId);
+          const rows = editor ? Array.from(editor.querySelectorAll(".factura-oc-item")) : [];
+          const row = el.closest(".factura-oc-item");
+          if(rows.length <= 1){
+            row?.querySelectorAll("input, textarea").forEach(input => input.value = "");
+          }else{
+            row?.remove();
+            syncFacturasOcEditorNumbers(editor);
+          }
+          break;
+        }
         
         case "importProveedores": await importProveedoresDesdeExcel(); break;
 
