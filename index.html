@@ -977,6 +977,10 @@ html[data-theme="light"] .pill.info *{
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M19 8h2"/><path d="M20 7v2"/></svg></span>
         <span class="sb-txt">Roles</span>
       </div>
+      <div class="sb-btn" data-sb="conectados">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M18 5h3"/><path d="M19.5 3.5v3"/></svg></span>
+        <span class="sb-txt">Conectados</span>
+      </div>
       <div class="sb-btn" data-sb="activarqr">
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h6v6H5z"/><path d="M13 5h6v6h-6z"/><path d="M5 13h6v6H5z"/><path d="M14 14h1"/><path d="M17 13h2v2h-2z"/><path d="M13 18h6"/></svg></span>
         <span class="sb-txt">Activar QR</span>
@@ -1077,7 +1081,7 @@ document.getElementById("btnTheme")?.addEventListener("click", toggleTheme);
   setDoc, updateDoc, deleteDoc,
   query, orderBy, limit, where,
   serverTimestamp,
-  onSnapshot
+  getCountFromServer
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 
@@ -1101,6 +1105,7 @@ document.getElementById("btnTheme")?.addEventListener("click", toggleTheme);
 
   const COL_VISITAS = "visitas";
   const COL_USERS = "users";
+  const COL_PRESENCE = "presence";
   const QR_LATE_BLOCK_MIN = 30; // ⛔ bloqueo duro por retraso
 /* =========================
    Roles
@@ -1124,7 +1129,7 @@ document.getElementById("btnTheme")?.addEventListener("click", toggleTheme);
     "registrar_salida","exportar_excel","limpiar_finalizados",
     "reactivar_qr","eliminar","ver_qr","buscar_proveedor",
     "admin_roles","admin_proveedores","ver_citas_compras",
-    "editar_cita","cancelar_cita"
+    "editar_cita","cancelar_cita","admin_conectados"
   ];
 
  
@@ -1196,7 +1201,13 @@ const PERMISOS = {
 let proveedoresCache = [];
 let proveedoresLoaded = false;
 let proveedoresLoading = false;
-let unsubscribeVisitas = null;
+let proveedoresLoadPromise = null;
+let proveedoresLoadError = null;
+let presenceTimer = null;
+let presenceDisabled = false;
+let pendingUsersCountCache = { value: null, ts: 0, disabledUntil: 0 };
+let lastTodaySyncTs = 0;
+let currentUser = null; // {uid,email,role,nombre}
 let lockView = false;
 let currentView = "login";
 let chartAreaInstance = null;
@@ -1207,17 +1218,132 @@ let chartIncidenciasInstance = null;
 let chartPuntualidadInstance = null;
 
 async function ensureProveedoresLoaded(){
-  if (proveedoresLoaded || proveedoresLoading) return;
+  if (proveedoresLoaded) return proveedoresCache;
+  if (proveedoresLoadPromise) return proveedoresLoadPromise;
 
   proveedoresLoading = true;
-  try {
-    await loadProveedores();
-    proveedoresLoaded = true;
-  } catch (e) {
-    console.error("Error cargando proveedores", e);
-  } finally {
-    proveedoresLoading = false;
+  proveedoresLoadPromise = withTimeout(
+    loadProveedores(),
+    8000,
+    "No se pudo cargar proveedores a tiempo"
+  )
+    .catch(e => {
+      console.error("Error cargando proveedores", e);
+      proveedoresLoadError = e;
+      if(!proveedoresCache.length){
+        proveedoresCache = loadProveedoresLocalCache();
+        if(proveedoresCache.length) proveedoresLoaded = true;
+      }
+      return proveedoresCache;
+    })
+    .finally(() => {
+      proveedoresLoading = false;
+      proveedoresLoadPromise = null;
+    });
+
+  return proveedoresLoadPromise;
+}
+
+function loadProveedoresLocalCache(){
+  try{
+    const raw = localStorage.getItem("proveedores_cache_v1");
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  }catch{
+    return [];
   }
+}
+
+function saveProveedoresLocalCache(list){
+  try{
+    localStorage.setItem("proveedores_cache_v1", JSON.stringify(list || []));
+  }catch{}
+}
+
+function withTimeout(promise, ms, message){
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => {
+        const err = new Error(message || "Tiempo de espera agotado");
+        err.code = "timeout";
+        reject(err);
+      }, ms);
+    })
+  ]);
+}
+
+function dayKey(dateObj = new Date()){
+  const d = new Date(dateObj);
+  return d.toISOString().slice(0,10);
+}
+
+function isTodayDate(dateObj){
+  return dayKey(dateObj) === dayKey(new Date());
+}
+
+async function updatePresence(online = true){
+  if(presenceDisabled) return;
+  if(!currentUser?.uid || !navigator.onLine) return;
+
+  try{
+    const ref = doc(db, COL_PRESENCE, currentUser.uid);
+    await setDoc(ref, {
+      uid: currentUser.uid,
+      email: currentUser.email || currentUser.user || "",
+      nombre: currentUser.nombre || currentUser.email || "",
+      role: currentUser.role || "",
+      online: Boolean(online),
+      currentView: currentView || "",
+      visible: document.visibilityState === "visible",
+      lastSeen: Date.now(),
+      lastSeenAt: serverTimestamp()
+    }, { merge: true });
+  }catch(e){
+    if(e?.code === "permission-denied"){
+      presenceDisabled = true;
+      stopPresence(false);
+      console.warn("Presencia desactivada: faltan reglas de Firestore para la colección presence.");
+      return;
+    }
+    console.warn("No se pudo actualizar presencia", e);
+  }
+}
+
+function startPresence(){
+  stopPresence(false);
+  if(!currentUser?.uid) return;
+
+  updatePresence(true);
+  presenceTimer = setInterval(() => {
+    updatePresence(true);
+  }, 60000);
+}
+
+function stopPresence(markOffline = true){
+  if(presenceTimer){
+    clearInterval(presenceTimer);
+    presenceTimer = null;
+  }
+
+  if(markOffline){
+    updatePresence(false);
+  }
+}
+
+function isPresenceActive(p){
+  const lastSeen = Number(p?.lastSeen || 0);
+  return Boolean(p?.online && Date.now() - lastSeen < 2 * 60 * 1000);
+}
+
+function formatAgo(ts){
+  const diff = Math.max(0, Date.now() - Number(ts || 0));
+  const sec = Math.floor(diff / 1000);
+  if(sec < 60) return `${sec}s`;
+  const min = Math.floor(sec / 60);
+  if(min < 60) return `${min}m`;
+  const hr = Math.floor(min / 60);
+  return `${hr}h`;
 }
 
 // =========================
@@ -1263,7 +1389,6 @@ const PIN_SESSION_KEY = "adminPinOkTs";
       CANCELADO:"cancelado"
     };
 
-    let currentUser = null; // {uid,email,role,nombre}
     let visitas = loadVisitasLocal();
     let _returnToEditCitaId = null;
     let _returnToEditMode = false;
@@ -1501,17 +1626,31 @@ async function goNuevaCita(){
 }
 
 
-    async function getPendingUsersCount(){
+    async function getPendingUsersCount(force = false){
+  const now = Date.now();
+  if(!force && pendingUsersCountCache.value !== null && now - pendingUsersCountCache.ts < 10 * 60 * 1000){
+    return pendingUsersCountCache.value;
+  }
+
+  if(now < pendingUsersCountCache.disabledUntil){
+    return pendingUsersCountCache.value ?? 0;
+  }
+
   try{
     const q = query(
       collection(db, COL_USERS),
       where("role", "==", ROLES.PENDIENTE)
     );
-    const snap = await getDocs(q);
-    return snap.size;
+    const snap = await getCountFromServer(q);
+    const count = snap.data().count || 0;
+    pendingUsersCountCache = { value: count, ts: now, disabledUntil: 0 };
+    return count;
   }catch(e){
     console.warn("No se pudo contar pendientes", e);
-    return 0;
+    if(e?.code === "resource-exhausted"){
+      pendingUsersCountCache.disabledUntil = now + 60 * 60 * 1000;
+    }
+    return pendingUsersCountCache.value ?? 0;
   }
 }
     function esc(s=""){
@@ -1611,10 +1750,12 @@ function collectFacturaOcFromDom(editorId="facturasOcEditor"){
 
     if(!facturaNo && !ocNos.length) continue;
 
-   if(!facturaNo && !ocNos.length){
-   // fila vacía → ignorar
-   continue;
-  }
+   
+if(!facturaNo && !ocNos.length){
+  // fila vacía → ignorar
+  continue;
+}
+
 
     if(!ocNos.length){
       toast("OC requerida", `La factura ${facturaNo} necesita al menos una OC.`, "warn", 3200);
@@ -2418,6 +2559,12 @@ if(!sb) return;
     await renderAdminRoles();
     return;
   }
+  if(key === 'conectados'){
+    setActiveSb('config');
+    sbClose();
+    await renderAdminConectados();
+    return;
+  }
 if(key === "proveedores"){
   setActiveSb("config");
   sbClose();
@@ -2720,56 +2867,22 @@ function fmt(ts){
       return arr;
     }
 
-    async function syncDay(dateObj){
+    async function syncDay(dateObj, force = false){
       if(!navigator.onLine) return;
+      if(!currentUser || currentUser.role === ROLES.PENDIENTE) return;
+      if(!hasPerm("ver_dashboard") && !hasPerm("ver_historial")) return;
+      if(isTodayDate(dateObj) && !force && Date.now() - lastTodaySyncTs < 5 * 60 * 1000) return;
       try{
         const cloud = await cloudFetchByDay(dateObj);
         visitas = mergeById(visitas, cloud);
         saveVisitasLocal();
+        if(isTodayDate(dateObj)) lastTodaySyncTs = Date.now();
       }catch(e){
         console.warn(e);
         toast("Sync", "No se pudo leer del día (revisa Rules/Internet).", "warn", 3200);
       }
     }
 
-    function startVisitasListener(){
-  // Evita duplicar listeners
-  if (unsubscribeVisitas) {
-    unsubscribeVisitas();
-    unsubscribeVisitas = null;
-  }
-
-  const today = new Date();
-  const { start, end } = dayBounds(today);
-
-  const q = query(
-    collection(db, COL_VISITAS),
-    where("fechaHoraTs", ">=", start),
-    where("fechaHoraTs", "<", end)
-  );
-
-  unsubscribeVisitas = onSnapshot(q, (snap) => {
-    const cloud = [];
-    snap.forEach(d => {
-      cloud.push({ id: d.id, ...d.data() });
-    });
-
-    // 🔄 Mezcla nube + local (tu lógica existente)
-    visitas = mergeById(visitas, cloud);
-    saveVisitasLocal();
-
-   
-// ✅ Actualiza UI solo si corresponde
-
-if (
-  document.visibilityState === "visible" &&
-  !lockView && currentView === "dashboard"
-) {
-  renderDashboardHoy();
-}
-
-  });
-}
     // Evita spam de toasts
 let _lastSyncToastTs = 0;
 
@@ -2960,6 +3073,10 @@ function startAutoSync(){
   }, 120000);
 }
 window.addEventListener('visibilitychange', ()=>{
+  if(currentUser && navigator.onLine){
+    updatePresence(true).catch(()=>{});
+  }
+
   if(document.visibilityState === 'visible' && currentUser && navigator.onLine){
     syncDay(new Date()).catch(()=>{});
     pushRecentToCloud().catch(()=>{});
@@ -2977,11 +3094,8 @@ window.addEventListener('visibilitychange', ()=>{
     // Login / Logout UI
     // -------------------------
     async function doLogout(){
-      
-     if (unsubscribeVisitas) {
-     unsubscribeVisitas();
-     unsubscribeVisitas = null;
-     }
+      stopPresence(false);
+      await updatePresence(false);
 
       try{ await signOut(auth); }catch{}
       localStorage.removeItem(LS_USER);
@@ -3226,6 +3340,9 @@ function renderRegisterForm(){
       const { programados, llegados, dentro, despachados, finalizados } = getCounts(filtered);
 
       const resumen = `
+      <button class="secondary" data-action="sync">
+        Actualizar
+      </button>
       ${hasPerm("escanear_qr") ? `
   <button class="secondary"
           data-action="scan"
@@ -4620,6 +4737,7 @@ appEl.addEventListener("click", (e) => {
       `;
 
       await loadAdminUsers();
+      await updatePendingBadge(true);
       document.getElementById("uSearch").addEventListener("input", filterAdminUsers);
     }
 
@@ -4717,6 +4835,121 @@ appEl.addEventListener("click", (e) => {
 </table>
 `;}
 
+    async function renderAdminConectados(){
+      try{ setActiveSb('config'); }catch{}
+      if(!requirePerm("admin_conectados","Solo ADMIN puede monitorear usuarios conectados.")) return;
+      currentView = "admin_conectados";
+      await updatePresence(true);
+
+      appEl.innerHTML = `
+        <div class="card">
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <h2 style="margin:0 0 4px;">Usuarios conectados</h2>
+              <div style="color:var(--muted); font-size:12px;">
+                Activo = último pulso recibido en menos de 2 minutos.
+              </div>
+            </div>
+            <div class="row" style="gap:10px; flex-wrap:wrap;">
+              <button class="secondary" data-action="connectedReload">Refrescar</button>
+              <button class="secondary" data-action="home">Volver</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div id="connectedSummary" class="row" style="gap:8px; flex-wrap:wrap;"></div>
+          <div style="height:10px;"></div>
+          <div id="connectedWrap" style="overflow:auto;"></div>
+        </div>
+      `;
+
+      await loadConnectedUsers();
+    }
+
+    async function loadConnectedUsers(){
+      const wrap = document.getElementById("connectedWrap");
+      const summary = document.getElementById("connectedSummary");
+      if(!wrap) return;
+
+      wrap.innerHTML = `<div style="color:var(--muted);font-size:12px;">Cargando presencia...</div>`;
+
+      try{
+        const q = query(
+          collection(db, COL_PRESENCE),
+          orderBy("lastSeen", "desc"),
+          limit(200)
+        );
+        const snap = await getDocs(q);
+        const rows = [];
+        snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
+
+        const active = rows.filter(isPresenceActive).length;
+        const inactive = rows.length - active;
+
+        if(summary){
+          summary.innerHTML = `
+            <span class="pill"><span class="dot ok"></span>${active} activo${active === 1 ? "" : "s"}</span>
+            <span class="pill"><span class="dot warn"></span>${inactive} reciente${inactive === 1 ? "" : "s"} sin pulso</span>
+            <span class="pill"><span class="dot info"></span>${rows.length} usuario${rows.length === 1 ? "" : "s"} monitoreado${rows.length === 1 ? "" : "s"}</span>
+          `;
+        }
+
+        paintConnectedUsers(rows);
+      }catch(e){
+        console.error(e);
+        wrap.innerHTML = `<div style="color:var(--muted);font-size:12px;">Error cargando conectados (Rules/Permisos).</div>`;
+        toast("Conectados","No se pudo cargar la presencia. Revisa Rules.","bad",4200);
+      }
+    }
+
+    function paintConnectedUsers(rows){
+      const wrap = document.getElementById("connectedWrap");
+      if(!wrap) return;
+
+      if(!rows.length){
+        wrap.innerHTML = `<div class="pill"><span class="dot muted"></span>No hay usuarios monitoreados todavía.</div>`;
+        return;
+      }
+
+      wrap.innerHTML = `
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Estado</th>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Pantalla</th>
+              <th>Ventana</th>
+              <th>Último pulso</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(p => {
+              const active = isPresenceActive(p);
+              return `
+                <tr>
+                  <td>
+                    <span class="pill">
+                      <span class="dot ${active ? "ok" : "warn"}"></span>
+                      ${active ? "Conectado" : "Sin pulso"}
+                    </span>
+                  </td>
+                  <td>
+                    <b>${esc(p.nombre || p.email || "-")}</b><br>
+                    <span style="color:var(--muted);font-size:12px;">${esc(p.email || p.uid || "-")}</span>
+                  </td>
+                  <td>${esc(p.role || "-")}</td>
+                  <td>${esc(p.currentView || "-")}</td>
+                  <td>${p.visible ? "Visible" : "Oculta"}</td>
+                  <td>${formatAgo(p.lastSeen)} atrás</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
   async function saveRoleForUser(uid){
   if(!requirePerm("admin_roles")) return;
   if(!requireAdminPin("aprobar usuario")) return;
@@ -4732,7 +4965,8 @@ appEl.addEventListener("click", (e) => {
   });
 
   toast("Usuario aprobado",`Rol: ${role}`,"ok");
-  updatePendingBadge();
+  pendingUsersCountCache.value = null;
+  updatePendingBadge(false);
 }
     // -------------------------
     // Portal proveedor (simple)
@@ -4852,22 +5086,30 @@ appEl.addEventListener("click", (e) => {
 }
 
 async function renderNuevo(){
-  if(!requirePerm("crear_cita","Solo COMPRAS o ADMIN pueden crear citas.")) return;
+  if(!requirePerm("crear_cita","Tu rol no puede crear citas.")) return;
   currentView = "nuevo";
+  proveedoresLoadError = null;
 
   if(!proveedoresCache.length){
-  await loadProveedores();
+    const localProveedores = loadProveedoresLocalCache();
+    if(localProveedores.length){
+      proveedoresCache = localProveedores;
+    }
   }
 
   if(!proveedoresCache || !proveedoresCache.length){
+    const isLoadProblem = Boolean(proveedoresLoadError);
     appEl.innerHTML = `
       <div class="card">
         <h2>Nueva Cita</h2>
         <p style="color:var(--muted);font-size:12px;">
-          No hay proveedores registrados.<br>
-          Ve a <b>Configuración → Proveedores</b> y agrega al menos uno.
+          ${isLoadProblem
+            ? `No se pudo cargar el catálogo de proveedores.<br>Revisa conexión, permisos de Firestore o cuota disponible.`
+            : `El catálogo de proveedores aún no está cargado.<br>Presiona el botón para cargarlo.`
+          }
         </p>
         <div class="divider"></div>
+        <button class="secondary" data-action="reloadProveedoresNuevo">Cargar proveedores</button>
         <button class="secondary" data-action="home">Volver</button>
       </div>
     `;
@@ -6080,10 +6322,24 @@ async function confirmarEntrada(id) {
       window.open(url, "_blank");
     }
 
-    async function updatePendingBadge(){
-  if(!currentUser || currentUser.role !== ROLES.ADMIN) return;
+    async function updatePendingBadge(force = false){
+  if(!sbConfigChip) return;
 
-  const count = await getPendingUsersCount();
+  if(!currentUser || currentUser.role !== ROLES.ADMIN){
+    sbConfigChip.textContent = '';
+    sbConfigChip.style.display = 'none';
+    return;
+  }
+
+  if(!force && pendingUsersCountCache.value === null){
+    sbConfigChip.textContent = 'ADMIN';
+    sbConfigChip.style.display = 'inline-flex';
+    sbConfigChip.style.background = '';
+    sbConfigChip.style.borderColor = '';
+    return;
+  }
+
+  const count = await getPendingUsersCount(force);
   if(!sbConfigChip) return;
 
   if(count > 0){
@@ -6097,6 +6353,9 @@ sbConfigChip.style.borderColor =
 
   }else{
     sbConfigChip.textContent = 'ADMIN';
+    sbConfigChip.style.display = 'inline-flex';
+    sbConfigChip.style.background = '';
+    sbConfigChip.style.borderColor = '';
   }
 }
 
@@ -6300,7 +6559,7 @@ async function guardarProveedor(){
 
     // recarga cache
     proveedoresLoaded = false;
-    await ensureProveedoresLoaded();
+    await loadProveedores(true);
 
   }catch(e){
     console.error(e);
@@ -6352,11 +6611,17 @@ async function importProveedoresDesdeExcel(){
 
   // refresca cache
   proveedoresLoaded = false;
-  await loadProveedores();
+  await loadProveedores(true);
 }
 
-async function loadProveedores(){
+async function loadProveedores(force = false){
   try{
+    if(!force && proveedoresLoaded){
+      renderProveedores(proveedoresCache);
+      return proveedoresCache;
+    }
+
+    proveedoresLoadError = null;
     const snap = await getDocs(collection(db,"proveedores"));
     const lista = [];
 
@@ -6366,14 +6631,25 @@ async function loadProveedores(){
 
     // 🔥 ESTA LÍNEA FALTABA
     proveedoresCache = lista;
+    proveedoresLoaded = true;
+    proveedoresLoadError = null;
+    saveProveedoresLocalCache(lista);
 
     console.log("Proveedores:", proveedoresCache);
 
     renderProveedores(proveedoresCache);
+    return proveedoresCache;
 
   }catch(e){
     console.error(e);
+    proveedoresLoaded = false;
+    proveedoresLoadError = e;
+    if(!proveedoresCache.length){
+      proveedoresCache = loadProveedoresLocalCache();
+      if(proveedoresCache.length) proveedoresLoaded = true;
+    }
     toast("Error","No se pudieron cargar proveedores","bad");
+    return proveedoresCache;
   }
 }
 
@@ -6450,6 +6726,23 @@ function renderProveedores(lista){
         case "histLoad": await loadHistDay(); break;
 
         case "nuevo": await goNuevaCita(); break;
+
+        case "reloadProveedoresNuevo":
+          proveedoresLoaded = false;
+          proveedoresLoadPromise = null;
+          appEl.innerHTML = `
+            <div class="card">
+              <h2>Nueva Cita</h2>
+              <p style="color:var(--muted);font-size:12px;">Cargando proveedores...</p>
+            </div>
+          `;
+          await withTimeout(loadProveedores(true), 8000, "No se pudo cargar proveedores a tiempo").catch(e => {
+            proveedoresLoadError = e;
+            toast("Proveedores","No se pudo cargar el catálogo. Intenta de nuevo.","warn",3200);
+            return proveedoresCache;
+          });
+          await renderNuevo();
+          break;
 
         case "guardarProveedor": await guardarProveedor(); break;
 
@@ -6556,7 +6849,7 @@ function renderProveedores(lista){
 
         case "sync":
           toast("Sincronizando","Actualizando desde la nube...","info",1600);
-          await syncDay(new Date());
+          await syncDay(new Date(), true);
           await pushRecentToCloud();
           toast("Listo","Datos sincronizados.","ok",1600);
           renderHome();
@@ -6567,6 +6860,11 @@ function renderProveedores(lista){
           break;
         case "adminReload":
           await loadAdminUsers();
+          await updatePendingBadge(true);
+          break;
+        case "connectedReload":
+          await updatePresence(true);
+          await loadConnectedUsers();
           break;
         case "saveRole":
           await saveRoleForUser(el.dataset.uid);
@@ -6671,7 +6969,6 @@ document.addEventListener("input", (e) => {
   if(_searchTimer) clearTimeout(_searchTimer);
   _searchTimer = setTimeout(async () => {
     updateNet();
-    await syncDay(new Date());
     renderHome();
   }, 600);
 });
@@ -6694,6 +6991,7 @@ window.addEventListener("offline",updateNet);
     // -------------------------
     onAuthStateChanged(auth, async (user) => {
       if(!user){
+        stopPresence(false);
         currentUser = null;
         localStorage.removeItem(LS_USER);
         paintHeader();
@@ -6701,7 +6999,6 @@ window.addEventListener("offline",updateNet);
         return;
       }
 
-      startVisitasListener();
       const prof = await ensureUserProfile(user);
       currentUser = {
         uid: prof.uid,
@@ -6715,10 +7012,11 @@ window.addEventListener("offline",updateNet);
 
       paintHeader();
       paintSidebar();     // ✅ AQUÍ 
-      updatePendingBadge();
+      updatePendingBadge(false);
       // carga local inmediata + sync HOY
       visitas = loadVisitasLocal();
       renderHome();
+      startPresence();
       await syncDay(new Date());
       renderHome();
     });
