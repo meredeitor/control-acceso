@@ -977,10 +977,6 @@ html[data-theme="light"] .pill.info *{
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M19 8h2"/><path d="M20 7v2"/></svg></span>
         <span class="sb-txt">Roles</span>
       </div>
-      <div class="sb-btn" data-sb="conectados">
-        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M18 5h3"/><path d="M19.5 3.5v3"/></svg></span>
-        <span class="sb-txt">Conectados</span>
-      </div>
       <div class="sb-btn" data-sb="activarqr">
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h6v6H5z"/><path d="M13 5h6v6h-6z"/><path d="M5 13h6v6H5z"/><path d="M14 14h1"/><path d="M17 13h2v2h-2z"/><path d="M13 18h6"/></svg></span>
         <span class="sb-txt">Activar QR</span>
@@ -1081,7 +1077,6 @@ document.getElementById("btnTheme")?.addEventListener("click", toggleTheme);
   setDoc, updateDoc, deleteDoc,
   query, orderBy, limit, where,
   serverTimestamp,
-  getCountFromServer,
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
@@ -1106,7 +1101,6 @@ document.getElementById("btnTheme")?.addEventListener("click", toggleTheme);
 
   const COL_VISITAS = "visitas";
   const COL_USERS = "users";
-  const COL_PRESENCE = "presence";
   const QR_LATE_BLOCK_MIN = 30; // ⛔ bloqueo duro por retraso
 /* =========================
    Roles
@@ -1130,7 +1124,7 @@ document.getElementById("btnTheme")?.addEventListener("click", toggleTheme);
     "registrar_salida","exportar_excel","limpiar_finalizados",
     "reactivar_qr","eliminar","ver_qr","buscar_proveedor",
     "admin_roles","admin_proveedores","ver_citas_compras",
-    "editar_cita","cancelar_cita","admin_conectados"
+    "editar_cita","cancelar_cita"
   ];
 
  
@@ -1203,11 +1197,6 @@ let proveedoresCache = [];
 let proveedoresLoaded = false;
 let proveedoresLoading = false;
 let unsubscribeVisitas = null;
-let visitasListenerDayKey = "";
-let presenceTimer = null;
-let presenceDisabled = false;
-let pendingUsersCountCache = { value: null, ts: 0, disabledUntil: 0 };
-let currentUser = null; // {uid,email,role,nombre}
 let lockView = false;
 let currentView = "login";
 let chartAreaInstance = null;
@@ -1229,83 +1218,6 @@ async function ensureProveedoresLoaded(){
   } finally {
     proveedoresLoading = false;
   }
-}
-
-function dayKey(dateObj = new Date()){
-  const d = new Date(dateObj);
-  return d.toISOString().slice(0,10);
-}
-
-function isTodayDate(dateObj){
-  return dayKey(dateObj) === dayKey(new Date());
-}
-
-function hasTodayVisitasListener(){
-  return Boolean(unsubscribeVisitas && visitasListenerDayKey === dayKey(new Date()));
-}
-
-async function updatePresence(online = true){
-  if(presenceDisabled) return;
-  if(!currentUser?.uid || !navigator.onLine) return;
-
-  try{
-    const ref = doc(db, COL_PRESENCE, currentUser.uid);
-    await setDoc(ref, {
-      uid: currentUser.uid,
-      email: currentUser.email || currentUser.user || "",
-      nombre: currentUser.nombre || currentUser.email || "",
-      role: currentUser.role || "",
-      online: Boolean(online),
-      currentView: currentView || "",
-      visible: document.visibilityState === "visible",
-      lastSeen: Date.now(),
-      lastSeenAt: serverTimestamp()
-    }, { merge: true });
-  }catch(e){
-    if(e?.code === "permission-denied"){
-      presenceDisabled = true;
-      stopPresence(false);
-      console.warn("Presencia desactivada: faltan reglas de Firestore para la colección presence.");
-      return;
-    }
-    console.warn("No se pudo actualizar presencia", e);
-  }
-}
-
-function startPresence(){
-  stopPresence(false);
-  if(!currentUser?.uid) return;
-
-  updatePresence(true);
-  presenceTimer = setInterval(() => {
-    updatePresence(true);
-  }, 60000);
-}
-
-function stopPresence(markOffline = true){
-  if(presenceTimer){
-    clearInterval(presenceTimer);
-    presenceTimer = null;
-  }
-
-  if(markOffline){
-    updatePresence(false);
-  }
-}
-
-function isPresenceActive(p){
-  const lastSeen = Number(p?.lastSeen || 0);
-  return Boolean(p?.online && Date.now() - lastSeen < 2 * 60 * 1000);
-}
-
-function formatAgo(ts){
-  const diff = Math.max(0, Date.now() - Number(ts || 0));
-  const sec = Math.floor(diff / 1000);
-  if(sec < 60) return `${sec}s`;
-  const min = Math.floor(sec / 60);
-  if(min < 60) return `${min}m`;
-  const hr = Math.floor(min / 60);
-  return `${hr}h`;
 }
 
 // =========================
@@ -1351,6 +1263,7 @@ const PIN_SESSION_KEY = "adminPinOkTs";
       CANCELADO:"cancelado"
     };
 
+    let currentUser = null; // {uid,email,role,nombre}
     let visitas = loadVisitasLocal();
     let _returnToEditCitaId = null;
     let _returnToEditMode = false;
@@ -1588,31 +1501,17 @@ async function goNuevaCita(){
 }
 
 
-    async function getPendingUsersCount(force = false){
-  const now = Date.now();
-  if(!force && pendingUsersCountCache.value !== null && now - pendingUsersCountCache.ts < 10 * 60 * 1000){
-    return pendingUsersCountCache.value;
-  }
-
-  if(now < pendingUsersCountCache.disabledUntil){
-    return pendingUsersCountCache.value ?? 0;
-  }
-
+    async function getPendingUsersCount(){
   try{
     const q = query(
       collection(db, COL_USERS),
       where("role", "==", ROLES.PENDIENTE)
     );
-    const snap = await getCountFromServer(q);
-    const count = snap.data().count || 0;
-    pendingUsersCountCache = { value: count, ts: now, disabledUntil: 0 };
-    return count;
+    const snap = await getDocs(q);
+    return snap.size;
   }catch(e){
     console.warn("No se pudo contar pendientes", e);
-    if(e?.code === "resource-exhausted"){
-      pendingUsersCountCache.disabledUntil = now + 60 * 60 * 1000;
-    }
-    return pendingUsersCountCache.value ?? 0;
+    return 0;
   }
 }
     function esc(s=""){
@@ -1712,12 +1611,10 @@ function collectFacturaOcFromDom(editorId="facturasOcEditor"){
 
     if(!facturaNo && !ocNos.length) continue;
 
-   
-if(!facturaNo && !ocNos.length){
-  // fila vacía → ignorar
-  continue;
-}
-
+   if(!facturaNo && !ocNos.length){
+   // fila vacía → ignorar
+   continue;
+  }
 
     if(!ocNos.length){
       toast("OC requerida", `La factura ${facturaNo} necesita al menos una OC.`, "warn", 3200);
@@ -2521,12 +2418,6 @@ if(!sb) return;
     await renderAdminRoles();
     return;
   }
-  if(key === 'conectados'){
-    setActiveSb('config');
-    sbClose();
-    await renderAdminConectados();
-    return;
-  }
 if(key === "proveedores"){
   setActiveSb("config");
   sbClose();
@@ -2831,9 +2722,6 @@ function fmt(ts){
 
     async function syncDay(dateObj){
       if(!navigator.onLine) return;
-      if(!currentUser || currentUser.role === ROLES.PENDIENTE) return;
-      if(!hasPerm("ver_dashboard") && !hasPerm("ver_historial")) return;
-      if(isTodayDate(dateObj) && hasTodayVisitasListener()) return;
       try{
         const cloud = await cloudFetchByDay(dateObj);
         visitas = mergeById(visitas, cloud);
@@ -2845,18 +2733,13 @@ function fmt(ts){
     }
 
     function startVisitasListener(){
-  if(!currentUser || currentUser.role === ROLES.PENDIENTE) return;
-  if(!hasPerm("ver_dashboard")) return;
-
   // Evita duplicar listeners
   if (unsubscribeVisitas) {
     unsubscribeVisitas();
     unsubscribeVisitas = null;
-    visitasListenerDayKey = "";
   }
 
   const today = new Date();
-  visitasListenerDayKey = dayKey(today);
   const { start, end } = dayBounds(today);
 
   const q = query(
@@ -2885,11 +2768,6 @@ if (
   renderDashboardHoy();
 }
 
-  }, (e) => {
-    console.warn("Listener visitas falló", e);
-    unsubscribeVisitas = null;
-    visitasListenerDayKey = "";
-    _maybeToastSync("No se pudo escuchar visitas en tiempo real.", "warn", 3200);
   });
 }
     // Evita spam de toasts
@@ -3082,10 +2960,6 @@ function startAutoSync(){
   }, 120000);
 }
 window.addEventListener('visibilitychange', ()=>{
-  if(currentUser && navigator.onLine){
-    updatePresence(true).catch(()=>{});
-  }
-
   if(document.visibilityState === 'visible' && currentUser && navigator.onLine){
     syncDay(new Date()).catch(()=>{});
     pushRecentToCloud().catch(()=>{});
@@ -3103,13 +2977,10 @@ window.addEventListener('visibilitychange', ()=>{
     // Login / Logout UI
     // -------------------------
     async function doLogout(){
-      stopPresence(false);
-      await updatePresence(false);
       
      if (unsubscribeVisitas) {
      unsubscribeVisitas();
      unsubscribeVisitas = null;
-     visitasListenerDayKey = "";
      }
 
       try{ await signOut(auth); }catch{}
@@ -4749,7 +4620,6 @@ appEl.addEventListener("click", (e) => {
       `;
 
       await loadAdminUsers();
-      await updatePendingBadge(true);
       document.getElementById("uSearch").addEventListener("input", filterAdminUsers);
     }
 
@@ -4847,121 +4717,6 @@ appEl.addEventListener("click", (e) => {
 </table>
 `;}
 
-    async function renderAdminConectados(){
-      try{ setActiveSb('config'); }catch{}
-      if(!requirePerm("admin_conectados","Solo ADMIN puede monitorear usuarios conectados.")) return;
-      currentView = "admin_conectados";
-      await updatePresence(true);
-
-      appEl.innerHTML = `
-        <div class="card">
-          <div class="row" style="justify-content:space-between;">
-            <div>
-              <h2 style="margin:0 0 4px;">Usuarios conectados</h2>
-              <div style="color:var(--muted); font-size:12px;">
-                Activo = último pulso recibido en menos de 2 minutos.
-              </div>
-            </div>
-            <div class="row" style="gap:10px; flex-wrap:wrap;">
-              <button class="secondary" data-action="connectedReload">Refrescar</button>
-              <button class="secondary" data-action="home">Volver</button>
-            </div>
-          </div>
-
-          <div class="divider"></div>
-          <div id="connectedSummary" class="row" style="gap:8px; flex-wrap:wrap;"></div>
-          <div style="height:10px;"></div>
-          <div id="connectedWrap" style="overflow:auto;"></div>
-        </div>
-      `;
-
-      await loadConnectedUsers();
-    }
-
-    async function loadConnectedUsers(){
-      const wrap = document.getElementById("connectedWrap");
-      const summary = document.getElementById("connectedSummary");
-      if(!wrap) return;
-
-      wrap.innerHTML = `<div style="color:var(--muted);font-size:12px;">Cargando presencia...</div>`;
-
-      try{
-        const q = query(
-          collection(db, COL_PRESENCE),
-          orderBy("lastSeen", "desc"),
-          limit(200)
-        );
-        const snap = await getDocs(q);
-        const rows = [];
-        snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
-
-        const active = rows.filter(isPresenceActive).length;
-        const inactive = rows.length - active;
-
-        if(summary){
-          summary.innerHTML = `
-            <span class="pill"><span class="dot ok"></span>${active} activo${active === 1 ? "" : "s"}</span>
-            <span class="pill"><span class="dot warn"></span>${inactive} reciente${inactive === 1 ? "" : "s"} sin pulso</span>
-            <span class="pill"><span class="dot info"></span>${rows.length} usuario${rows.length === 1 ? "" : "s"} monitoreado${rows.length === 1 ? "" : "s"}</span>
-          `;
-        }
-
-        paintConnectedUsers(rows);
-      }catch(e){
-        console.error(e);
-        wrap.innerHTML = `<div style="color:var(--muted);font-size:12px;">Error cargando conectados (Rules/Permisos).</div>`;
-        toast("Conectados","No se pudo cargar la presencia. Revisa Rules.","bad",4200);
-      }
-    }
-
-    function paintConnectedUsers(rows){
-      const wrap = document.getElementById("connectedWrap");
-      if(!wrap) return;
-
-      if(!rows.length){
-        wrap.innerHTML = `<div class="pill"><span class="dot muted"></span>No hay usuarios monitoreados todavía.</div>`;
-        return;
-      }
-
-      wrap.innerHTML = `
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Estado</th>
-              <th>Usuario</th>
-              <th>Rol</th>
-              <th>Pantalla</th>
-              <th>Ventana</th>
-              <th>Último pulso</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map(p => {
-              const active = isPresenceActive(p);
-              return `
-                <tr>
-                  <td>
-                    <span class="pill">
-                      <span class="dot ${active ? "ok" : "warn"}"></span>
-                      ${active ? "Conectado" : "Sin pulso"}
-                    </span>
-                  </td>
-                  <td>
-                    <b>${esc(p.nombre || p.email || "-")}</b><br>
-                    <span style="color:var(--muted);font-size:12px;">${esc(p.email || p.uid || "-")}</span>
-                  </td>
-                  <td>${esc(p.role || "-")}</td>
-                  <td>${esc(p.currentView || "-")}</td>
-                  <td>${p.visible ? "Visible" : "Oculta"}</td>
-                  <td>${formatAgo(p.lastSeen)} atrás</td>
-                </tr>
-              `;
-            }).join("")}
-          </tbody>
-        </table>
-      `;
-    }
-
   async function saveRoleForUser(uid){
   if(!requirePerm("admin_roles")) return;
   if(!requireAdminPin("aprobar usuario")) return;
@@ -4977,8 +4732,7 @@ appEl.addEventListener("click", (e) => {
   });
 
   toast("Usuario aprobado",`Rol: ${role}`,"ok");
-  pendingUsersCountCache.value = null;
-  updatePendingBadge(false);
+  updatePendingBadge();
 }
     // -------------------------
     // Portal proveedor (simple)
@@ -5102,7 +4856,7 @@ async function renderNuevo(){
   currentView = "nuevo";
 
   if(!proveedoresCache.length){
-  await ensureProveedoresLoaded();
+  await loadProveedores();
   }
 
   if(!proveedoresCache || !proveedoresCache.length){
@@ -6326,24 +6080,10 @@ async function confirmarEntrada(id) {
       window.open(url, "_blank");
     }
 
-    async function updatePendingBadge(force = false){
-  if(!sbConfigChip) return;
+    async function updatePendingBadge(){
+  if(!currentUser || currentUser.role !== ROLES.ADMIN) return;
 
-  if(!currentUser || currentUser.role !== ROLES.ADMIN){
-    sbConfigChip.textContent = '';
-    sbConfigChip.style.display = 'none';
-    return;
-  }
-
-  if(!force && pendingUsersCountCache.value === null){
-    sbConfigChip.textContent = 'ADMIN';
-    sbConfigChip.style.display = 'inline-flex';
-    sbConfigChip.style.background = '';
-    sbConfigChip.style.borderColor = '';
-    return;
-  }
-
-  const count = await getPendingUsersCount(force);
+  const count = await getPendingUsersCount();
   if(!sbConfigChip) return;
 
   if(count > 0){
@@ -6357,9 +6097,6 @@ sbConfigChip.style.borderColor =
 
   }else{
     sbConfigChip.textContent = 'ADMIN';
-    sbConfigChip.style.display = 'inline-flex';
-    sbConfigChip.style.background = '';
-    sbConfigChip.style.borderColor = '';
   }
 }
 
@@ -6563,7 +6300,7 @@ async function guardarProveedor(){
 
     // recarga cache
     proveedoresLoaded = false;
-    await loadProveedores(true);
+    await ensureProveedoresLoaded();
 
   }catch(e){
     console.error(e);
@@ -6615,16 +6352,11 @@ async function importProveedoresDesdeExcel(){
 
   // refresca cache
   proveedoresLoaded = false;
-  await loadProveedores(true);
+  await loadProveedores();
 }
 
-async function loadProveedores(force = false){
+async function loadProveedores(){
   try{
-    if(!force && proveedoresLoaded){
-      renderProveedores(proveedoresCache);
-      return proveedoresCache;
-    }
-
     const snap = await getDocs(collection(db,"proveedores"));
     const lista = [];
 
@@ -6634,17 +6366,14 @@ async function loadProveedores(force = false){
 
     // 🔥 ESTA LÍNEA FALTABA
     proveedoresCache = lista;
-    proveedoresLoaded = true;
 
     console.log("Proveedores:", proveedoresCache);
 
     renderProveedores(proveedoresCache);
-    return proveedoresCache;
 
   }catch(e){
     console.error(e);
     toast("Error","No se pudieron cargar proveedores","bad");
-    return proveedoresCache;
   }
 }
 
@@ -6838,11 +6567,6 @@ function renderProveedores(lista){
           break;
         case "adminReload":
           await loadAdminUsers();
-          await updatePendingBadge(true);
-          break;
-        case "connectedReload":
-          await updatePresence(true);
-          await loadConnectedUsers();
           break;
         case "saveRole":
           await saveRoleForUser(el.dataset.uid);
@@ -6947,6 +6671,7 @@ document.addEventListener("input", (e) => {
   if(_searchTimer) clearTimeout(_searchTimer);
   _searchTimer = setTimeout(async () => {
     updateNet();
+    await syncDay(new Date());
     renderHome();
   }, 600);
 });
@@ -6969,19 +6694,14 @@ window.addEventListener("offline",updateNet);
     // -------------------------
     onAuthStateChanged(auth, async (user) => {
       if(!user){
-        stopPresence(false);
         currentUser = null;
-        if (unsubscribeVisitas) {
-          unsubscribeVisitas();
-          unsubscribeVisitas = null;
-          visitasListenerDayKey = "";
-        }
         localStorage.removeItem(LS_USER);
         paintHeader();
         renderLogin();
         return;
       }
 
+      startVisitasListener();
       const prof = await ensureUserProfile(user);
       currentUser = {
         uid: prof.uid,
@@ -6995,12 +6715,10 @@ window.addEventListener("offline",updateNet);
 
       paintHeader();
       paintSidebar();     // ✅ AQUÍ 
-      updatePendingBadge(false);
+      updatePendingBadge();
       // carga local inmediata + sync HOY
       visitas = loadVisitasLocal();
       renderHome();
-      startPresence();
-      startVisitasListener();
       await syncDay(new Date());
       renderHome();
     });
