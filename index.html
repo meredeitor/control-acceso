@@ -3053,31 +3053,35 @@ async function depurarBaseRetencion30Dias() {
   renderDashboardHoy();
 }
 // -------------------------
-// Auto-Sync (cada 2 min cuando está visible)
+// Auto-Sync dashboard (cada 5 min solo si está visible)
 // -------------------------
 let _autoSyncTimer = null;
+const DASHBOARD_AUTO_REFRESH_MS = 5 * 60 * 1000;
 function stopAutoSync(){
   if(_autoSyncTimer){ clearInterval(_autoSyncTimer); _autoSyncTimer = null; }
 }
 function startAutoSync(){
   stopAutoSync();
   if(!currentUser || currentUser.role === ROLES.PENDIENTE) return;
+  if(!hasPerm("ver_dashboard")) return;
   _autoSyncTimer = setInterval(async ()=>{
     try{
       if(document.visibilityState !== 'visible') return;
+      if(currentView !== "dashboard") return;
       updateNet();
       if(!navigator.onLine) return;
       await syncDay(new Date());
       await pushRecentToCloud();
+      if(currentView === "dashboard") renderDashboardHoy();
     }catch(e){}
-  }, 120000);
+  }, DASHBOARD_AUTO_REFRESH_MS);
 }
 window.addEventListener('visibilitychange', ()=>{
   if(currentUser && navigator.onLine){
     updatePresence(true).catch(()=>{});
   }
 
-  if(document.visibilityState === 'visible' && currentUser && navigator.onLine){
+  if(document.visibilityState === 'visible' && currentUser && navigator.onLine && currentView === "dashboard"){
     syncDay(new Date()).catch(()=>{});
     pushRecentToCloud().catch(()=>{});
   }
@@ -3094,6 +3098,7 @@ window.addEventListener('visibilitychange', ()=>{
     // Login / Logout UI
     // -------------------------
     async function doLogout(){
+      stopAutoSync();
       stopPresence(false);
       await updatePresence(false);
 
@@ -6973,7 +6978,12 @@ document.addEventListener("input", (e) => {
   }, 600);
 });
 
-window.addEventListener("online", () => { updateNet(); if(currentUser) syncDay(new Date()).catch(()=>{}); });
+window.addEventListener("online", () => {
+  updateNet();
+  if(currentUser && currentView === "dashboard" && document.visibilityState === "visible"){
+    syncDay(new Date()).catch(()=>{});
+  }
+});
 window.addEventListener("offline",updateNet);
     updateNet();
 
@@ -6991,6 +7001,7 @@ window.addEventListener("offline",updateNet);
     // -------------------------
     onAuthStateChanged(auth, async (user) => {
       if(!user){
+        stopAutoSync();
         stopPresence(false);
         currentUser = null;
         localStorage.removeItem(LS_USER);
@@ -7017,6 +7028,7 @@ window.addEventListener("offline",updateNet);
       visitas = loadVisitasLocal();
       renderHome();
       startPresence();
+      startAutoSync();
       await syncDay(new Date());
       renderHome();
     });
