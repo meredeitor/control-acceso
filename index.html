@@ -889,7 +889,7 @@ html[data-theme="light"] .pill.info *{
     <div class="sb-logo">PV</div>
     <div class="sb-title">
       <b>Acceso Proveedores</b>
-      <span id="appVersion">Versión proveedores-v6</span>
+      <span id="appVersion">Versión proveedores-v7</span>
     </div>
   </div>
   <div class="sb-section">
@@ -1061,7 +1061,7 @@ html[data-theme="light"] .pill.info *{
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "proveedores-v6";
+  const APP_VERSION = "proveedores-v7";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -1647,6 +1647,11 @@ function capArea(area){
   return AREA_CAPACITY[area] || 1; // default: 1
 }
 
+function citaBloqueaHorario(v){
+  if(!v || typeof v.fechaHoraTs !== "number") return false;
+  return v.status !== Status.CANCELADO && v.status !== Status.FINALIZADO;
+}
+
 
 const SLOT_MINUTES = 30;      // bloques visuales
 const MIN_DIFF_MINUTES = 0;  // regla de negocio
@@ -1665,7 +1670,7 @@ function generarSlots(){
 function obtenerCitasDeHoy(){
   const hoy = new Date();
   return visitas.filter(v =>
-    typeof v.fechaHoraTs === "number" &&
+    citaBloqueaHorario(v) &&
     isSameDay(v.fechaHoraTs, hoy)
   );
 }
@@ -1680,8 +1685,8 @@ function slotOcupado(area, slotHora, citasHoy){
 
   // Cuenta cuántas citas existen en ese horario PARA ESA ÁREA (misma ventana de 30 min)
   const ocupadas = citasHoy.filter(v => {
+    if(!citaBloqueaHorario(v)) return false;
     if(v.area !== area) return false;
-    if(typeof v.fechaHoraTs !== "number") return false;
     return Math.abs(v.fechaHoraTs - slotTs.getTime()) < slotWindowMs;
   }).length;
 
@@ -3597,10 +3602,9 @@ function existeCitaEnHorarioExcluding(fechaHoraISO, area, excludeId){
 
   const ocupadas = visitas.filter(v =>
     String(v.id) !== String(excludeId) &&
+    citaBloqueaHorario(v) &&
     v.area === area &&
-    typeof v.fechaHoraTs === "number" &&
-    Math.abs(v.fechaHoraTs - ts) < slotWindowMs &&
-    v.status !== Status.CANCELADO
+    Math.abs(v.fechaHoraTs - ts) < slotWindowMs
   ).length;
 
   return ocupadas >= cap;
@@ -5109,8 +5113,8 @@ appEl.addEventListener("click", (e) => {
   const slotWindowMs = SLOT_MINUTES * 60 * 1000;
 
   const ocupadas = visitas.filter(v =>
+    citaBloqueaHorario(v) &&
     v.area === area &&
-    typeof v.fechaHoraTs === "number" &&
     Math.abs(v.fechaHoraTs - ts) < slotWindowMs
   ).length;
 
@@ -5130,8 +5134,8 @@ appEl.addEventListener("click", (e) => {
     const base = slotTs.getTime();
 
     return citasHoy.filter(v => {
+      if(!citaBloqueaHorario(v)) return false;
       if(v.area !== area) return false;
-      if(typeof v.fechaHoraTs !== "number") return false;
       return Math.abs(v.fechaHoraTs - base) < slotWindowMs;
     }).length;
   }
