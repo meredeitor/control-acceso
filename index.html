@@ -867,13 +867,29 @@ html[data-theme="light"] .pill.info *{
   </div>
 </div>
 
+<!-- Modal: Editar cita compras -->
+<div class="modal-overlay" id="editCitaModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="editCitaTitle">Editar cita</h3>
+        <small id="editCitaSubtitle">—</small>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary" data-action="ccCloseEditModal">Cerrar</button>
+      </div>
+    </div>
+    <div class="modal-body" id="editCitaBody"></div>
+  </div>
+</div>
+
 <div class="sb-overlay" id="sbOverlay"></div>
 <aside class="sidebar" id="sidebar">
   <div class="sb-brand">
     <div class="sb-logo">PV</div>
     <div class="sb-title">
       <b>Acceso Proveedores</b>
-      <span>Dashboard • Citas • Historial • Configuración</span>
+      <span id="appVersion">Versión proveedores-v5</span>
     </div>
   </div>
   <div class="sb-section">
@@ -1045,6 +1061,11 @@ html[data-theme="light"] .pill.info *{
   </div>
 </div>
 <script type="module">
+  const APP_VERSION = "proveedores-v5";
+
+  const appVersionEl = document.getElementById("appVersion");
+  if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
+
   function setTheme(mode){
   document.documentElement.setAttribute("data-theme", mode);
   localStorage.setItem("ui_theme", mode);
@@ -1165,7 +1186,9 @@ const PERMISOS = {
   "exportar_excel",
   "ver_qr",
   "reactivar_qr",
-  "admin_proveedores"
+  "admin_proveedores",
+  "editar_cita",
+  "cancelar_cita"
 ],
 
   [ROLES.COMPRAS]: [
@@ -1200,9 +1223,11 @@ const PERMISOS = {
 
 let proveedoresCache = [];
 let proveedoresLoaded = false;
+let proveedoresLoadedTs = 0;
 let proveedoresLoading = false;
 let proveedoresLoadPromise = null;
 let proveedoresLoadError = null;
+const PROVEEDORES_CACHE_TTL_MS = 5 * 60 * 1000;
 let presenceTimer = null;
 let presenceDisabled = false;
 let pendingUsersCountCache = { value: null, ts: 0, disabledUntil: 0 };
@@ -1218,7 +1243,7 @@ let chartIncidenciasInstance = null;
 let chartPuntualidadInstance = null;
 
 async function ensureProveedoresLoaded(){
-  if (proveedoresLoaded) return proveedoresCache;
+  if (proveedoresLoaded && (Date.now() - proveedoresLoadedTs) < PROVEEDORES_CACHE_TTL_MS) return proveedoresCache;
   if (proveedoresLoadPromise) return proveedoresLoadPromise;
 
   proveedoresLoading = true;
@@ -1247,7 +1272,11 @@ async function ensureProveedoresLoaded(){
 function loadProveedoresLocalCache(){
   try{
     const raw = localStorage.getItem("proveedores_cache_v1");
+    const ts = Number(localStorage.getItem("proveedores_cache_ts_v1") || 0);
     const arr = raw ? JSON.parse(raw) : [];
+    if(Array.isArray(arr) && arr.length){
+      proveedoresLoadedTs = ts || 0;
+    }
     return Array.isArray(arr) ? arr : [];
   }catch{
     return [];
@@ -1257,6 +1286,7 @@ function loadProveedoresLocalCache(){
 function saveProveedoresLocalCache(list){
   try{
     localStorage.setItem("proveedores_cache_v1", JSON.stringify(list || []));
+    localStorage.setItem("proveedores_cache_ts_v1", String(Date.now()));
   }catch{}
 }
 
@@ -3537,7 +3567,7 @@ function existeCitaEnHorarioExcluding(fechaHoraISO, area, excludeId){
 let _comprasCache = []; // cache de la vista (rango cargado)
 
 async function renderCitasCompras(){
-  if(!requirePerm("ver_citas_compras","Solo COMPRAS puede ver esta tabla.")) return;
+  if(!requirePerm("ver_citas_compras","Solo COMPRAS/JEFATURA puede ver esta tabla.")) return;
   currentView = "citas_compras";
 
   // defaults: hoy -> +30 días
@@ -3785,8 +3815,8 @@ function paintCitasComprasTable(tableList, baseList){
 
 async function renderEditarCitaCompras(id){
   if(!requirePerm("editar_cita","No tienes permiso para editar citas.")) return;
-  currentView = "editar_cita";
-  const v = visitas.find(x => String(x.id) === String(id));
+  const v = visitas.find(x => String(x.id) === String(id)) ||
+            _comprasCache.find(x => String(x.id) === String(id));
   if(!v){
     toast("No encontrado","No se encontró la cita.","warn");
     return renderCitasCompras();
@@ -3795,19 +3825,19 @@ async function renderEditarCitaCompras(id){
   // asegura proveedores en cache para autocompletar
   await ensureProveedoresLoaded();
 
-  appEl.innerHTML = `
-    <div class="card">
-      <div class="row" style="justify-content:space-between;">
-        <div>
-          <h2 style="margin:0 0 4px;">Editar cita</h2>
-          <div style="color:var(--muted);font-size:12px;">ID: <b style="color:var(--text)">${esc(v.id)}</b></div>
-        </div>
-        <div class="row">
-          <button class="secondary" data-action="citasComprasBack">Volver</button>
-        </div>
-      </div>
+  const modal = document.getElementById("editCitaModal");
+  const title = document.getElementById("editCitaTitle");
+  const subtitle = document.getElementById("editCitaSubtitle");
+  const body = document.getElementById("editCitaBody");
+  if(!modal || !body){
+    toast("Edición","No se encontró el modal de edición.","bad",3200);
+    return;
+  }
 
-      <div class="divider"></div>
+  if(title) title.textContent = "Editar cita";
+  if(subtitle) subtitle.innerHTML = `ID: <b style="color:var(--text)">${esc(v.id)}</b>`;
+
+  body.innerHTML = `
 
       <div class="two">
         <div>
@@ -3863,10 +3893,17 @@ async function renderEditarCitaCompras(id){
       <div class="row">
         <button class="secondary" data-action="ccVerQR" data-id="${esc(v.id)}">Ver QR</button>
         <button class="ok" data-action="ccSaveEdit" data-id="${esc(v.id)}">Guardar cambios</button>
-        <button class="secondary" data-action="citasComprasBack">Cancelar</button>
+        <button class="secondary" data-action="ccCloseEditModal">Cancelar</button>
       </div>
-    </div>
   `;
+
+  modal.classList.add("show");
+  modal.onclick = (e) => {
+    if(e.target === modal) closeEditarCitaComprasModal();
+  };
+  document.onkeydown = (e) => {
+    if(e.key === "Escape") closeEditarCitaComprasModal();
+  };
 
   // set persona select
   setTimeout(()=>{
@@ -3876,6 +3913,13 @@ async function renderEditarCitaCompras(id){
 
   // autocomplete proveedor (reutiliza tu idea pero en este form)
   setupProveedorAutocompleteForEdit(v);
+}
+
+function closeEditarCitaComprasModal(){
+  const modal = document.getElementById("editCitaModal");
+  const body = document.getElementById("editCitaBody");
+  if(modal) modal.classList.remove("show");
+  if(body) body.innerHTML = "";
 }
 
 function setupProveedorAutocompleteForEdit(v){
@@ -3964,7 +4008,7 @@ async function guardarEdicionCitaCompras(id){
   }
 
   toast("Actualizado","La cita fue actualizada.","ok",2200);
-  await renderCitasCompras();
+  closeEditarCitaComprasModal();
   await loadCitasCompras(); // refresca tabla con filtros actuales
 }
 async function cancelarCitaCompras(id){
@@ -5099,7 +5143,21 @@ async function renderNuevo(){
     const localProveedores = loadProveedoresLocalCache();
     if(localProveedores.length){
       proveedoresCache = localProveedores;
+      proveedoresLoaded = true;
     }
+  }
+
+  const proveedoresCacheAge = proveedoresLoadedTs ? (Date.now() - proveedoresLoadedTs) : Infinity;
+  const proveedoresCacheStale = proveedoresCacheAge >= PROVEEDORES_CACHE_TTL_MS;
+  if(proveedoresCache.length && proveedoresCacheStale && navigator.onLine && !proveedoresLoading && !proveedoresLoadPromise){
+    loadProveedores(true)
+      .then(() => {
+        if(currentView === "nuevo") renderNuevo();
+      })
+      .catch(e => {
+        proveedoresLoadError = e;
+        console.warn("No se pudo refrescar proveedores en segundo plano", e);
+      });
   }
 
   if(!proveedoresCache || !proveedoresCache.length){
@@ -5123,10 +5181,17 @@ async function renderNuevo(){
 
   appEl.innerHTML = `
     <div class="card">
-      <h2 style="margin:0 0 6px;">Nueva Cita</h2>
-      <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
-        Captura datos mínimos.
-      </p>
+      <div class="row" style="justify-content:space-between;gap:10px;align-items:flex-start;">
+        <div>
+          <h2 style="margin:0 0 6px;">Nueva Cita</h2>
+          <p style="margin:0 0 12px;color:var(--muted);font-size:12px;">
+            Captura datos mínimos.
+          </p>
+        </div>
+        <button class="secondary" data-action="reloadProveedoresNuevo" data-no-sb="true">
+          Actualizar proveedores
+        </button>
+      </div>
 
       <div class="two">
 
@@ -6564,6 +6629,7 @@ async function guardarProveedor(){
 
     // recarga cache
     proveedoresLoaded = false;
+    proveedoresLoadedTs = 0;
     await loadProveedores(true);
 
   }catch(e){
@@ -6616,16 +6682,18 @@ async function importProveedoresDesdeExcel(){
 
   // refresca cache
   proveedoresLoaded = false;
+  proveedoresLoadedTs = 0;
   await loadProveedores(true);
 }
 
 async function loadProveedores(force = false){
   try{
-    if(!force && proveedoresLoaded){
+    if(!force && proveedoresLoaded && (Date.now() - proveedoresLoadedTs) < PROVEEDORES_CACHE_TTL_MS){
       renderProveedores(proveedoresCache);
       return proveedoresCache;
     }
 
+    proveedoresLoading = true;
     proveedoresLoadError = null;
     const snap = await getDocs(collection(db,"proveedores"));
     const lista = [];
@@ -6637,6 +6705,7 @@ async function loadProveedores(force = false){
     // 🔥 ESTA LÍNEA FALTABA
     proveedoresCache = lista;
     proveedoresLoaded = true;
+    proveedoresLoadedTs = Date.now();
     proveedoresLoadError = null;
     saveProveedoresLocalCache(lista);
 
@@ -6655,6 +6724,8 @@ async function loadProveedores(force = false){
     }
     toast("Error","No se pudieron cargar proveedores","bad");
     return proveedoresCache;
+  }finally{
+    proveedoresLoading = false;
   }
 }
 
@@ -6734,6 +6805,7 @@ function renderProveedores(lista){
 
         case "reloadProveedoresNuevo":
           proveedoresLoaded = false;
+          proveedoresLoadedTs = 0;
           proveedoresLoadPromise = null;
           appEl.innerHTML = `
             <div class="card">
@@ -6906,6 +6978,10 @@ case "ccEdit":
 
 case "ccSaveEdit":
   await guardarEdicionCitaCompras(id);
+  break;
+
+case "ccCloseEditModal":
+  closeEditarCitaComprasModal();
   break;
 
 case "ccCancel":
