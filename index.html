@@ -3844,6 +3844,9 @@ function paintCitasComprasTable(tableList, baseList){
               <td>${esc(v.motivo||"-")}</td>
               <td>${badge(v.status)}</td>
               <td style="white-space:nowrap;">
+                <button class="secondary" data-action="ficha" data-id="${esc(v.id)}">
+                  Detalle
+                </button>
                 <button class="secondary" data-action="ccEdit" data-id="${esc(v.id)}" ${canEdit?"":"disabled"}>
                   Editar
                 </button>
@@ -5894,6 +5897,28 @@ ${incLabel ? `
             </div>
           </div>
 
+          <div class="divider"></div>
+          <h3 style="margin:0 0 8px;">Dictamen de calidad</h3>
+          <div class="grid history-grid">
+            <div class="pill" style="display:flex; justify-content:space-between;">
+              <span style="color:var(--muted)">Estado</span>
+              <b style="color:var(--text)">${esc((v.dictamen?.estado || "pendiente").toUpperCase())}</b>
+            </div>
+            <div class="pill" style="display:flex; justify-content:space-between;">
+              <span style="color:var(--muted)">Incidencia</span>
+              <b style="color:var(--text)">${esc(INC_LABEL[v.dictamen?.incidencia || "SIN_INCIDENCIAS"] || v.dictamen?.incidencia || "Sin Incidencias")}</b>
+            </div>
+            <div class="pill" style="display:flex; justify-content:space-between;">
+              <span style="color:var(--muted)">Dictaminó</span>
+              <b style="color:var(--text)">${esc(v.dictamen?.por || "-")}</b>
+            </div>
+            <div class="pill" style="display:flex; justify-content:space-between;">
+              <span style="color:var(--muted)">Fecha dictamen</span>
+              <b style="color:var(--text)">${esc(v.dictamen?.ts ? new Date(v.dictamen.ts).toLocaleString() : "-")}</b>
+            </div>
+          </div>
+          <label>Observaciones de calidad</label>
+          <textarea rows="3" readonly placeholder="Sin observaciones">${esc(v.dictamen?.notas || "")}</textarea>
           ${hasPerm("ver_documentos") ? `
             <div class="divider"></div>
             ${renderFacturasOcReadonly(v)}
