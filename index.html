@@ -138,6 +138,34 @@
       transition: transform .06s ease, background .15s ease, border-color .15s ease;
     }
     .tarjeta:hover{ transform:translateY(-1px); background: rgba(15,23,42,.92); border-color: rgba(59,130,246,.25); }
+    .tarjeta.qr-vencido{
+      position:relative;
+      overflow:hidden;
+      padding-top:38px;
+      background: linear-gradient(135deg, rgba(255,0,64,.98), rgba(127,0,20,.92));
+      border-color: rgba(255,59,48,.95);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.12), 0 0 24px rgba(255,0,64,.65), 0 14px 34px rgba(255,0,64,.30);
+    }
+    .tarjeta.qr-vencido:hover{
+      background: linear-gradient(135deg, rgba(255,20,80,1), rgba(150,0,30,.96));
+      border-color:#ffccd5;
+    }
+    .tarjeta.qr-vencido strong,
+    .tarjeta.qr-vencido small{ color:#fff; }
+    .qr-banda-inactivo{
+      position:absolute;
+      left:0; right:0; top:0;
+      padding:7px 10px;
+      background:#ff073a;
+      color:#fff;
+      border-bottom:1px solid rgba(255,255,255,.55);
+      box-shadow:0 0 18px rgba(255,7,58,.85);
+      text-align:center;
+      font-size:11px;
+      font-weight:900;
+      letter-spacing:.7px;
+      text-transform:uppercase;
+    }
     .tarjeta strong{ display:block; font-size:14px; }
     .tarjeta small{ color:var(--muted); display:block; margin-top:2px; }
     .meta{ margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; color:var(--muted); font-size:12px; }
@@ -447,6 +475,20 @@ html[data-theme="light"] .tarjeta{
   border:1px solid var(--border);
   border-radius:14px;
   box-shadow:0 10px 24px rgba(0,0,0,.08);
+}
+
+html[data-theme="light"] .tarjeta.qr-vencido{
+  background: linear-gradient(135deg, rgba(255,0,64,.98), rgba(127,0,20,.92));
+  border-color: rgba(255,59,48,.95);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.55), 0 0 24px rgba(255,0,64,.55), 0 14px 34px rgba(255,0,64,.25);
+}
+html[data-theme="light"] .tarjeta.qr-vencido:hover{
+  background: linear-gradient(135deg, rgba(255,20,80,1), rgba(150,0,30,.96));
+  border-color:#ffccd5;
+}
+html[data-theme="light"] .tarjeta.qr-vencido strong,
+html[data-theme="light"] .tarjeta.qr-vencido small{
+  color:#fff;
 }
 
 /* Inputs */
@@ -811,7 +853,407 @@ html[data-theme="light"] .pill.info *{
   font-weight:900;
 }
 
-</style>
+
+/* ============================
+   TEMA DESIERTO - paleta #3A2D1F #A67C52 #D9A441 #F2D0A7 #F7F3E8
+   ============================ */
+html[data-theme="desert"]{
+  --bg:#F7F3E8;
+  --panel:#F2D0A7;
+  --panel2:#F7F3E8;
+  --text:#3A2D1F;
+  --muted:#7b5b3b;
+  --brand:#D9A441;
+  --ok:#6f8f3a;
+  --warn:#D9A441;
+  --info:#A67C52;
+  --bad:#b23a2e;
+  --border:rgba(58,45,31,.18);
+  --shadow:0 14px 34px rgba(58,45,31,.16);
+  --focus:0 0 0 3px rgba(217,164,65,.32);
+}
+html[data-theme="desert"] body{
+  color:var(--text);
+  background:
+    radial-gradient(900px 500px at 18% 0%, rgba(217,164,65,.20), transparent 60%),
+    radial-gradient(700px 420px at 92% 18%, rgba(166,124,82,.20), transparent 58%),
+    var(--bg);
+}
+html[data-theme="desert"] header,
+html[data-theme="desert"] .sidebar{
+  background: linear-gradient(180deg, rgba(242,208,167,.98), rgba(247,243,232,.96));
+  border-color:var(--border);
+  box-shadow:0 18px 48px rgba(58,45,31,.14);
+}
+html[data-theme="desert"] .logo,
+html[data-theme="desert"] .sidebar .sb-logo{
+  background: linear-gradient(135deg, #A67C52, #D9A441);
+  color:#fff;
+  box-shadow:0 12px 26px rgba(166,124,82,.28);
+}
+html[data-theme="desert"] .card,
+html[data-theme="desert"] .tarjeta,
+html[data-theme="desert"] .col,
+html[data-theme="desert"] .modal{
+  background: linear-gradient(180deg, rgba(247,243,232,.96), rgba(242,208,167,.80));
+  border-color:var(--border);
+  box-shadow:var(--shadow);
+  color:var(--text);
+}
+html[data-theme="desert"] .tarjeta:hover{
+  background: linear-gradient(180deg, rgba(247,243,232,1), rgba(242,208,167,.95));
+  border-color:rgba(166,124,82,.42);
+}
+html[data-theme="desert"] input,
+html[data-theme="desert"] textarea,
+html[data-theme="desert"] select{
+  background:rgba(247,243,232,.92);
+  color:var(--text);
+  border-color:rgba(58,45,31,.20);
+}
+html[data-theme="desert"] button{
+  background:#A67C52;
+  color:#fff;
+  box-shadow:0 10px 22px rgba(166,124,82,.20);
+}
+html[data-theme="desert"] button.secondary,
+html[data-theme="desert"] .sb-btn{
+  background:rgba(242,208,167,.62);
+  color:#3A2D1F;
+  border:1px solid rgba(58,45,31,.16);
+  box-shadow:none;
+}
+html[data-theme="desert"] button.secondary:hover,
+html[data-theme="desert"] .sb-btn:hover{
+  background:rgba(217,164,65,.22);
+  border-color:rgba(166,124,82,.34);
+}
+html[data-theme="desert"] .sb-btn[aria-current="page"]{
+  background:rgba(217,164,65,.34);
+  border-color:rgba(166,124,82,.42);
+}
+html[data-theme="desert"] .pill,
+html[data-theme="desert"] .pill *{
+  background:rgba(247,243,232,.58);
+  border-color:rgba(58,45,31,.16);
+  color:#3A2D1F;
+}
+html[data-theme="desert"] .pill .dot{
+  color:inherit;
+  border-color:transparent;
+}
+html[data-theme="desert"] .title small,
+html[data-theme="desert"] label,
+html[data-theme="desert"] .tarjeta small,
+html[data-theme="desert"] .meta,
+html[data-theme="desert"] .sb-sub,
+html[data-theme="desert"] .sb-txt,
+html[data-theme="desert"] .table th{
+  color:var(--muted);
+}
+html[data-theme="desert"] .table{
+  border-color:rgba(58,45,31,.18);
+}
+html[data-theme="desert"] .table th{
+  background:rgba(166,124,82,.12);
+}
+html[data-theme="desert"] .table td{
+  border-bottom-color:rgba(58,45,31,.12);
+}
+html[data-theme="desert"] .table tr:hover td{
+  background:rgba(217,164,65,.12);
+}
+html[data-theme="desert"] .badge-dictamen.pendiente{
+  background:rgba(217,164,65,.22);
+  border-color:rgba(166,124,82,.40);
+  color:#3A2D1F;
+}
+html[data-theme="desert"] .badge-dictamen.aceptado{
+  background:rgba(111,143,58,.16);
+  border-color:rgba(111,143,58,.34);
+  color:#31501d;
+}
+html[data-theme="desert"] .badge-dictamen.rechazado{
+  background:rgba(178,58,46,.14);
+  border-color:rgba(178,58,46,.34);
+  color:#7a241b;
+}
+html[data-theme="desert"] .tarjeta.qr-vencido{
+  background: linear-gradient(135deg, rgba(255,0,64,.98), rgba(127,0,20,.92));
+  border-color: rgba(255,59,48,.95);
+}
+html[data-theme="desert"] .tarjeta.qr-vencido strong,
+html[data-theme="desert"] .tarjeta.qr-vencido small{
+  color:#fff;
+}
+/* ============================
+   TEMA MENTA - paleta #ECFEFF #CFFAFE #67E8F9 #34D399 #0F766E
+   ============================ */
+html[data-theme="mint"]{
+  --bg:#ECFEFF;
+  --panel:#CFFAFE;
+  --panel2:#ECFEFF;
+  --text:#0F3F3B;
+  --muted:#0F766E;
+  --brand:#34D399;
+  --ok:#34D399;
+  --warn:#0EA5B7;
+  --info:#67E8F9;
+  --bad:#dc2626;
+  --border:rgba(15,118,110,.18);
+  --shadow:0 14px 34px rgba(15,118,110,.14);
+  --focus:0 0 0 3px rgba(52,211,153,.32);
+}
+html[data-theme="mint"] body{
+  color:var(--text);
+  background:
+    radial-gradient(900px 500px at 18% 0%, rgba(103,232,249,.28), transparent 60%),
+    radial-gradient(760px 420px at 92% 18%, rgba(52,211,153,.22), transparent 58%),
+    var(--bg);
+}
+html[data-theme="mint"] header,
+html[data-theme="mint"] .sidebar{
+  background: linear-gradient(180deg, rgba(207,250,254,.98), rgba(236,254,255,.96));
+  border-color:var(--border);
+  box-shadow:0 18px 48px rgba(15,118,110,.13);
+}
+html[data-theme="mint"] .logo,
+html[data-theme="mint"] .sidebar .sb-logo{
+  background: linear-gradient(135deg, #34D399, #0F766E);
+  color:#fff;
+  box-shadow:0 12px 26px rgba(15,118,110,.26);
+}
+html[data-theme="mint"] .card,
+html[data-theme="mint"] .tarjeta,
+html[data-theme="mint"] .col,
+html[data-theme="mint"] .modal{
+  background: linear-gradient(180deg, rgba(236,254,255,.97), rgba(207,250,254,.82));
+  border-color:var(--border);
+  box-shadow:var(--shadow);
+  color:var(--text);
+}
+html[data-theme="mint"] .tarjeta:hover{
+  background: linear-gradient(180deg, rgba(236,254,255,1), rgba(207,250,254,.96));
+  border-color:rgba(15,118,110,.38);
+}
+html[data-theme="mint"] input,
+html[data-theme="mint"] textarea,
+html[data-theme="mint"] select{
+  background:rgba(236,254,255,.94);
+  color:var(--text);
+  border-color:rgba(15,118,110,.22);
+}
+html[data-theme="mint"] button{
+  background:#0F766E;
+  color:#fff;
+  box-shadow:0 10px 22px rgba(15,118,110,.20);
+}
+html[data-theme="mint"] button.secondary,
+html[data-theme="mint"] .sb-btn{
+  background:rgba(207,250,254,.70);
+  color:#0F3F3B;
+  border:1px solid rgba(15,118,110,.16);
+  box-shadow:none;
+}
+html[data-theme="mint"] button.secondary:hover,
+html[data-theme="mint"] .sb-btn:hover{
+  background:rgba(52,211,153,.20);
+  border-color:rgba(15,118,110,.34);
+}
+html[data-theme="mint"] .sb-btn[aria-current="page"]{
+  background:rgba(52,211,153,.28);
+  border-color:rgba(15,118,110,.38);
+}
+html[data-theme="mint"] .pill,
+html[data-theme="mint"] .pill *{
+  background:rgba(236,254,255,.62);
+  border-color:rgba(15,118,110,.16);
+  color:#0F3F3B;
+}
+html[data-theme="mint"] .pill .dot{
+  color:inherit;
+  border-color:transparent;
+}
+html[data-theme="mint"] .title small,
+html[data-theme="mint"] label,
+html[data-theme="mint"] .tarjeta small,
+html[data-theme="mint"] .meta,
+html[data-theme="mint"] .sb-sub,
+html[data-theme="mint"] .sb-txt,
+html[data-theme="mint"] .table th{
+  color:var(--muted);
+}
+html[data-theme="mint"] .table{
+  border-color:rgba(15,118,110,.18);
+}
+html[data-theme="mint"] .table th{
+  background:rgba(103,232,249,.18);
+}
+html[data-theme="mint"] .table td{
+  border-bottom-color:rgba(15,118,110,.12);
+}
+html[data-theme="mint"] .table tr:hover td{
+  background:rgba(52,211,153,.11);
+}
+html[data-theme="mint"] .badge-dictamen.pendiente{
+  background:rgba(103,232,249,.26);
+  border-color:rgba(15,118,110,.32);
+  color:#0F3F3B;
+}
+html[data-theme="mint"] .badge-dictamen.aceptado{
+  background:rgba(52,211,153,.18);
+  border-color:rgba(52,211,153,.36);
+  color:#065f46;
+}
+html[data-theme="mint"] .badge-dictamen.rechazado{
+  background:rgba(220,38,38,.12);
+  border-color:rgba(220,38,38,.30);
+  color:#991b1b;
+}
+html[data-theme="mint"] .tarjeta.qr-vencido{
+  background: linear-gradient(135deg, rgba(255,0,64,.98), rgba(127,0,20,.92));
+  border-color: rgba(255,59,48,.95);
+}
+html[data-theme="mint"] .tarjeta.qr-vencido strong,
+html[data-theme="mint"] .tarjeta.qr-vencido small{
+  color:#fff;
+}
+/* ============================
+   TEMA COBRE - paleta #1F1300 #7C2D12 #C2410C #FB923C #FDE68A
+   ============================ */
+html[data-theme="copper"]{
+  --bg:#1F1300;
+  --panel:#7C2D12;
+  --panel2:#2a1804;
+  --text:#FDE68A;
+  --muted:#fed7aa;
+  --brand:#FB923C;
+  --ok:#facc15;
+  --warn:#FDE68A;
+  --info:#FB923C;
+  --bad:#ef4444;
+  --border:rgba(253,230,138,.18);
+  --shadow:0 16px 38px rgba(31,19,0,.42);
+  --focus:0 0 0 3px rgba(251,146,60,.34);
+}
+html[data-theme="copper"] body{
+  color:var(--text);
+  background:
+    radial-gradient(900px 500px at 18% 0%, rgba(194,65,12,.34), transparent 60%),
+    radial-gradient(760px 420px at 92% 18%, rgba(251,146,60,.25), transparent 58%),
+    var(--bg);
+}
+html[data-theme="copper"] header,
+html[data-theme="copper"] .sidebar{
+  background: linear-gradient(180deg, rgba(31,19,0,.98), rgba(124,45,18,.94));
+  border-color:var(--border);
+  box-shadow:0 18px 48px rgba(31,19,0,.50);
+}
+html[data-theme="copper"] .logo,
+html[data-theme="copper"] .sidebar .sb-logo{
+  background: linear-gradient(135deg, #C2410C, #FB923C);
+  color:#fff;
+  box-shadow:0 12px 26px rgba(251,146,60,.25);
+}
+html[data-theme="copper"] .card,
+html[data-theme="copper"] .tarjeta,
+html[data-theme="copper"] .col,
+html[data-theme="copper"] .modal{
+  background: linear-gradient(180deg, rgba(124,45,18,.92), rgba(31,19,0,.86));
+  border-color:var(--border);
+  box-shadow:var(--shadow);
+  color:var(--text);
+}
+html[data-theme="copper"] .tarjeta:hover{
+  background: linear-gradient(180deg, rgba(194,65,12,.88), rgba(124,45,18,.92));
+  border-color:rgba(253,230,138,.34);
+}
+html[data-theme="copper"] input,
+html[data-theme="copper"] textarea,
+html[data-theme="copper"] select{
+  background:rgba(31,19,0,.58);
+  color:var(--text);
+  border-color:rgba(253,230,138,.22);
+}
+html[data-theme="copper"] input::placeholder,
+html[data-theme="copper"] textarea::placeholder{
+  color:rgba(254,215,170,.78);
+}
+html[data-theme="copper"] button{
+  background:#C2410C;
+  color:#fff;
+  box-shadow:0 10px 22px rgba(194,65,12,.26);
+}
+html[data-theme="copper"] button.secondary,
+html[data-theme="copper"] .sb-btn{
+  background:rgba(253,230,138,.10);
+  color:#FDE68A;
+  border:1px solid rgba(253,230,138,.18);
+  box-shadow:none;
+}
+html[data-theme="copper"] button.secondary:hover,
+html[data-theme="copper"] .sb-btn:hover{
+  background:rgba(251,146,60,.18);
+  border-color:rgba(253,230,138,.34);
+}
+html[data-theme="copper"] .sb-btn[aria-current="page"]{
+  background:rgba(251,146,60,.24);
+  border-color:rgba(253,230,138,.40);
+}
+html[data-theme="copper"] .pill,
+html[data-theme="copper"] .pill *{
+  background:rgba(31,19,0,.22);
+  border-color:rgba(253,230,138,.18);
+  color:#FDE68A;
+}
+html[data-theme="copper"] .pill .dot{
+  color:inherit;
+  border-color:transparent;
+}
+html[data-theme="copper"] .title small,
+html[data-theme="copper"] label,
+html[data-theme="copper"] .tarjeta small,
+html[data-theme="copper"] .meta,
+html[data-theme="copper"] .sb-sub,
+html[data-theme="copper"] .sb-txt,
+html[data-theme="copper"] .table th{
+  color:var(--muted);
+}
+html[data-theme="copper"] .table{
+  border-color:rgba(253,230,138,.18);
+}
+html[data-theme="copper"] .table th{
+  background:rgba(31,19,0,.26);
+}
+html[data-theme="copper"] .table td{
+  border-bottom-color:rgba(253,230,138,.12);
+}
+html[data-theme="copper"] .table tr:hover td{
+  background:rgba(251,146,60,.12);
+}
+html[data-theme="copper"] .badge-dictamen.pendiente{
+  background:rgba(253,230,138,.16);
+  border-color:rgba(253,230,138,.34);
+  color:#FDE68A;
+}
+html[data-theme="copper"] .badge-dictamen.aceptado{
+  background:rgba(250,204,21,.14);
+  border-color:rgba(250,204,21,.32);
+  color:#fef3c7;
+}
+html[data-theme="copper"] .badge-dictamen.rechazado{
+  background:rgba(239,68,68,.14);
+  border-color:rgba(239,68,68,.34);
+  color:#fecaca;
+}
+html[data-theme="copper"] .tarjeta.qr-vencido{
+  background: linear-gradient(135deg, rgba(255,0,64,.98), rgba(127,0,20,.92));
+  border-color: rgba(255,59,48,.95);
+}
+html[data-theme="copper"] .tarjeta.qr-vencido strong,
+html[data-theme="copper"] .tarjeta.qr-vencido small{
+  color:#fff;
+}</style>
 </head>
 
 <body>
@@ -889,7 +1331,7 @@ html[data-theme="light"] .pill.info *{
     <div class="sb-logo">PV</div>
     <div class="sb-title">
       <b>Acceso Proveedores</b>
-      <span id="appVersion">Versión proveedores-v7</span>
+      <span id="appVersion">Versión proveedores-v8</span>
     </div>
   </div>
   <div class="sb-section">
@@ -1061,14 +1503,34 @@ html[data-theme="light"] .pill.info *{
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "proveedores-v7";
+  const APP_VERSION = "proveedores-v8";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
 
+  const THEMES = ["dark", "light", "desert", "mint", "copper"];
+  const THEME_LABELS = {
+    dark: "Tema: Oscuro",
+    light: "Tema: Claro",
+    desert: "Tema: Desierto",
+    mint: "Tema: Menta",
+    copper: "Tema: Cobre"
+  };
+  const THEME_COLORS = {
+    dark: "#0f172a",
+    light: "#f6f8fc",
+    desert: "#F7F3E8",
+    mint: "#ECFEFF",
+    copper: "#1F1300"
+  };
+
   function setTheme(mode){
-  document.documentElement.setAttribute("data-theme", mode);
-  localStorage.setItem("ui_theme", mode);
+  const next = THEMES.includes(mode) ? mode : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem("ui_theme", next);
+  const btn = document.getElementById("btnTheme");
+  if(btn) btn.textContent = THEME_LABELS[next] || "Tema";
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", THEME_COLORS[next] || "#0f172a");
 }
 
 function initTheme(){
@@ -1078,7 +1540,8 @@ function initTheme(){
 
 function toggleTheme(){
   const cur = document.documentElement.getAttribute("data-theme") || "dark";
-  setTheme(cur === "light" ? "dark" : "light");
+  const idx = THEMES.indexOf(cur);
+  setTheme(THEMES[(idx + 1) % THEMES.length]);
 }
 
 initTheme();
@@ -3400,6 +3863,13 @@ function renderRegisterForm(){
   `;
 }
 
+    function qrInactivoPorImpuntualidad(v){
+      if(!v || v.status !== Status.PROGRAMADO) return false;
+      if(v.qrDesactivadoMotivo === "RETRASO") return true;
+      if(typeof v.fechaHoraTs !== "number") return false;
+      return (Date.now() - v.fechaHoraTs) > (QR_LATE_BLOCK_MIN * 60 * 1000);
+    }
+
     function renderDashboardHoy(){
       if(!requirePerm("ver_dashboard","Tu rol no puede ver el dashboard.")) return;
       currentView = "dashboard";
@@ -3472,11 +3942,13 @@ const INC_LABEL = {
 };
 const incLabel = INC_LABEL[incKey] || "";
 const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
+        const qrVencido = qrInactivoPorImpuntualidad(v);
         let docColor="bad";
         if(v.ocNo && v.facturaNo) docColor="ok";
         else if(v.ocNo || v.facturaNo) docColor="warn";
         return `
-          <div class="tarjeta history-card" data-action="ficha" data-id="${esc(v.id)}">
+          <div class="tarjeta history-card ${qrVencido ? "qr-vencido" : ""}" data-action="ficha" data-id="${esc(v.id)}">
+            ${qrVencido ? `<div class="qr-banda-inactivo">QR inactivo por impuntualidad</div>` : ""}
             <strong>${esc(v.proveedor)}</strong>
             <small>${esc(v.empresa)}</small>
             <div class="meta">
@@ -4118,8 +4590,10 @@ async function cancelarCitaCompras(id){
         const cita = v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-";
         const dict = (v.dictamen?.estado || "pendiente").toLowerCase();
         const dictLabel = (v.dictamen?.estado || "pendiente").toUpperCase();
+        const qrVencido = qrInactivoPorImpuntualidad(v);
         return `
-          <div class="tarjeta history-card" data-action="ficha" data-id="${esc(v.id)}">
+          <div class="tarjeta history-card ${qrVencido ? "qr-vencido" : ""}" data-action="ficha" data-id="${esc(v.id)}">
+            ${qrVencido ? `<div class="qr-banda-inactivo">QR inactivo por impuntualidad</div>` : ""}
             <strong>${esc(v.proveedor)}</strong>
             <small>${esc(v.empresa)}</small>
             <div class="meta">
