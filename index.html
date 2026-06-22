@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
@@ -1119,7 +1119,102 @@ html[data-theme="mint"] .tarjeta.qr-vencido small{
   color:#fff;
 }
 /* ============================
-   TEMA COBRE - paleta #1F1300 #7C2D12 #C2410C #FB923C #FDE68A
+   /* Ajuste de contraste para chips/cards en Desierto y Menta */
+html[data-theme="desert"] .pill,
+html[data-theme="desert"] .history-card .pill{
+  background:rgba(247,243,232,.86) !important;
+  border-color:rgba(58,45,31,.22) !important;
+  color:#3A2D1F !important;
+}
+html[data-theme="desert"] .pill *:not(.dot){
+  background:transparent !important;
+  color:#3A2D1F !important;
+}
+html[data-theme="desert"] .pill .dot{
+  color:inherit !important;
+  border-color:transparent !important;
+}
+html[data-theme="desert"] .pill.ok{ background:rgba(111,143,58,.22) !important; border-color:rgba(111,143,58,.46) !important; }
+html[data-theme="desert"] .pill.warn{ background:rgba(217,164,65,.30) !important; border-color:rgba(166,124,82,.48) !important; }
+html[data-theme="desert"] .pill.bad,
+html[data-theme="desert"] .pill.danger{ background:rgba(178,58,46,.22) !important; border-color:rgba(178,58,46,.50) !important; color:#6f1f17 !important; }
+html[data-theme="desert"] .pill.bad *:not(.dot),
+html[data-theme="desert"] .pill.danger *:not(.dot){ color:#6f1f17 !important; }
+html[data-theme="desert"] .badge-dictamen.rechazado{
+  background:rgba(178,58,46,.22) !important;
+  border-color:rgba(178,58,46,.56) !important;
+  color:#6f1f17 !important;
+  font-weight:900;
+}
+html[data-theme="desert"] .badge-dictamen.pendiente{
+  background:rgba(217,164,65,.30) !important;
+  border-color:rgba(166,124,82,.50) !important;
+  color:#3A2D1F !important;
+}
+html[data-theme="desert"] .badge-dictamen.aceptado{
+  background:rgba(111,143,58,.22) !important;
+  border-color:rgba(111,143,58,.48) !important;
+  color:#31501d !important;
+}
+
+html[data-theme="mint"] .pill,
+html[data-theme="mint"] .history-card .pill{
+  background:rgba(236,254,255,.88) !important;
+  border-color:rgba(15,118,110,.24) !important;
+  color:#0F3F3B !important;
+}
+html[data-theme="mint"] .pill *:not(.dot){
+  background:transparent !important;
+  color:#0F3F3B !important;
+}
+html[data-theme="mint"] .pill .dot{
+  color:inherit !important;
+  border-color:transparent !important;
+}
+html[data-theme="mint"] .pill.ok{ background:rgba(52,211,153,.24) !important; border-color:rgba(15,118,110,.42) !important; }
+html[data-theme="mint"] .pill.warn{ background:rgba(103,232,249,.30) !important; border-color:rgba(14,165,183,.48) !important; }
+html[data-theme="mint"] .pill.bad,
+html[data-theme="mint"] .pill.danger{ background:rgba(220,38,38,.18) !important; border-color:rgba(220,38,38,.46) !important; color:#8f1515 !important; }
+html[data-theme="mint"] .pill.bad *:not(.dot),
+html[data-theme="mint"] .pill.danger *:not(.dot){ color:#8f1515 !important; }
+html[data-theme="mint"] .badge-dictamen.rechazado{
+  background:rgba(220,38,38,.18) !important;
+  border-color:rgba(220,38,38,.50) !important;
+  color:#8f1515 !important;
+  font-weight:900;
+}
+html[data-theme="mint"] .badge-dictamen.pendiente{
+  background:rgba(103,232,249,.30) !important;
+  border-color:rgba(14,165,183,.48) !important;
+  color:#0F3F3B !important;
+}
+html[data-theme="mint"] .badge-dictamen.aceptado{
+  background:rgba(52,211,153,.24) !important;
+  border-color:rgba(15,118,110,.44) !important;
+  color:#065f46 !important;
+}
+
+/* Viñetas con colores del tema claro en Desierto y Menta */
+html[data-theme="desert"] .pill .dot,
+html[data-theme="mint"] .pill .dot{
+  width:9px !important;
+  height:9px !important;
+  flex:0 0 auto;
+  box-shadow:0 0 0 2px rgba(255,255,255,.72), 0 1px 4px rgba(15,23,42,.18) !important;
+}
+html[data-theme="desert"] .pill .dot.info,
+html[data-theme="mint"] .pill .dot.info{ background:#0284c7 !important; }
+html[data-theme="desert"] .pill .dot.warn,
+html[data-theme="mint"] .pill .dot.warn{ background:#d97706 !important; }
+html[data-theme="desert"] .pill .dot.ok,
+html[data-theme="mint"] .pill .dot.ok{ background:#16a34a !important; }
+html[data-theme="desert"] .pill .dot.bad,
+html[data-theme="mint"] .pill .dot.bad{ background:#dc2626 !important; }
+html[data-theme="desert"] .pill .dot.brand,
+html[data-theme="mint"] .pill .dot.brand{ background:#2563eb !important; }
+html[data-theme="desert"] .pill .dot.muted,
+html[data-theme="mint"] .pill .dot.muted{ background:#64748b !important; }
+TEMA COBRE - paleta #1F1300 #7C2D12 #C2410C #FB923C #FDE68A
    ============================ */
 html[data-theme="copper"]{
   --bg:#1F1300;
@@ -1253,7 +1348,21 @@ html[data-theme="copper"] .tarjeta.qr-vencido{
 html[data-theme="copper"] .tarjeta.qr-vencido strong,
 html[data-theme="copper"] .tarjeta.qr-vencido small{
   color:#fff;
-}</style>
+}
+/* Viñetas con colores del tema oscuro en Cobre */
+html[data-theme="copper"] .pill .dot{
+  width:9px !important;
+  height:9px !important;
+  flex:0 0 auto;
+  box-shadow:0 0 0 2px rgba(31,19,0,.55), 0 1px 5px rgba(0,0,0,.28) !important;
+}
+html[data-theme="copper"] .pill .dot.info{ background:#38bdf8 !important; }
+html[data-theme="copper"] .pill .dot.warn{ background:#facc15 !important; }
+html[data-theme="copper"] .pill .dot.ok{ background:#22c55e !important; }
+html[data-theme="copper"] .pill .dot.bad{ background:#ef4444 !important; }
+html[data-theme="copper"] .pill .dot.brand{ background:#3b82f6 !important; }
+html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
+</style>
 </head>
 
 <body>
@@ -1331,7 +1440,7 @@ html[data-theme="copper"] .tarjeta.qr-vencido small{
     <div class="sb-logo">PV</div>
     <div class="sb-title">
       <b>Acceso Proveedores</b>
-      <span id="appVersion">Versión proveedores-v8</span>
+      <span id="appVersion">Versión proveedores-v12</span>
     </div>
   </div>
   <div class="sb-section">
@@ -1503,7 +1612,7 @@ html[data-theme="copper"] .tarjeta.qr-vencido small{
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "proveedores-v8";
+  const APP_VERSION = "proveedores-v12";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -3948,7 +4057,7 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
         else if(v.ocNo || v.facturaNo) docColor="warn";
         return `
           <div class="tarjeta history-card ${qrVencido ? "qr-vencido" : ""}" data-action="ficha" data-id="${esc(v.id)}">
-            ${qrVencido ? `<div class="qr-banda-inactivo">QR inactivo por impuntualidad</div>` : ""}
+            ${qrVencido ? `<div class="qr-banda-inactivo">QR inactivo por retraso</div>` : ""}
             <strong>${esc(v.proveedor)}</strong>
             <small>${esc(v.empresa)}</small>
             <div class="meta">
@@ -4593,7 +4702,7 @@ async function cancelarCitaCompras(id){
         const qrVencido = qrInactivoPorImpuntualidad(v);
         return `
           <div class="tarjeta history-card ${qrVencido ? "qr-vencido" : ""}" data-action="ficha" data-id="${esc(v.id)}">
-            ${qrVencido ? `<div class="qr-banda-inactivo">QR inactivo por impuntualidad</div>` : ""}
+            ${qrVencido ? `<div class="qr-banda-inactivo">QR inactivo por retraso</div>` : ""}
             <strong>${esc(v.proveedor)}</strong>
             <small>${esc(v.empresa)}</small>
             <div class="meta">
@@ -7597,3 +7706,24 @@ window.addEventListener("offline",updateNet);
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
