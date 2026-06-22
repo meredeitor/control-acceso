@@ -1,4 +1,4 @@
-const CACHE_NAME = "proveedores-v7";
+const CACHE_NAME = "proveedores-v8";
 
 // Archivos base que siempre quieres offline
 const STATIC_ASSETS = [
@@ -12,7 +12,7 @@ const STATIC_ASSETS = [
   "https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"
 ];
 
-// 🚀 INSTALL
+// ðŸš€ INSTALL
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -22,7 +22,7 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// 🔄 ACTIVATE (limpia versiones viejas)
+// ðŸ”„ ACTIVATE (limpia versiones viejas)
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -38,17 +38,17 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// 🌐 FETCH (estrategia híbrida)
+// ðŸŒ FETCH (estrategia hÃ­brida)
 self.addEventListener("fetch", (event) => {
   const req = event.request;
 
-  // 🔥 API / Firebase → siempre red primero
+  // ðŸ”¥ API / Firebase â†’ siempre red primero
   if (req.url.includes("firestore") || req.url.includes("googleapis")) {
     event.respondWith(fetch(req));
     return;
   }
 
-  // 🔥 HTML → network first
+  // ðŸ”¥ HTML â†’ network first
   if (req.mode === "navigate") {
     event.respondWith(
       fetch(req)
@@ -63,7 +63,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 🔥 JS / CSS / imágenes → cache first
+  // ðŸ”¥ JS / CSS / imÃ¡genes â†’ cache first
   event.respondWith(
     caches.match(req).then((cached) => {
       return (
