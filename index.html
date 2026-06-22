@@ -2996,6 +2996,11 @@ async function pushRecentToCloud(){
   if(!navigator.onLine) return;
   if(!currentUser || currentUser.role === ROLES.PENDIENTE) return;
 
+  // Solo ADMIN puede re-subir visitas completas en autosync.
+  // Roles como COMPRAS pueden crear/editar citas programadas, pero Firestore
+  // bloquea que reescriban visitas ya tomadas por Guardia o Calidad.
+  if(currentUser.role !== ROLES.ADMIN) return;
+
   try{
     const sorted = [...visitas].sort((a,b)=>((b.updatedTs||b.createdTs||0)-(a.updatedTs||a.createdTs||0)));
     const top = sorted.slice(0, 10);
@@ -3832,8 +3837,8 @@ function paintCitasComprasTable(tableList, baseList){
       <tbody>
         ${(tableList||[]).map(v=>{
           const fecha = v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-";
-          const canEdit = hasPerm("editar_cita") && v.status !== Status.CANCELADO && v.status !== Status.FINALIZADO;
-          const canCancel = hasPerm("cancelar_cita") && v.status !== Status.CANCELADO && v.status !== Status.FINALIZADO;
+          const canEdit = hasPerm("editar_cita") && v.status === Status.PROGRAMADO;
+          const canCancel = hasPerm("cancelar_cita") && v.status === Status.PROGRAMADO;
 
           return `
             <tr>
@@ -3844,9 +3849,6 @@ function paintCitasComprasTable(tableList, baseList){
               <td>${esc(v.motivo||"-")}</td>
               <td>${badge(v.status)}</td>
               <td style="white-space:nowrap;">
-                <button class="secondary" data-action="ficha" data-id="${esc(v.id)}">
-                  Detalle
-                </button>
                 <button class="secondary" data-action="ccEdit" data-id="${esc(v.id)}" ${canEdit?"":"disabled"}>
                   Editar
                 </button>
@@ -5897,28 +5899,6 @@ ${incLabel ? `
             </div>
           </div>
 
-          <div class="divider"></div>
-          <h3 style="margin:0 0 8px;">Dictamen de calidad</h3>
-          <div class="grid history-grid">
-            <div class="pill" style="display:flex; justify-content:space-between;">
-              <span style="color:var(--muted)">Estado</span>
-              <b style="color:var(--text)">${esc((v.dictamen?.estado || "pendiente").toUpperCase())}</b>
-            </div>
-            <div class="pill" style="display:flex; justify-content:space-between;">
-              <span style="color:var(--muted)">Incidencia</span>
-              <b style="color:var(--text)">${esc(INC_LABEL[v.dictamen?.incidencia || "SIN_INCIDENCIAS"] || v.dictamen?.incidencia || "Sin Incidencias")}</b>
-            </div>
-            <div class="pill" style="display:flex; justify-content:space-between;">
-              <span style="color:var(--muted)">Dictaminó</span>
-              <b style="color:var(--text)">${esc(v.dictamen?.por || "-")}</b>
-            </div>
-            <div class="pill" style="display:flex; justify-content:space-between;">
-              <span style="color:var(--muted)">Fecha dictamen</span>
-              <b style="color:var(--text)">${esc(v.dictamen?.ts ? new Date(v.dictamen.ts).toLocaleString() : "-")}</b>
-            </div>
-          </div>
-          <label>Observaciones de calidad</label>
-          <textarea rows="3" readonly placeholder="Sin observaciones">${esc(v.dictamen?.notas || "")}</textarea>
           ${hasPerm("ver_documentos") ? `
             <div class="divider"></div>
             ${renderFacturasOcReadonly(v)}
@@ -7056,6 +7036,8 @@ case "volverAEditarCita":
   renderHome();
   break;
   
+      }
+
       }
     });
 
