@@ -1214,7 +1214,8 @@ html[data-theme="desert"] .pill .dot.brand,
 html[data-theme="mint"] .pill .dot.brand{ background:#2563eb !important; }
 html[data-theme="desert"] .pill .dot.muted,
 html[data-theme="mint"] .pill .dot.muted{ background:#64748b !important; }
-TEMA COBRE - paleta #1F1300 #7C2D12 #C2410C #FB923C #FDE68A
+/* ============================
+   TEMA COBRE - paleta #1F1300 #7C2D12 #C2410C #FB923C #FDE68A
    ============================ */
 html[data-theme="copper"]{
   --bg:#1F1300;
@@ -1362,6 +1363,43 @@ html[data-theme="copper"] .pill .dot.ok{ background:#22c55e !important; }
 html[data-theme="copper"] .pill .dot.bad{ background:#ef4444 !important; }
 html[data-theme="copper"] .pill .dot.brand{ background:#3b82f6 !important; }
 html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
+
+/* Disponibilidad de hoy: slots visibles fuera del tema oscuro */
+html[data-theme="light"] .agenda-slot.agenda-free,
+html[data-theme="desert"] .agenda-slot.agenda-free,
+html[data-theme="mint"] .agenda-slot.agenda-free{
+  background:linear-gradient(135deg, rgba(22,163,74,.24), rgba(240,253,244,.96)) !important;
+  border:1px solid rgba(22,163,74,.58) !important;
+  color:#14532d !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.58), 0 6px 14px rgba(22,163,74,.13) !important;
+}
+html[data-theme="light"] .agenda-slot.agenda-busy,
+html[data-theme="desert"] .agenda-slot.agenda-busy,
+html[data-theme="mint"] .agenda-slot.agenda-busy{
+  background:linear-gradient(135deg, rgba(217,119,6,.34), rgba(255,247,237,.96)) !important;
+  border:1px solid rgba(217,119,6,.70) !important;
+  color:#7c2d12 !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.54), 0 6px 16px rgba(217,119,6,.16) !important;
+}
+html[data-theme="copper"] .agenda-slot.agenda-free{
+  background:linear-gradient(135deg, rgba(34,197,94,.32), rgba(31,19,0,.88)) !important;
+  border:1px solid rgba(34,197,94,.72) !important;
+  color:#dcfce7 !important;
+  box-shadow:0 0 0 1px rgba(253,230,138,.14), 0 0 18px rgba(34,197,94,.16) !important;
+}
+html[data-theme="copper"] .agenda-slot.agenda-busy{
+  background:linear-gradient(135deg, rgba(250,204,21,.36), rgba(31,19,0,.90)) !important;
+  border:1px solid rgba(250,204,21,.82) !important;
+  color:#fef3c7 !important;
+  box-shadow:0 0 0 1px rgba(253,230,138,.16), 0 0 20px rgba(250,204,21,.18) !important;
+}
+html[data-theme="light"] .agenda-slot *,
+html[data-theme="desert"] .agenda-slot *,
+html[data-theme="mint"] .agenda-slot *,
+html[data-theme="copper"] .agenda-slot *{
+  background:transparent !important;
+  color:inherit !important;
+}
 </style>
 </head>
 
@@ -1440,7 +1478,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     <div class="sb-logo">PV</div>
     <div class="sb-title">
       <b>Acceso Proveedores</b>
-      <span id="appVersion">Versión proveedores-v13</span>
+      <span id="appVersion">Versión proveedores-v14</span>
     </div>
   </div>
   <div class="sb-section">
@@ -1612,7 +1650,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "proveedores-v13";
+  const APP_VERSION = "proveedores-v14";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -7712,6 +7750,7 @@ window.addEventListener("offline",updateNet);
 </script>
 </body>
 </html>
+
 
 
 

@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = "proveedores-v13";
+﻿const CACHE_NAME = "proveedores-v14";
 
 // Archivos base que siempre quieres offline
 const STATIC_ASSETS = [
@@ -78,6 +78,7 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
 
 
 
