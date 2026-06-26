@@ -1440,7 +1440,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     <div class="sb-logo">PV</div>
     <div class="sb-title">
       <b>Acceso Proveedores</b>
-      <span id="appVersion">Versión proveedores-v12</span>
+      <span id="appVersion">Versión proveedores-v13</span>
     </div>
   </div>
   <div class="sb-section">
@@ -1612,7 +1612,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "proveedores-v12";
+  const APP_VERSION = "proveedores-v13";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -2221,7 +2221,9 @@ function capArea(area){
 
 function citaBloqueaHorario(v){
   if(!v || typeof v.fechaHoraTs !== "number") return false;
-  return v.status !== Status.CANCELADO && v.status !== Status.FINALIZADO;
+  // Para agenda se bloquea todo horario ya usado, aunque la cita ya haya finalizado.
+  // Solo las canceladas liberan el espacio.
+  return v.status !== Status.CANCELADO;
 }
 
 
@@ -3519,7 +3521,7 @@ function fmt(ts){
     async function syncDay(dateObj, force = false){
       if(!navigator.onLine) return;
       if(!currentUser || currentUser.role === ROLES.PENDIENTE) return;
-      if(!hasPerm("ver_dashboard") && !hasPerm("ver_historial")) return;
+      if(!hasPerm("ver_dashboard") && !hasPerm("ver_historial") && !hasPerm("crear_cita")) return;
       if(isTodayDate(dateObj) && !force && Date.now() - lastTodaySyncTs < 5 * 60 * 1000) return;
       try{
         const cloud = await cloudFetchByDay(dateObj);
@@ -5773,6 +5775,10 @@ async function renderNuevo(){
   currentView = "nuevo";
   proveedoresLoadError = null;
 
+  if(navigator.onLine){
+    await syncDay(new Date(), true);
+  }
+
   if(!proveedoresCache.length){
     const localProveedores = loadProveedoresLocalCache();
     if(localProveedores.length){
@@ -7706,6 +7712,7 @@ window.addEventListener("offline",updateNet);
 </script>
 </body>
 </html>
+
 
 
 
