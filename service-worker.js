@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = "proveedores-v14";
+const CACHE_NAME = "proveedores-v15";
 
 // Archivos base que siempre quieres offline
 const STATIC_ASSETS = [

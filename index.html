@@ -1478,7 +1478,7 @@ html[data-theme="copper"] .agenda-slot *{
     <div class="sb-logo">PV</div>
     <div class="sb-title">
       <b>Acceso Proveedores</b>
-      <span id="appVersion">Versión proveedores-v14</span>
+      <span id="appVersion">Versión proveedores-v15</span>
     </div>
   </div>
   <div class="sb-section">
@@ -1650,7 +1650,7 @@ html[data-theme="copper"] .agenda-slot *{
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "proveedores-v14";
+  const APP_VERSION = "proveedores-v15";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -2268,7 +2268,7 @@ function citaBloqueaHorario(v){
 const SLOT_MINUTES = 30;      // bloques visuales
 const MIN_DIFF_MINUTES = 0;  // regla de negocio
 const AGENDA_START = 8;      // 08:00
-const AGENDA_END = 18;       // 18:00
+const AGENDA_END = 17;       // 17:00
 
 function generarSlots(){
   const slots = [];
@@ -2277,6 +2277,14 @@ function generarSlots(){
     slots.push(`${String(h).padStart(2,"0")}:30`);
   }
   return slots;
+}
+
+function horarioCitaPermitido(fechaHoraISO){
+  if(!fechaHoraISO) return false;
+  const fecha = new Date(fechaHoraISO);
+  if(Number.isNaN(fecha.getTime())) return false;
+  const minutos = fecha.getHours() * 60 + fecha.getMinutes();
+  return minutos < (AGENDA_END * 60);
 }
 
 function obtenerCitasDeHoy(){
@@ -4646,6 +4654,11 @@ async function guardarEdicionCitaCompras(id){
     return;
   }
 
+  if(!horarioCitaPermitido(fechaHora)){
+    toast("Horario no permitido","No se pueden generar citas a las 5:00 pm o después.","warn");
+    return;
+  }
+
   // respeta tu capacidad por área/hora excluyendo la misma cita
   if(existeCitaEnHorarioExcluding(fechaHora, area, v.id)){
     toast("Horario no disponible","Ya existe el máximo de citas para esa área en ese horario.","warn");
@@ -6028,6 +6041,11 @@ function setupProveedorAutocomplete(){
 
   if(!proveedorCodigo || !area || !motivo || !fechaHora ){
     toast("Campos obligatorios","Proveedor, Persona, Área, Motivo y Fecha","warn");
+    return null;
+  }
+
+  if(!horarioCitaPermitido(fechaHora)){
+    toast("Horario no permitido","No se pueden generar citas a las 5:00 pm o después.","warn");
     return null;
   }
 
