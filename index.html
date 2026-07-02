@@ -1478,7 +1478,7 @@ html[data-theme="copper"] .agenda-slot *{
     <div class="sb-logo">PV</div>
     <div class="sb-title">
       <b>Acceso Proveedores</b>
-      <span id="appVersion">Versión proveedores-v15</span>
+      <span id="appVersion">Versión proveedores-v16</span>
     </div>
   </div>
   <div class="sb-section">
@@ -1650,7 +1650,7 @@ html[data-theme="copper"] .agenda-slot *{
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "proveedores-v15";
+  const APP_VERSION = "proveedores-v16";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -1737,7 +1737,7 @@ document.getElementById("btnTheme")?.addEventListener("click", toggleTheme);
   const COL_VISITAS = "visitas";
   const COL_USERS = "users";
   const COL_PRESENCE = "presence";
-  const QR_LATE_BLOCK_MIN = 30; // ⛔ bloqueo duro por retraso
+  const QR_LATE_BLOCK_MIN = 15; // bloqueo duro por retraso
 /* =========================
    Roles
 ========================= */
@@ -6336,7 +6336,7 @@ ${renderFacturasOcReadonly(v)}
   const now = Date.now();
   const diffMin = Math.round((now - v.fechaHoraTs) / 60000);
 
-  // ⛔ BLOQUEO DURO POR RETRASO > 30 MIN
+  // BLOQUEO DURO POR RETRASO > 15 MIN
  if(diffMin > QR_LATE_BLOCK_MIN){
   v.qrActivo = false;
 
@@ -6626,7 +6626,7 @@ ${incLabel ? `
   return renderDashboardHoy();
 }
 
-  // ⛔ Bloqueo por retraso > 30 min (y desactivar QR)
+  // Bloqueo por retraso > 15 min (y desactivar QR)
   const delayMin = Math.round((Date.now() - v.fechaHoraTs) / 60000);
   if(delayMin > QR_LATE_BLOCK_MIN){
 
@@ -6711,7 +6711,7 @@ ${incLabel ? `
     return renderDashboardHoy();
   }
 
-  // ⛔ Bloqueo por retraso > 30 min (y desactivar QR)
+  // Bloqueo por retraso > 15 min (y desactivar QR)
   const delayMin = Math.round((Date.now() - v.fechaHoraTs) / 60000);
   if(delayMin > QR_LATE_BLOCK_MIN){
 
