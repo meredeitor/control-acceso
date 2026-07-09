@@ -4027,6 +4027,34 @@ function renderRegisterForm(){
       return (Date.now() - v.fechaHoraTs) > (QR_LATE_BLOCK_MIN * 60 * 1000);
     }
 
+    function citaBloqueadaPorRetraso(v){
+      return qrInactivoPorImpuntualidad(v);
+    }
+
+    function fechaCreacionCita(v){
+      if(!v) return "-";
+      if(typeof v.createdTs === "number") return new Date(v.createdTs).toLocaleString();
+      if(v.createdAt?.toDate) return v.createdAt.toDate().toLocaleString();
+      if(typeof v.createdAt?.seconds === "number") return new Date(v.createdAt.seconds * 1000).toLocaleString();
+      if(v.createdAt) return new Date(v.createdAt).toLocaleString();
+      return "-";
+    }
+
+    function pillCitaCreada(v){
+      return `<span class="pill"><span class="dot info"></span>Cita creada: ${esc(fechaCreacionCita(v))}</span>`;
+    }
+
+    function bloquearAccionCitaRetrasada(id, actionLabel="esta acción"){
+      const v = visitas.find(x => String(x.id) === String(id)) || _comprasCache.find(x => String(x.id) === String(id));
+      if(!citaBloqueadaPorRetraso(v)) return false;
+      toast(
+        "Cita bloqueada",
+        `No se puede ${actionLabel}. Reactiva el QR desde ADMIN para desbloquear la cita.`,
+        "bad",
+        4200
+      );
+      return true;
+    }
     function renderDashboardHoy(){
       if(!requirePerm("ver_dashboard","Tu rol no puede ver el dashboard.")) return;
       currentView = "dashboard";
@@ -4111,6 +4139,7 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
             <div class="meta">
               <span class="pill"><span class="dot info"></span>${esc(v.area || "Área")}</span>
               <span class="pill"><span class="dot warn"></span>${esc(cita)}</span>
+              ${pillCitaCreada(v)}
               <span class="pill"><span class="dot ${docColor}"></span>Docs</span>
               ${v.ocNo ? `
   <span class="pill oc-pill" title="Orden de Compra">
@@ -4466,12 +4495,13 @@ function paintCitasComprasTable(tableList, baseList){
       <tbody>
         ${(tableList||[]).map(v=>{
           const fecha = v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-";
-          const canEdit = hasPerm("editar_cita") && v.status === Status.PROGRAMADO;
-          const canCancel = hasPerm("cancelar_cita") && v.status === Status.PROGRAMADO;
+          const bloqueada = citaBloqueadaPorRetraso(v);
+          const canEdit = hasPerm("editar_cita") && v.status === Status.PROGRAMADO && !bloqueada;
+          const canCancel = hasPerm("cancelar_cita") && v.status === Status.PROGRAMADO && !bloqueada;
 
           return `
             <tr>
-              <td>${esc(fecha)}</td>
+              <td>${esc(fecha)}<br>${pillCitaCreada(v)}</td>
               <td><b>${esc(v.proveedor||"-")}</b><br><code>${esc(v.id)}</code></td>
               <td>${esc(v.personaVisita||"-")}</td>
               <td>${esc(v.area||"-")}</td>
@@ -4500,6 +4530,11 @@ async function renderEditarCitaCompras(id){
   if(!v){
     toast("No encontrado","No se encontró la cita.","warn");
     return renderCitasCompras();
+  }
+
+  if(citaBloqueadaPorRetraso(v)){
+    toast("Cita bloqueada","No se puede editar. Reactiva el QR desde ADMIN para desbloquear la cita.","bad",4200);
+    return;
   }
 
   // asegura proveedores en cache para autocompletar
@@ -4760,6 +4795,7 @@ async function cancelarCitaCompras(id){
             <small>${esc(v.empresa)}</small>
             <div class="meta">
               <span class="pill"><span class="dot warn"></span>${esc(cita)}</span>
+              ${pillCitaCreada(v)}
               <span class="badge-dictamen ${esc(dict)}"><span class="bdot"></span> ${esc(dictLabel)}</span>
             </div>
           </div>
@@ -5730,6 +5766,7 @@ appEl.addEventListener("click", (e) => {
               <small>${esc(v.empresa)}</small>
               <div class="meta">
                 <span class="pill"><span class="dot info"></span>ID: ${esc(v.id)}</span>
+                ${pillCitaCreada(v)}
                 <span class="pill"><span class="dot ${v.qrActivo ? "ok":"bad"}"></span>${v.qrActivo ? "QR Activo":"QR Inactivo"}</span>
               </div>
             </div>
@@ -6486,6 +6523,7 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
               <div class="meta" style="margin-top:10px;">
                 <span class="pill"><span class="dot ${statusDot}"></span>${esc(statusLabel)}</span>
                 <span class="pill"><span class="dot info"></span>ID: ${esc(v.id)}</span>
+                ${pillCitaCreada(v)}
                 ${v.qrActivo
                   ? `<span class="pill"><span class="dot ok"></span>QR Activo</span>`
                   : `<span class="pill"><span class="dot bad"></span>QR Desactivado</span>`
@@ -7030,6 +7068,10 @@ async function confirmarEntrada(id) {
       const idx = visitas.findIndex(x => x.id == id);
       if(idx < 0) return;
       const v = visitas[idx];
+      if(citaBloqueadaPorRetraso(v)){
+        toast("Cita bloqueada","No se puede eliminar. Reactiva el QR desde ADMIN para desbloquear la cita.","bad",4200);
+        return;
+      }
 
       if(v.ocFileKey){ try{ await idbDelDoc(v.ocFileKey); }catch{} }
       if(v.facturaFileKey){ try{ await idbDelDoc(v.facturaFileKey); }catch{} }
@@ -7542,7 +7584,10 @@ function renderProveedores(lista){
         case "verQR": renderQR(id); break;
         case "scan": renderScanner(); break;
 
-        case "ficha": renderFicha(id); break;
+        case "ficha":
+          if(bloquearAccionCitaRetrasada(id, "abrir la ficha")) break;
+          renderFicha(id);
+          break;
         case "entrada": renderEntrada(id); break;
         case "confirmarEntrada": await confirmarEntrada(id); break;
         case "despachar": await despachar(id); break;
@@ -7570,6 +7615,7 @@ function renderProveedores(lista){
         case "eliminar": {
           const v = visitas.find(x => x.id == id);
           if(!v) return;
+          if(bloquearAccionCitaRetrasada(id, "eliminar la cita")) break;
           if(!requireAdminPin("eliminar este registro")) return;
           if(confirm(`¿Eliminar el registro de "${v.proveedor}"?`)){
             await eliminarVisita(id);
@@ -7626,10 +7672,12 @@ function renderProveedores(lista){
   break;
 
 case "ccEdit":
+  if(bloquearAccionCitaRetrasada(id, "editar la cita")) break;
   await renderEditarCitaCompras(id);
   break;
 
 case "ccSaveEdit":
+  if(bloquearAccionCitaRetrasada(id, "guardar cambios")) break;
   await guardarEdicionCitaCompras(id);
   break;
 
@@ -7638,6 +7686,7 @@ case "ccCloseEditModal":
   break;
 
 case "ccCancel":
+  if(bloquearAccionCitaRetrasada(id, "cancelar la cita")) break;
   if(confirm("¿Cancelar esta cita? El QR quedará inactivo.")){
     await cancelarCitaCompras(id);
   }
@@ -7768,6 +7817,10 @@ window.addEventListener("offline",updateNet);
 </script>
 </body>
 </html>
+
+
+
+
 
 
 
