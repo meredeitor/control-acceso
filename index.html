@@ -1815,6 +1815,356 @@ html[data-theme="copper"] .agenda-slot *{
         font-size:1.45rem;
       }
     }
+
+/* Cita QR pass */
+.appointment-pass-wrap{
+  display:flex;
+  justify-content:center;
+}
+.appointment-pass{
+  width:min(100%, 520px);
+  overflow:hidden;
+  border-radius:24px;
+  background:#f8fafc !important;
+  color:#0f172a !important;
+  border:1px solid rgba(15,23,42,.12);
+  box-shadow:0 28px 70px rgba(2,6,23,.32);
+}
+.appointment-pass *{ box-sizing:border-box; }
+.appointment-pass-hero{
+  position:relative;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:14px;
+  min-height:170px;
+  padding:26px 28px 48px;
+  color:#fff;
+  background:
+    linear-gradient(135deg, rgba(3,18,37,.98), rgba(8,40,75,.96) 58%, rgba(7,94,191,.88)),
+    radial-gradient(circle at 72% 20%, rgba(96,165,250,.24), transparent 36%);
+}
+.appointment-pass-hero::after{
+  content:"";
+  position:absolute;
+  left:-8%;
+  right:-8%;
+  bottom:-30px;
+  height:62px;
+  background:#f8fafc;
+  transform:skewY(4deg);
+  transform-origin:left top;
+}
+.appointment-pass-brand{
+  position:relative;
+  z-index:1;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:20px;
+}
+.appointment-pass-brand img{
+  width:42px;
+  height:42px;
+  border-radius:12px;
+  object-fit:cover;
+  box-shadow:0 12px 26px rgba(0,0,0,.26);
+}
+.appointment-pass-brand strong{
+  display:block;
+  font-size:13px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+}
+.appointment-pass-brand span{
+  display:block;
+  margin-top:3px;
+  color:rgba(255,255,255,.72);
+  font-size:8px;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+}
+.appointment-pass-title{
+  position:relative;
+  z-index:1;
+}
+.appointment-pass-title h2{
+  margin:0;
+  color:#fff;
+  font-size:30px;
+  line-height:1;
+  letter-spacing:2px;
+  text-transform:uppercase;
+}
+.appointment-pass-status{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:12px;
+  color:#60a5fa;
+  font-size:15px;
+  font-weight:900;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+}
+.appointment-pass-status svg,
+.appointment-pass-icon svg{
+  width:24px;
+  height:24px;
+  stroke:currentColor;
+  fill:none;
+  stroke-width:2.4;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.appointment-pass-number{
+  position:relative;
+  z-index:1;
+  min-width:120px;
+  text-align:left;
+  padding-top:28px;
+}
+.appointment-pass-number small{
+  display:block;
+  color:rgba(255,255,255,.70);
+  font-size:10px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+}
+.appointment-pass-number b{
+  display:block;
+  margin-top:10px;
+  color:#fff;
+  font-size:22px;
+  letter-spacing:1px;
+}
+.appointment-pass-number i{
+  display:block;
+  width:46px;
+  height:3px;
+  margin-top:14px;
+  background:#3b82f6;
+  border-radius:999px;
+}
+.appointment-pass-body{
+  position:relative;
+  z-index:2;
+  padding:0 28px 0;
+  margin-top:-22px;
+}
+.appointment-pass-person{
+  display:grid;
+  grid-template-columns:54px 1fr;
+  gap:14px;
+  align-items:center;
+  padding-bottom:16px;
+  border-bottom:1px solid rgba(15,23,42,.16);
+}
+.appointment-pass-avatar{
+  display:grid;
+  place-items:center;
+  width:54px;
+  height:54px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#dbeafe,#eff6ff);
+  color:#1d4ed8;
+  border:1px solid rgba(37,99,235,.18);
+}
+.appointment-pass-avatar svg{
+  width:28px;
+  height:28px;
+  stroke:currentColor;
+  fill:none;
+  stroke-width:2.2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.appointment-pass-label{
+  color:#475569;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+}
+.appointment-pass-name{
+  margin-top:6px;
+  color:#0f172a;
+  font-size:24px;
+  line-height:1.05;
+  font-weight:900;
+  overflow-wrap:anywhere;
+}
+.appointment-pass-sub{
+  margin-top:7px;
+  color:#475569;
+  font-size:13px;
+  font-weight:700;
+  overflow-wrap:anywhere;
+}
+.appointment-pass-facts{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  padding:16px 0 10px;
+}
+.appointment-pass-fact{
+  display:grid;
+  grid-template-columns:44px 1fr;
+  gap:10px;
+  align-items:center;
+  min-width:0;
+}
+.appointment-pass-icon{
+  display:grid;
+  place-items:center;
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  color:#2563eb;
+  background:#f8fafc;
+  border:2px solid #dbe4f0;
+}
+.appointment-pass-fact b{
+  display:block;
+  margin-top:4px;
+  color:#0f172a;
+  font-size:14px;
+  overflow-wrap:anywhere;
+}
+.appointment-pass-fact span{
+  display:block;
+  margin-top:3px;
+  color:#2563eb;
+  font-size:12px;
+  font-weight:800;
+  overflow-wrap:anywhere;
+}
+.appointment-pass-qr-zone{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  gap:16px;
+  align-items:center;
+  padding:10px 0 14px;
+}
+.appointment-pass-side{
+  display:grid;
+  justify-items:center;
+  gap:8px;
+  color:#0f172a;
+  text-align:center;
+  font-size:10px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.appointment-pass-side .appointment-pass-icon{
+  width:40px;
+  height:40px;
+}
+.appointment-pass-side i{
+  width:36px;
+  height:3px;
+  background:#2563eb;
+  border-radius:999px;
+}
+.appointment-pass-qr-card{
+  display:grid;
+  justify-items:center;
+}
+.appointment-pass-qr{
+  display:inline-block;
+  padding:12px;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 14px 34px rgba(15,23,42,.14);
+}
+.appointment-pass-code{
+  margin-top:10px;
+  color:#2563eb;
+  font-size:14px;
+  font-weight:900;
+  letter-spacing:2px;
+  text-align:center;
+}
+.appointment-pass-code small{
+  display:block;
+  margin-top:4px;
+  color:#475569;
+  font-size:10px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+}
+.appointment-pass-docs{
+  margin:0 0 14px;
+  padding:10px 12px;
+  border-radius:14px;
+  color:#334155;
+  background:#eef4fb;
+  border:1px solid rgba(37,99,235,.12);
+  font-size:12px;
+  font-weight:700;
+}
+.appointment-pass-doc-row{
+  display:grid;
+  grid-template-columns:72px 1fr;
+  gap:10px;
+  align-items:start;
+  padding:3px 0;
+}
+.appointment-pass-doc-row b{ color:#0f172a; }
+.appointment-pass-doc-row span{ color:#334155; overflow-wrap:anywhere; }
+.appointment-pass-instructions{
+  display:grid;
+  grid-template-columns:44px 1fr;
+  gap:14px;
+  align-items:center;
+  margin:0 -14px;
+  padding:14px 18px;
+  border-radius:20px 20px 0 0;
+  background:#e8eef7;
+  color:#334155;
+}
+.appointment-pass-instructions b{
+  display:block;
+  color:#0f172a;
+  font-size:12px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+.appointment-pass-instructions p{
+  margin:4px 0 0;
+  font-size:13px;
+  line-height:1.35;
+}
+.appointment-pass-footer{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 28px;
+  color:#fff;
+  background:#020d1a;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:2px;
+  text-transform:uppercase;
+}
+.appointment-pass-actions{
+  justify-content:center;
+  margin:14px auto 0;
+  max-width:520px;
+}
+@media (max-width:720px){
+  .appointment-pass{ border-radius:22px; }
+  .appointment-pass-hero{ grid-template-columns:1fr; padding:26px 22px 54px; }
+  .appointment-pass-brand{ margin-bottom:18px; }
+  .appointment-pass-title h2{ font-size:30px; }
+  .appointment-pass-number{ padding-top:0; }
+  .appointment-pass-body{ padding:0 22px; }
+  .appointment-pass-person{ grid-template-columns:1fr; text-align:center; justify-items:center; }
+  .appointment-pass-facts,
+  .appointment-pass-qr-zone{ grid-template-columns:1fr; }
+  .appointment-pass-side{ display:none; }
+  .appointment-pass-footer{ padding:16px 22px; font-size:11px; letter-spacing:1.3px; }
+}
+
 </style>
 </head>
 
@@ -2065,7 +2415,7 @@ html[data-theme="copper"] .agenda-slot *{
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "ACC-V24";
+  const APP_VERSION = "ACC-V26";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -6597,74 +6947,150 @@ if(existeCitaEnHorario(fechaHora, area)){
     return renderHome();
   }
 
-  appEl.innerHTML = `
-    <div class="card printable">
-      <h2 style="margin:0 0 6px;">QR de la Cita</h2>
-      <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">Escanea en recepción para el acceso.</p>
+  const citaDate = v.fechaHora ? new Date(v.fechaHora) : null;
+  const citaFecha = citaDate && !Number.isNaN(citaDate.getTime())
+    ? citaDate.toLocaleDateString([], { day:"2-digit", month:"short", year:"numeric" })
+    : "-";
+  const citaHora = citaDate && !Number.isNaN(citaDate.getTime())
+    ? citaDate.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" })
+    : "-";
+  const folioCita = `C-${String(v.id).slice(-6).toUpperCase()}`;
+  const codigoVerificacion = String(v.id).replace(/(.{4})/g, "$1 ").trim().toUpperCase();
+  const docsRows = normalizeFacturasOc(v).filter(r => r.facturaNo || r.ocNos.length);
+  const docsResumen = `
+    <div class="appointment-pass-docs">
+      ${(docsRows.length ? docsRows : [{ facturaNo:"-", ocNos:[] }]).map((r, idx) => `
+        <div class="appointment-pass-doc-row">
+          <b>Factura${docsRows.length > 1 ? ` ${idx + 1}` : ""}</b>
+          <span>${esc(r.facturaNo || "-")}</span>
+        </div>
+        <div class="appointment-pass-doc-row">
+          <b>OC${docsRows.length > 1 ? ` ${idx + 1}` : ""}</b>
+          <span>${esc((r.ocNos || []).join(", ") || "-")}</span>
+        </div>
+      `).join("")}
+      ${v.materialRecibir ? `<div class="appointment-pass-doc-row"><b>Material</b><span>${esc(v.materialRecibir)}</span></div>` : ""}
+    </div>
+  `;
 
-      <div class="row" style="align-items:flex-start;">
-        <div style="flex:0 0 280px;">
-          <div id="qrcode" style="background:white; padding:10px; border-radius:14px; display:inline-block;"></div>
+  appEl.innerHTML = `
+    <div class="appointment-pass-wrap">
+      <div class="printable appointment-pass">
+        <div class="appointment-pass-hero">
+          <div>
+            <div class="appointment-pass-brand">
+              <img src="icon-192-cobre.png" alt="MereSoft Access Control" data-html2canvas-ignore="true">
+              <div>
+                <strong>MereSoft Access Control</strong>
+                <span>Seguridad - Confianza - Registro</span>
+              </div>
+            </div>
+            <div class="appointment-pass-title">
+              <h2>Cita programada</h2>
+              <div class="appointment-pass-status">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                Acceso autorizado
+              </div>
+            </div>
+          </div>
+          <div class="appointment-pass-number">
+            <small>No. de cita</small>
+            <b>${esc(folioCita)}</b>
+            <i></i>
+          </div>
         </div>
 
-        <div class="qr-info" style="flex:1; min-width:220px;">
-          <div class="pill" style="margin-bottom:10px;">
-            <span class="dot info"></span> ID:
-            <b style="color:var(--text); margin-left:6px;">${esc(String(v.id))}</b>
-          </div>
-
-          <div class="card qr-detail-card" style="box-shadow:none;">
-            <div style="color:var(--muted);font-size:12px;">Proveedor</div>
-            <div style="font-weight:800;">${esc(v.proveedor)}</div>
-
-            <div style="height:8px"></div>
-
-            <div style="color:var(--muted);font-size:12px;">Empresa</div>
-            <div style="font-weight:700;">${esc(v.empresa)}</div>
-
-            <div style="height:8px"></div>
-
-            <div style="color:var(--muted);font-size:12px;">Cita</div>
-            <div style="font-weight:700;"><b>${esc(new Date(v.fechaHora).toLocaleString())}</b></div>
-          
-            <div style="height:10px"></div>
-
-${renderFacturasOcReadonly(v)}
-          
+        <div class="appointment-pass-body">
+          <div class="appointment-pass-person">
+            <div class="appointment-pass-avatar" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="8" r="4"/></svg>
             </div>
-
-          <div class="divider"></div>
-
-          <div class="pill"
-            style="
-              background: rgba(250,204,21,.15);
-              border-color: rgba(250,204,21,.45);
-              color: #fde68a;
-              font-size: 12px;
-              font-weight: 600;
-            ">
-            <span class="dot warn"></span>
-            <b>Nota:</b> No olvides traer tu <u>Orden de Compra</u> y <u>Factura</u>
+            <div>
+              <div class="appointment-pass-label">Proveedor</div>
+              <div class="appointment-pass-name">${esc(v.proveedor || "-")}</div>
+              <div class="appointment-pass-sub">${esc(v.empresa || v.area || "-")}</div>
+              ${v.motivo ? `<div class="appointment-pass-sub">${esc(v.motivo)}</div>` : ""}
+            </div>
           </div>
 
-          <div class="row" style="margin-top:12px; flex-wrap:wrap;">
-            ${_returnToEditMode ? `
-              <button class="secondary" data-action="volverAEditarCita">Volver a edición</button>
-            ` : ""}
-
-            <!-- ✅ NUEVO: Guardar/Compartir QR -->
-            <button class="secondary" id="btnGuardarQR" type="button">Guardar QR</button>
-            <button class="secondary" id="btnCompartirQR" type="button">Compartir QR</button>
-
-            <button class="secondary" data-action="print">
-              Guardar / Imprimir
-            </button>
-            <button class="secondary" data-action="home">
-              Volver
-            </button>
+          <div class="appointment-pass-facts">
+            <div class="appointment-pass-fact">
+              <div class="appointment-pass-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="8" r="4"/></svg>
+              </div>
+              <div>
+                <div class="appointment-pass-label">Contacto</div>
+                <b>${esc(v.personaVisita || "-")}</b>
+                <span>${esc(v.area || "-")}</span>
+              </div>
+            </div>
+            <div class="appointment-pass-fact">
+              <div class="appointment-pass-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+              </div>
+              <div>
+                <div class="appointment-pass-label">Fecha y hora</div>
+                <b>${esc(citaFecha)}</b>
+                <span>${esc(citaHora)}</span>
+              </div>
+            </div>
           </div>
+
+          <div class="appointment-pass-qr-zone">
+            <div class="appointment-pass-side">
+              <div class="appointment-pass-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 3 20 7v6c0 5-3 8-8 10-5-2-8-5-8-10V7l8-4Z"/><path d="m9 12 2 2 4-5"/></svg>
+              </div>
+              <div>Acceso<br>autorizado</div>
+              <i></i>
+            </div>
+            <div class="appointment-pass-qr-card">
+              <div id="qrcode" class="appointment-pass-qr"></div>
+              <div class="appointment-pass-code">
+                ${esc(codigoVerificacion)}
+                <small>Código de verificación</small>
+              </div>
+            </div>
+            <div class="appointment-pass-side">
+              <div class="appointment-pass-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></svg>
+              </div>
+              <div>Válido<br>15 min</div>
+              <i></i>
+            </div>
+          </div>
+
+          ${docsResumen}
+
+          <div class="appointment-pass-instructions">
+            <div class="appointment-pass-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+            </div>
+            <div>
+              <b>Instrucciones</b>
+              <p>Presenta este código QR en caseta. No lo compartas con otras personas. Recuerda traer orden de compra y factura cuando aplique.</p>
+              <p><b>Nota:</b> No olvides traer tu Orden de Compra y Factura.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="appointment-pass-footer">
+          <span class="appointment-pass-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3 20 7v6c0 5-3 8-8 10-5-2-8-5-8-10V7l8-4Z"/><path d="m9 12 2 2 4-5"/></svg>
+          </span>
+          Tu seguridad, nuestra prioridad
         </div>
       </div>
+    </div>
+
+    <div class="row appointment-pass-actions">
+      ${_returnToEditMode ? `
+        <button class="secondary" data-action="volverAEditarCita">Volver a edición</button>
+      ` : ""}
+      <button class="secondary" id="btnGuardarQR" type="button">Guardar pase</button>
+      <button class="secondary" id="btnCompartirQR" type="button">Compartir QR</button>
+      <button class="secondary" data-action="print">Guardar / Imprimir</button>
+      <button class="secondary" data-action="home">Volver</button>
     </div>
   `;
 
@@ -6677,101 +7103,100 @@ ${renderFacturasOcReadonly(v)}
     const box = document.getElementById("qrcode");
     box.innerHTML = "";
 
-    // Genera QR
     new QRCode(box, {
       text: String(v.id),
-      width: 260,
-      height: 260,
+      width: 210,
+      height: 210,
       colorDark: "#111827",
       colorLight: "#ffffff",
       correctLevel: QRCode.CorrectLevel.M
     });
 
-    // ===== Guardar/Compartir (tomado de kiosk.html, adaptado) =====
     const canvas = box.querySelector("canvas");
     const img = box.querySelector("img");
+    const qrDataUrl = canvas?.toDataURL("image/png") || img?.src || null;
 
-    const qrDataUrl =
-      canvas?.toDataURL("image/png") ||
-      img?.src ||
-      null;
+    async function appointmentPassBlob(){
+      const pass = document.querySelector(".appointment-pass");
+      if(pass && window.html2canvas){
+        const rendered = await window.html2canvas(pass, {
+          backgroundColor: "#f8fafc",
+          scale: Math.min(2, window.devicePixelRatio || 1.5),
+          useCORS: false,
+          allowTaint: false,
+          ignoreElements: (el) => el?.hasAttribute?.("data-html2canvas-ignore")
+        });
+        return new Promise(resolve => rendered.toBlob(resolve, "image/png", 0.95));
+      }
+      if(qrDataUrl) return await (await fetch(qrDataUrl)).blob();
+      return null;
+    }
 
-    // 📌 Texto completo a compartir (TODOS los datos solicitados)
-    const citaFmt = v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-"; // usa el mismo origen que ya muestras
-    const ocFmt = (v.ocNo && String(v.ocNo).trim()) ? String(v.ocNo).trim() : "-";
+    const citaFmt = v.fechaHora ? new Date(v.fechaHora).toLocaleString() : "-";
     const provFmt = (v.proveedor && String(v.proveedor).trim()) ? String(v.proveedor).trim() : "-";
+    const docsText = docsRows.length
+      ? docsRows.map((r, idx) =>
+          `• Factura${docsRows.length > 1 ? ` ${idx + 1}` : ""}: ${r.facturaNo || "-"}\n` +
+          `• OC${docsRows.length > 1 ? ` ${idx + 1}` : ""}: ${(r.ocNos || []).join(", ") || "-"}\n`
+        ).join("")
+      : `• Factura: -\n• OC: -\n`;
 
     const shareText =
 `✅ Datos de tu cita
 • Proveedor: ${provFmt}
-• OC: ${ocFmt}
-• Horario: ${citaFmt}
+${docsText}• Horario: ${citaFmt}
 
 ⚠️ No olvides tu OC y Factura.`;
 
-    // Guardar QR
     const btnGuardar = document.getElementById("btnGuardarQR");
     if(btnGuardar){
-      btnGuardar.onclick = () => {
-        if(!qrDataUrl) return alert("No se pudo generar el QR");
+      btnGuardar.onclick = async () => {
+        const blob = await appointmentPassBlob();
+        if(!blob) return alert("No se pudo generar el pase");
+        const passDataUrl = await new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
         const a = document.createElement("a");
-        a.href = qrDataUrl;
-        a.download = `QR-${String(v.id)}.png`;
+        a.href = passDataUrl;
+        a.download = `CITA-${String(v.id)}.png`;
         a.click();
       };
     }
 
-    // Compartir QR + texto con todos los datos
     const btnCompartir = document.getElementById("btnCompartirQR");
     if(btnCompartir){
       btnCompartir.onclick = async () => {
-        // Si no soporta share, al menos copiamos texto para pegar en WhatsApp/correo
         if(!navigator.share){
           try{
             await navigator.clipboard.writeText(shareText);
-            alert("Tu dispositivo no soporta 'Compartir'. Se copió el texto al portapapeles. Ahora pega en WhatsApp/Correo y adjunta el QR guardado.");
+            alert("Tu dispositivo no soporta 'Compartir'. Se copió el texto al portapapeles. Ahora pega en WhatsApp/Correo y adjunta el pase guardado.");
           }catch{
-            alert("Tu dispositivo no soporta 'Compartir'. Copia manualmente los datos y adjunta el QR guardado.");
+            alert("Tu dispositivo no soporta 'Compartir'. Copia manualmente los datos y adjunta el pase guardado.");
           }
           return;
         }
 
-        if(!qrDataUrl){
-          // igual comparte texto aunque no haya imagen (raro, pero posible si falla el QR)
-          await navigator.share({
-            title: "QR de la Cita",
-            text: shareText
-          });
+        const passBlob = await appointmentPassBlob();
+        if(!passBlob){
+          await navigator.share({ title: "Datos de la Cita", text: shareText });
           return;
         }
 
         try{
-          const blob = await (await fetch(qrDataUrl)).blob();
-          const file = new File([blob], `QR-${String(v.id)}.png`, { type: "image/png" });
-
-          // Evita fallos en dispositivos que no pueden compartir archivos
+          const file = new File([passBlob], `CITA-${String(v.id)}.png`, { type: "image/png" });
           if(navigator.canShare && !navigator.canShare({ files: [file] })){
-            // comparte solo texto (y sugiere guardar imagen)
-            await navigator.share({
-              title: "Datos de la Cita",
-              text: shareText
-            });
-            toast("Compartir", "Tu dispositivo no permite compartir archivos. Se compartió el texto; guarda el QR y adjúntalo manualmente.", "warn", 3600);
+            await navigator.share({ title: "Datos de la Cita", text: shareText });
+            toast("Compartir", "Tu dispositivo no permite compartir archivos. Se compartió el texto; guarda el pase y adjúntalo manualmente.", "warn", 3600);
             return;
           }
-
-          await navigator.share({
-            title: "QR de la Cita",
-            text: shareText,     // ✅ AQUÍ van TODOS los datos
-            files: [file]
-          });
+          await navigator.share({ title: "Pase de la Cita", text: shareText, files: [file] });
         }catch(e){
           console.warn("Compartir cancelado o falló:", e);
-          // Cancelado por el usuario o error — no hacer toast agresivo
         }
       };
     }
-
   }catch(e){
     console.warn(e);
     toast("QR","No se pudo generar el QR.","bad",3600);
