@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Control de Acceso Proveedores</title>
+  <title>MereSoft Access Control</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" href="icon-192.png" />
   <meta name="theme-color" content="#0f172a" />
@@ -47,7 +47,11 @@
      display:flex; align-items:center; justify-content:center;
      font-weight:900; letter-spacing:.5px; color:#fff;
    }
-    .title h1{ font-size:16px; margin:0; line-height:1.1; }
+    .title h1{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; font-size:16px; margin:0; line-height:1.1; }
+    .version-badge{
+      display:inline-flex; align-items:center; border-radius:999px; background:#d9f99d; color:#0b1220;
+      font-size:11px; font-weight:900; line-height:1; padding:4px 8px; letter-spacing:0;
+    }
     .title small{ display:block; color:var(--muted); font-size:12px; margin-top:2px; }
     .actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
     .container{ max-width:1250px; margin:0 auto; padding:16px 14px 80px; }
@@ -1400,10 +1404,150 @@ html[data-theme="copper"] .agenda-slot *{
   background:transparent !important;
   color:inherit !important;
 }
+    /* MereSoft Access auth */
+    .access-auth-view{
+      min-height:calc(100vh - 96px);
+      display:grid;
+      place-items:center;
+      padding:24px 0;
+    }
+    .access-auth-card{
+      width:min(980px,100%);
+      min-height:560px;
+      display:grid;
+      grid-template-columns:1fr minmax(320px,420px);
+      gap:22px;
+      padding:22px;
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:18px;
+      background:rgba(255,255,255,.08);
+      box-shadow:0 28px 70px rgba(0,0,0,.28);
+      backdrop-filter:blur(18px);
+    }
+    .access-auth-brand{
+      display:grid;
+      align-content:end;
+      gap:18px;
+      min-height:420px;
+      padding:28px;
+      border-radius:14px;
+      color:#fff;
+      background:
+        radial-gradient(circle at 20% 20%,rgba(132,204,22,.38),transparent 28%),
+        linear-gradient(135deg,#0b1220,#0f766e 62%,#84cc16);
+    }
+    .access-auth-mark{
+      display:grid;place-items:center;width:54px;height:54px;border-radius:14px;
+      background:rgba(255,255,255,.18);font-size:1.2rem;font-weight:950;position:relative;overflow:hidden;
+    }
+    .access-auth-mark:after{content:"";position:absolute;inset:5px;border:1px solid rgba(255,255,255,.38);border-radius:inherit;}
+    .access-auth-brand .eyebrow{color:#ccfbf1;font-size:.78rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em;}
+    .access-auth-brand h2{margin:0;font-size:2.2rem;line-height:1;letter-spacing:0;text-transform:none;}
+    .access-auth-brand p{margin:0;color:rgba(255,255,255,.82);}
+    .access-auth-form{
+      align-self:center;
+      display:grid;
+      gap:13px;
+      padding:24px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:14px;
+      background:rgba(15,23,42,.82);
+    }
+    .access-auth-form h2{margin:0;font-size:1.35rem;letter-spacing:0;text-transform:none;}
+    .access-auth-form label{margin:0;color:var(--muted);font-size:.82rem;font-weight:850;}
+    .access-auth-form input{min-height:40px;}
+    .access-auth-switch{margin:0;color:var(--muted);font-size:.85rem;}
+    .access-auth-switch b{color:#d9f99d;cursor:pointer;font-weight:950;}
+    .access-auth-form button{background:linear-gradient(135deg,#0b1220,#0f766e 58%,#84cc16);box-shadow:0 10px 22px rgba(15,118,110,.22);}
+
+    /* Auth contrast per theme */
+    html[data-theme="light"] body.auth-mode,
+    html[data-theme="desert"] body.auth-mode,
+    html[data-theme="mint"] body.auth-mode{
+      background:
+        radial-gradient(760px 420px at 18% 8%, rgba(15,118,110,.12), transparent 58%),
+        radial-gradient(720px 380px at 88% 18%, rgba(132,204,22,.14), transparent 55%),
+        var(--bg);
+    }
+    html[data-theme="light"] .access-auth-card,
+    html[data-theme="desert"] .access-auth-card,
+    html[data-theme="mint"] .access-auth-card{
+      border-color:rgba(15,23,42,.10);
+      background:rgba(255,255,255,.74);
+      box-shadow:0 28px 70px rgba(15,23,42,.14);
+    }
+    html[data-theme="light"] .access-auth-form,
+    html[data-theme="desert"] .access-auth-form,
+    html[data-theme="mint"] .access-auth-form{
+      color:#0f172a;
+      border-color:rgba(15,23,42,.10);
+      background:rgba(255,255,255,.94);
+      box-shadow:0 18px 38px rgba(15,23,42,.10);
+    }
+    html[data-theme="light"] .access-auth-form h2,
+    html[data-theme="desert"] .access-auth-form h2,
+    html[data-theme="mint"] .access-auth-form h2{
+      color:#0f172a;
+    }
+    html[data-theme="light"] .access-auth-form label,
+    html[data-theme="desert"] .access-auth-form label,
+    html[data-theme="mint"] .access-auth-form label,
+    html[data-theme="light"] .access-auth-switch,
+    html[data-theme="desert"] .access-auth-switch,
+    html[data-theme="mint"] .access-auth-switch{
+      color:#475569;
+    }
+    html[data-theme="light"] .access-auth-switch b,
+    html[data-theme="desert"] .access-auth-switch b,
+    html[data-theme="mint"] .access-auth-switch b{
+      color:#0f766e;
+    }
+    html[data-theme="light"] .access-auth-form input,
+    html[data-theme="desert"] .access-auth-form input,
+    html[data-theme="mint"] .access-auth-form input{
+      color:#0f172a;
+      background:#fff;
+      border-color:rgba(100,116,139,.28);
+    }
+    html[data-theme="light"] .access-auth-form input:focus,
+    html[data-theme="desert"] .access-auth-form input:focus,
+    html[data-theme="mint"] .access-auth-form input:focus{
+      border-color:rgba(15,118,110,.62);
+      box-shadow:0 0 0 3px rgba(15,118,110,.16);
+    }
+    @media(max-width:980px){.access-auth-card{grid-template-columns:1fr}.access-auth-brand{min-height:260px}}
+    @media(max-width:640px){.access-auth-view{padding:12px 0}.access-auth-card{padding:12px;border-radius:12px}.access-auth-brand{min-height:220px;padding:20px}.access-auth-brand h2{font-size:1.65rem}}
+
+    body.auth-mode .sidebar,
+    body.auth-mode header,
+    body.auth-mode .sb-overlay{
+      display:none !important;
+    }
+    body.auth-mode .app-shell{
+      display:block;
+      min-height:100vh;
+    }
+    body.auth-mode .main-wrap{
+      margin-left:0 !important;
+      width:100%;
+      min-height:100vh;
+    }
+    body.auth-mode .container{
+      max-width:none;
+      min-height:100vh;
+      padding:0;
+    }
+    body.auth-mode #app{
+      min-height:100vh;
+    }
+    body.auth-mode .access-auth-view{
+      min-height:100vh;
+      padding:24px;
+    }
 </style>
 </head>
 
-<body>
+<body class="auth-mode">
   <!-- Modal: Incidencias (Calidad) -->
 <div class="modal-overlay" id="incCalModal">
   <div class="modal">
@@ -1475,10 +1619,10 @@ html[data-theme="copper"] .agenda-slot *{
 <div class="sb-overlay" id="sbOverlay"></div>
 <aside class="sidebar" id="sidebar">
   <div class="sb-brand">
-    <div class="sb-logo">PV</div>
+    <div class="sb-logo">MA</div>
     <div class="sb-title">
-      <b>Acceso Proveedores</b>
-      <span id="appVersion">Versión proveedores-v17</span>
+      <b>MereSoft Access Control</b>
+      <span>MereSoft Suite</span>
     </div>
   </div>
   <div class="sb-section">
@@ -1621,10 +1765,10 @@ html[data-theme="copper"] .agenda-slot *{
 <header>
   <div class="topbar">
     <div class="title">
-      <div class="logo">PV</div>
+      <div class="logo">MA</div>
       <div>
-        <h1>Control de Acceso Proveedores</h1>
-        <small>Dashboard  • Historial por día • Admin Roles • Offline-first</small>
+        <h1>MereSoft Access Control <span class="version-badge" id="appVersion"></span></h1>
+        <small>MereSoft Suite</small>
       </div>
     </div>
     <div class="actions" id="actionsBar">
@@ -1650,7 +1794,7 @@ html[data-theme="copper"] .agenda-slot *{
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "proveedores-v17";
+  const APP_VERSION = "ACC-V17";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -3799,6 +3943,11 @@ window.addEventListener('visibilitychange', ()=>{
     // -------------------------
     // Login / Logout UI
     // -------------------------
+    function setAuthShell(enabled){
+      document.body.classList.toggle("auth-mode", Boolean(enabled));
+      if(enabled) sbClose();
+    }
+
     async function doLogout(){
       stopAutoSync();
       stopPresence(false);
@@ -3836,6 +3985,7 @@ window.addEventListener('visibilitychange', ()=>{
 }
 
   function renderLogin(){
+  setAuthShell(true);
   currentView = "login";
   dashboardSearchTerm = "";
   if(qSearch){
@@ -3919,64 +4069,81 @@ window.addEventListener('visibilitychange', ()=>{
 
 function renderLoginForm(){
   return `
-  <div class="card" style="max-width:420px;margin:40px auto;">
-    <h2>Iniciar sesión</h2>
+  <section class="access-auth-view">
+    <article class="access-auth-card">
+      <div class="access-auth-brand">
+        <span class="access-auth-mark">MA</span>
+        <div>
+          <p class="eyebrow">Acceso seguro</p>
+          <h2>MereSoft Access Control</h2>
+          <p>MereSoft Suite para control de acceso de proveedores.</p>
+        </div>
+      </div>
 
-    <label>Correo</label>
-    <input id="loginEmail" type="email"/>
+      <div class="access-auth-form">
+        <h2>Iniciar sesión</h2>
+        <label>Correo electrónico</label>
+        <input id="loginEmail" type="email" autocomplete="email" />
 
-    <label>Contraseña</label>
-    <input id="loginPass" type="password"/>
+        <label>Contraseña</label>
+        <input id="loginPass" type="password" autocomplete="current-password" />
 
-    <div class="divider"></div>
+        <button id="btnLogin">Entrar</button>
 
-    <button id="btnLogin">Entrar</button>
-
-    <p style="margin-top:12px;font-size:12px;color:var(--muted);">
-      ¿No tienes cuenta?
-      <b data-switch style="cursor:pointer;color:var(--brand);">Crear una</b>
-    </p>
-  </div>
+        <p class="access-auth-switch">
+          ¿No tienes cuenta?
+          <b data-switch>Agregar cuenta</b>
+        </p>
+      </div>
+    </article>
+  </section>
   `;
 }
 
 function renderRegisterForm(){
   return `
-  <div class="card" style="max-width:520px;margin:40px auto;">
-    <h2>Registro de usuario</h2>
+  <section class="access-auth-view">
+    <article class="access-auth-card">
+      <div class="access-auth-brand">
+        <span class="access-auth-mark">MA</span>
+        <div>
+          <p class="eyebrow">Cuenta pendiente</p>
+          <h2>MereSoft Access Control</h2>
+          <p>Registra tu cuenta para solicitar acceso. Un administrador asignará tu rol.</p>
+        </div>
+      </div>
 
-    <label>Nombre completo *</label>
-    <input id="regNombre"/>
+      <div class="access-auth-form">
+        <h2>Agregar cuenta</h2>
+        <label>Nombre completo *</label>
+        <input id="regNombre" autocomplete="name" />
 
-    <label>Empresa / Proveedor *</label>
-    <input id="regEmpresa"/>
+        <label>Empresa / Proveedor *</label>
+        <input id="regEmpresa" />
 
-    <label>Teléfono</label>
-    <input id="regTelefono"/>
+        <label>Teléfono</label>
+        <input id="regTelefono" autocomplete="tel" />
 
-    <label>Área</label>
-    <input id="regArea"/>
+        <label>Área</label>
+        <input id="regArea" />
 
-    <div class="divider"></div>
+        <label>Correo electrónico *</label>
+        <input id="regEmail" type="email" autocomplete="email" />
 
-    <label>Correo *</label>
-    <input id="regEmail" type="email"/>
+        <label>Contraseña *</label>
+        <input id="regPass" type="password" autocomplete="new-password" />
 
-    <label>Contraseña *</label>
-    <input id="regPass" type="password"/>
+        <button id="btnCreate">Crear cuenta pendiente</button>
 
-    <div class="divider"></div>
-
-    <button id="btnCreate">Solicitar acceso</button>
-
-    <p style="margin-top:12px;font-size:12px;color:var(--muted);">
-      ¿Ya tienes cuenta?
-      <b data-switch style="cursor:pointer;color:var(--brand);">Iniciar sesión</b>
-    </p>
-  </div>
+        <p class="access-auth-switch">
+          ¿Ya tienes cuenta?
+          <b data-switch>Iniciar sesión</b>
+        </p>
+      </div>
+    </article>
+  </section>
   `;
-}
-// -------------------------
+}// -------------------------
     // Views: Pendiente / Dashboard  / Historial
     // -------------------------
     function getCounts(list){
@@ -7789,6 +7956,7 @@ window.addEventListener("offline",updateNet);
       }
 
       const prof = await ensureUserProfile(user);
+      setAuthShell(false);
       currentUser = {
         uid: prof.uid,
         email: prof.email,
