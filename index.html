@@ -112,6 +112,12 @@
     .dot.bad{ background:var(--bad); }
     .dot.brand{ background:var(--brand); }
     .dot.muted{ background:var(--muted); }
+    .pill-multiline{
+      border-radius:12px;
+      align-items:flex-start;
+      white-space:normal;
+      line-height:1.25;
+    }
 
     .badge-dictamen{
       display:inline-flex; align-items:center; gap:6px;
@@ -317,13 +323,15 @@ height: 100vh;
 }
 
 .oc-pill{
-  max-width: 260px;          /* ajústalo a tu kanban */
+  max-width: 260px;
+  border-radius:12px;
   white-space: normal;       /* PERMITE salto de línea */
   word-break: break-word;    /* rompe palabras largas */
   line-height: 1.2;
 }
 .material-pill{
-  max-width: 260px;          /* mismo ancho que OC para consistencia */
+  max-width: 260px;
+  border-radius:12px;
   white-space: normal;       /* permite salto de línea */
   word-break: break-word;    /* rompe palabras largas */
   line-height: 1.2;
@@ -2057,7 +2065,7 @@ html[data-theme="copper"] .agenda-slot *{
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "ACC-V18";
+  const APP_VERSION = "ACC-V24";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -3931,10 +3939,10 @@ function fmt(ts){
           createdTs: Date.now(),
           createdAt: serverTimestamp()
         }, { merge: true });
-        return { uid:user.uid, email:user.email||"", role: ROLES.PENDIENTE };
+        return { uid:user.uid, email:user.email||"", nombre:user.email||"", role: ROLES.PENDIENTE };
       }
       const data = snap.data() || {};
-      return { uid:user.uid, email:user.email||"", role: data.role || ROLES.PENDIENTE };
+      return { uid:user.uid, email:user.email||"", nombre:data.nombre || user.displayName || user.email || "", role: data.role || ROLES.PENDIENTE };
     }
 
     // -------------------------
@@ -4470,8 +4478,34 @@ function renderRegisterForm(){
       return "-";
     }
 
+    function creadorCitaNombre(v){
+      const savedName = String(v?.createdByName || v?.createdByNombre || "").trim();
+      if(savedName) return savedName;
+      return String(v?.createdByEmail || v?.createdByUid || "-").trim() || "-";
+    }
+
     function pillCitaCreada(v){
-      return `<span class="pill"><span class="dot info"></span>Cita creada: ${esc(fechaCreacionCita(v))}</span>`;
+      const creador = creadorCitaNombre(v);
+      return `
+        <span class="pill pill-multiline">
+          <span style="display:grid; gap:4px; min-width:0;">
+            <span style="display:flex; align-items:flex-start; gap:7px; min-width:0;">
+              <span class="dot info" style="margin-top:4px; flex:0 0 auto;"></span>
+              <span>Cita creada: ${esc(fechaCreacionCita(v))}</span>
+            </span>
+            ${creador && creador !== "-" ? `
+              <span style="display:flex; align-items:flex-start; gap:7px; min-width:0;">
+                <span class="dot brand" style="margin-top:4px; flex:0 0 auto;"></span>
+                <span>Creada por: ${esc(creador)}</span>
+              </span>
+            ` : ""}
+          </span>
+        </span>
+      `;
+    }
+
+    function pillCitaCreadaPor(v){
+      return "";
     }
 
     function bloquearAccionCitaRetrasada(id, actionLabel="esta acción"){
@@ -4570,6 +4604,7 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
               <span class="pill"><span class="dot info"></span>${esc(v.area || "Área")}</span>
               <span class="pill"><span class="dot warn"></span>${esc(cita)}</span>
               ${pillCitaCreada(v)}
+              ${pillCitaCreadaPor(v)}
               <span class="pill"><span class="dot ${docColor}"></span>Docs</span>
               ${v.ocNo ? `
   <span class="pill oc-pill" title="Orden de Compra">
@@ -4931,7 +4966,8 @@ function paintCitasComprasTable(tableList, baseList){
 
           return `
             <tr>
-              <td>${esc(fecha)}<br>${pillCitaCreada(v)}</td>
+              <td>${esc(fecha)}<br>${pillCitaCreada(v)}
+              ${pillCitaCreadaPor(v)}</td>
               <td><b>${esc(v.proveedor||"-")}</b><br><code>${esc(v.id)}</code></td>
               <td>${esc(v.personaVisita||"-")}</td>
               <td>${esc(v.area||"-")}</td>
@@ -5226,6 +5262,7 @@ async function cancelarCitaCompras(id){
             <div class="meta">
               <span class="pill"><span class="dot warn"></span>${esc(cita)}</span>
               ${pillCitaCreada(v)}
+              ${pillCitaCreadaPor(v)}
               <span class="badge-dictamen ${esc(dict)}"><span class="bdot"></span> ${esc(dictLabel)}</span>
             </div>
           </div>
@@ -6197,6 +6234,7 @@ appEl.addEventListener("click", (e) => {
               <div class="meta">
                 <span class="pill"><span class="dot info"></span>ID: ${esc(v.id)}</span>
                 ${pillCitaCreada(v)}
+              ${pillCitaCreadaPor(v)}
                 <span class="pill"><span class="dot ${v.qrActivo ? "ok":"bad"}"></span>${v.qrActivo ? "QR Activo":"QR Inactivo"}</span>
               </div>
             </div>
@@ -6539,6 +6577,7 @@ if(existeCitaEnHorario(fechaHora, area)){
   status: "programado",
   createdByUid: currentUser.uid,
   createdByEmail: currentUser.email,
+  createdByName: currentUser.nombre || currentUser.email || "",
   createdTs: Date.now(),
   updatedTs: Date.now(),
   qrActivo: true
@@ -6954,6 +6993,7 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
                 <span class="pill"><span class="dot ${statusDot}"></span>${esc(statusLabel)}</span>
                 <span class="pill"><span class="dot info"></span>ID: ${esc(v.id)}</span>
                 ${pillCitaCreada(v)}
+              ${pillCitaCreadaPor(v)}
                 ${v.qrActivo
                   ? `<span class="pill"><span class="dot ok"></span>QR Activo</span>`
                   : `<span class="pill"><span class="dot bad"></span>QR Desactivado</span>`
@@ -8225,7 +8265,7 @@ window.addEventListener("offline",updateNet);
         email: prof.email,
         user: prof.email,
         role: prof.role,
-        nombre: prof.email
+        nombre: prof.nombre || prof.email
       };
       
       localStorage.setItem(LS_USER, JSON.stringify(currentUser));
