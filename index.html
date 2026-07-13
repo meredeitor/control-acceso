@@ -203,12 +203,12 @@
 
     #reader{ width:100%; border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,.10); background: rgba(2,6,23,.35); }
 
-    .toast-wrap{ position:fixed; right:14px; bottom:14px; z-index:9999; display:flex; flex-direction:column; gap:10px; max-width:360px; }
-    .toast{ border-radius:14px; border:1px solid rgba(255,255,255,.10); background: rgba(17,28,51,.96);
-      box-shadow:0 18px 40px rgba(0,0,0,.40); padding:10px 12px; display:flex; gap:10px; align-items:flex-start; }
-    .toast b{ display:block; font-size:13px; margin-bottom:2px; }
-    .toast p{ margin:0; font-size:12px; color:var(--muted); }
-    .toast .badge{ width:10px; height:10px; border-radius:999px; margin-top:4px; flex:0 0 auto; }
+    .toast-wrap{ position:fixed; right:18px; bottom:18px; z-index:9999; display:flex; flex-direction:column; gap:12px; width:min(460px, calc(100vw - 28px)); max-width:460px; }
+    .toast{ border-radius:16px; border:1px solid rgba(96,165,250,.32); background: rgba(17,28,51,.98);
+      box-shadow:0 22px 54px rgba(0,0,0,.46), 0 0 0 1px rgba(255,255,255,.06); padding:14px 16px; display:flex; gap:12px; align-items:flex-start; }
+    .toast b{ display:block; font-size:15px; line-height:1.25; margin-bottom:4px; color:#fff; }
+    .toast p{ margin:0; font-size:14px; line-height:1.35; color:#dbe7ff; }
+    .toast .badge{ width:13px; height:13px; border-radius:999px; margin-top:4px; flex:0 0 auto; box-shadow:0 0 0 3px rgba(255,255,255,.12); }
 
     /* Admin tabla */
     .table{ width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border:1px solid rgba(255,255,255,.10); border-radius:12px; }
@@ -1766,9 +1766,10 @@ html[data-theme="copper"] .agenda-slot *{
       }
 
       .toast-wrap{
-        left:10px;
-        right:10px;
-        bottom:10px;
+        left:12px;
+        right:12px;
+        bottom:12px;
+        width:auto;
         max-width:none;
       }
 
@@ -2415,7 +2416,7 @@ html[data-theme="copper"] .agenda-slot *{
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "ACC-V28";
+  const APP_VERSION = "ACC-V32";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -3071,6 +3072,54 @@ function datetimeLocalValue(ts = Date.now()){
   const d = new Date(ts);
   const pad = n => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function proveedorCitaKey({ proveedorCodigo = "", proveedor = "" } = {}){
+  const codigo = String(proveedorCodigo || "").trim().toLowerCase();
+  if(codigo) return `codigo:${codigo}`;
+  const nombre = String(proveedor || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return `nombre:${nombre}`;
+}
+
+function citaVencidaSinLlegada(v, nowTs = Date.now()){
+  if(!v || v.status !== Status.PROGRAMADO) return false;
+  if(typeof v.fechaHoraTs !== "number") return false;
+  if(v.llegadaTs || v.entradaTs || v.salidaTs) return false;
+  if(v.qrDesactivadoMotivo === "RETRASO") return true;
+  return v.fechaHoraTs < (nowTs - QR_LATE_BLOCK_MIN * 60 * 1000);
+}
+
+function validarReagendaProveedor({ proveedorCodigo, proveedor, fechaHoraTs, excludeId = null } = {}){
+  const key = proveedorCitaKey({ proveedorCodigo, proveedor });
+  if(!key || key === "nombre:") return true;
+  const nowTs = Date.now();
+  const mismoProveedor = (v) => proveedorCitaKey(v) === key && (!excludeId || v.id !== excludeId);
+  const vencidas = visitas.filter(v => mismoProveedor(v) && citaVencidaSinLlegada(v, nowTs));
+  if(!vencidas.length) return true;
+
+  const recuperacionesActivas = visitas.filter(v =>
+    mismoProveedor(v) &&
+    v.status === Status.PROGRAMADO &&
+    typeof v.fechaHoraTs === "number" &&
+    v.fechaHoraTs >= (nowTs - 30 * 1000) &&
+    !citaVencidaSinLlegada(v, nowTs)
+  );
+
+  const nuevaEsFutura = typeof fechaHoraTs === "number" && fechaHoraTs >= (nowTs - 30 * 1000);
+  if(nuevaEsFutura && recuperacionesActivas.length >= 1){
+    toast(
+      "Reagenda limitada",
+      "Este proveedor ya tiene una cita vencida y una reagenda activa. Finaliza, cancela o atiende esa cita antes de crear otra.",
+      "warn",
+      5200
+    );
+    return false;
+  }
+  return true;
 }
 
 function obtenerCitasDeHoy(){
@@ -5534,7 +5583,13 @@ async function guardarEdicionCitaCompras(id){
   if(!validarCitaNoPasada(fechaHora)){
     return;
   }
-  // respeta tu capacidad por área/hora excluyendo la misma cita
+
+  const fechaHoraTs = new Date(fechaHora).getTime();
+  if(!validarReagendaProveedor({ proveedorCodigo, proveedor: proveedorNombre, fechaHoraTs, excludeId: v.id })){
+    return;
+  }
+
+  // respeta tu capacidad por area/hora excluyendo la misma cita
   if(existeCitaEnHorarioExcluding(fechaHora, area, v.id)){
     toast("Horario no disponible","Ya existe el máximo de citas para esa área en ese horario.","warn");
     return;
@@ -6935,8 +6990,12 @@ function setupProveedorAutocomplete(){
   }
   const fechaHoraTs = new Date(fechaHora).getTime();
 
-  // ✅ Bloquea solo si ya existe cita en ese horario PARA LA MISMA ÁREA
-if(existeCitaEnHorario(fechaHora, area)){
+  if(!validarReagendaProveedor({ proveedorCodigo, proveedor: proveedorNombre, fechaHoraTs })){
+    return null;
+  }
+
+  // Bloquea solo si ya existe cita en ese horario PARA LA MISMA AREA
+  if(existeCitaEnHorario(fechaHora, area)){
   toast("Horario no disponible", "Ya existe el máximo de citas para esa área en ese horario.", "warn");
   return null;
 }
