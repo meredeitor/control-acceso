@@ -2415,7 +2415,7 @@ html[data-theme="copper"] .agenda-slot *{
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "ACC-V26";
+  const APP_VERSION = "ACC-V28";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -3050,6 +3050,27 @@ function horarioCitaPermitido(fechaHoraISO){
   if(Number.isNaN(fecha.getTime())) return false;
   const minutos = fecha.getHours() * 60 + fecha.getMinutes();
   return minutos < (AGENDA_END * 60);
+}
+
+function citaNoEsPasada(fechaHoraISO, baseTs = Date.now()){
+  if(!fechaHoraISO) return false;
+  const citaTs = new Date(fechaHoraISO).getTime();
+  if(Number.isNaN(citaTs)) return false;
+  return citaTs >= (baseTs - 30 * 1000);
+}
+
+function validarCitaNoPasada(fechaHoraISO){
+  if(citaNoEsPasada(fechaHoraISO)) return true;
+  const cita = new Date(fechaHoraISO);
+  const citaFmt = Number.isNaN(cita.getTime()) ? "la fecha seleccionada" : cita.toLocaleString();
+  toast("Horario vencido", `La cita (${citaFmt}) no puede ser anterior al momento de creacion. Selecciona una hora futura.`, "warn", 4200);
+  return false;
+}
+
+function datetimeLocalValue(ts = Date.now()){
+  const d = new Date(ts);
+  const pad = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function obtenerCitasDeHoy(){
@@ -5415,7 +5436,7 @@ async function renderEditarCitaCompras(id){
 
         <div>
           <label>Fecha y hora *</label>
-          <input type="datetime-local" id="ccFechaHora" value="${esc((v.fechaHora||"").slice(0,16))}">
+          <input type="datetime-local" id="ccFechaHora" value="${esc((v.fechaHora||"").slice(0,16))}" min="${datetimeLocalValue()}">
         </div>
       </div>
 
@@ -5510,6 +5531,9 @@ async function guardarEdicionCitaCompras(id){
     return;
   }
 
+  if(!validarCitaNoPasada(fechaHora)){
+    return;
+  }
   // respeta tu capacidad por área/hora excluyendo la misma cita
   if(existeCitaEnHorarioExcluding(fechaHora, area, v.id)){
     toast("Horario no disponible","Ya existe el máximo de citas para esa área en ese horario.","warn");
@@ -6798,7 +6822,7 @@ async function renderNuevo(){
 </div>
         <div>
           <label>Fecha y hora *</label>
-          <input type="datetime-local" id="fechaHora"/>
+          <input type="datetime-local" id="fechaHora" min="${datetimeLocalValue()}"/>
         </div>
 
         <div id="agendaVisual">
@@ -6825,8 +6849,10 @@ async function renderNuevo(){
   const hora = slot.dataset.hora;
   const fechaInput = document.getElementById("fechaHora");
 
-  const hoy = new Date().toISOString().slice(0,10);
-  fechaInput.value = `${hoy}T${hora}`;
+  const hoy = datetimeLocalValue().slice(0,10);
+  const fechaHoraSlot = `${hoy}T${hora}`;
+  if(!validarCitaNoPasada(fechaHoraSlot)) return;
+  fechaInput.value = fechaHoraSlot;
 });
 
 document.getElementById("area")
@@ -6904,6 +6930,9 @@ function setupProveedorAutocomplete(){
     return null;
   }
 
+  if(!validarCitaNoPasada(fechaHora)){
+    return null;
+  }
   const fechaHoraTs = new Date(fechaHora).getTime();
 
   // ✅ Bloquea solo si ya existe cita en ese horario PARA LA MISMA ÁREA
