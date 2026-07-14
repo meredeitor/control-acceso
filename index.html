@@ -2416,7 +2416,7 @@ html[data-theme="copper"] .agenda-slot *{
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "ACC-V35";
+  const APP_VERSION = "ACC-V36";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -3407,7 +3407,7 @@ function filterByArea(visitas, area){
 function countByArea(visitas){
   const out = {};
   visitas.forEach(v => {
-    const a = v.area || "Sin área";
+    const a = v.area || "Area";
     out[a] = (out[a] || 0) + 1;
   });
   return out; // { "Avíos": 10, "Aduana Peleteria": 5, ... }
@@ -3450,7 +3450,7 @@ function avgTiempoPorArea(visitas){
       typeof v.salidaTs === "number" &&
       v.salidaTs > v.entradaTs
     ){
-      const area = v.area || "Sin área";
+      const area = v.area || "Area";
       const mins = (v.salidaTs - v.entradaTs) / 60000;
 
       buckets[area] = (buckets[area] || 0) + mins;
@@ -3472,7 +3472,7 @@ function incidenciasPorArea(visitas){
   visitas.forEach(v => {
     const inc = (v.dictamen?.incidencia || "SIN_INCIDENCIAS").trim();
     if(inc && inc !== "SIN_INCIDENCIAS"){
-      const area = v.area || "Sin área";
+      const area = v.area || "Area";
       out[area] = (out[area] || 0) + 1;
     }
   });
@@ -5029,8 +5029,8 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
             <strong>${esc(v.proveedor)}</strong>
             <small>${esc(v.empresa)}</small>
             <div class="meta">
-              <span class="pill"><span class="dot info"></span>${esc(v.area || "Área")}</span>
               <span class="pill"><span class="dot brand"></span>ID: ${esc(v.id)}</span>
+              <span class="pill"><span class="dot info"></span>${esc(v.area || "Area")}</span>
               <span class="pill"><span class="dot warn"></span>${esc(cita)}</span>
               ${pillCitaCreada(v)}
               ${pillCitaCreadaPor(v)}
