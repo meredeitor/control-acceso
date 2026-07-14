@@ -2416,7 +2416,7 @@ html[data-theme="copper"] .agenda-slot *{
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "ACC-V32";
+  const APP_VERSION = "ACC-V33";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -3097,12 +3097,15 @@ function validarReagendaProveedor({ proveedorCodigo, proveedor, fechaHoraTs, exc
   const key = proveedorCitaKey({ proveedorCodigo, proveedor });
   if(!key || key === "nombre:") return true;
   const nowTs = Date.now();
+  const hoy = new Date(nowTs);
   const mismoProveedor = (v) => proveedorCitaKey(v) === key && (!excludeId || v.id !== excludeId);
-  const vencidas = visitas.filter(v => mismoProveedor(v) && citaVencidaSinLlegada(v, nowTs));
+  const esCitaDeHoy = (v) => typeof v.fechaHoraTs === "number" && isSameDay(v.fechaHoraTs, hoy);
+  const vencidas = visitas.filter(v => mismoProveedor(v) && esCitaDeHoy(v) && citaVencidaSinLlegada(v, nowTs));
   if(!vencidas.length) return true;
 
   const recuperacionesActivas = visitas.filter(v =>
     mismoProveedor(v) &&
+    esCitaDeHoy(v) &&
     v.status === Status.PROGRAMADO &&
     typeof v.fechaHoraTs === "number" &&
     v.fechaHoraTs >= (nowTs - 30 * 1000) &&
