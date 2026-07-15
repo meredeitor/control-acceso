@@ -1672,7 +1672,14 @@ html[data-theme="copper"] .agenda-slot *{
 
       .grid.cols-5,
       .history-grid{
-        grid-template-columns:1fr !important;
+        grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+      }
+
+      @media (max-width: 500px){
+        .grid.cols-5,
+        .history-grid{
+          grid-template-columns:1fr !important;
+        }
       }
 
       .sidebar{
