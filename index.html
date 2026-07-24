@@ -2171,9 +2171,7 @@ html[data-theme="copper"] .agenda-slot *{
   .appointment-pass-qr-zone{ grid-template-columns:1fr; }
   .appointment-pass-side{ display:none; }
   .appointment-pass-footer{ padding:16px 22px; font-size:11px; letter-spacing:1.3px; }
-}
-
-</style>
+}</style>
 </head>
 
 <body class="auth-mode">
@@ -2419,7 +2417,7 @@ html[data-theme="copper"] .agenda-slot *{
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "ACC-V40";
+  const APP_VERSION = "ACC-V42";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -5731,6 +5729,193 @@ async function cancelarCitaCompras(id){
       `;
     }
 
+function proveedorEvalClass(score, flags={}){
+  if((flags.rechazos || 0) >= 2 || (flags.noShow || 0) >= 3 || (flags.incidenciasCalidad || 0) >= 3) return "C";
+  if((flags.rechazos || 0) >= 1 || (flags.noShow || 0) >= 2 || (flags.tardesGraves || 0) >= 3) return score >= 70 ? "B" : "C";
+  if((flags.total || 0) < 3 && score >= 95) return "A";
+  if(score >= 95) return "AA";
+  if(score >= 85) return "A";
+  if(score >= 70) return "B";
+  return "C";
+}
+
+function proveedorEvalBadge(clase){
+  const c = String(clase || "C").toUpperCase();
+  const map = {
+    AA: "background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.45);color:#86efac;",
+    A: "background:rgba(56,189,248,.16);border-color:rgba(56,189,248,.42);color:#7dd3fc;",
+    B: "background:rgba(250,204,21,.16);border-color:rgba(250,204,21,.42);color:#fde68a;",
+    C: "background:rgba(239,68,68,.16);border-color:rgba(239,68,68,.45);color:#fca5a5;"
+  };
+  return `<span class="pill" style="font-weight:900;${map[c] || map.C}"><span class="dot ${c === "C" ? "bad" : c === "B" ? "warn" : "ok"}"></span>${esc(c)}</span>`;
+}
+
+function buildEvaluacionProveedores(list, opts={}){
+  const nowTs = opts.nowTs || Date.now();
+  const graceMin = Number(opts.graceMin ?? 10);
+  const graveMin = Number(opts.graveMin ?? 30);
+  const graceMs = graceMin * 60000;
+  const graveMs = graveMin * 60000;
+  const groups = new Map();
+
+  const getKey = (v) => String(v.proveedorCodigo || v.codigoProveedor || v.proveedor || v.empresa || "SIN_PROVEEDOR").trim().toUpperCase();
+  const getName = (v) => String(v.proveedor || v.empresa || v.proveedorCodigo || "Sin proveedor").trim();
+
+  (list || []).forEach(v => {
+    if(!v || typeof v.fechaHoraTs !== "number") return;
+    if(typeof Status !== "undefined" && v.status === Status.CANCELADO) return;
+
+    const key = getKey(v);
+    if(!groups.has(key)){
+      groups.set(key, {
+        key,
+        proveedor: getName(v),
+        empresa: v.empresa || "",
+        total:0,
+        llegadas:0,
+        aTiempo:0,
+        tardes:0,
+        tardesGraves:0,
+        noShow:0,
+        incidenciasCalidad:0,
+        rechazos:0,
+        docsIncompletos:0,
+        incidenciasSalida:0,
+        minutosTardeTotal:0,
+        score:100,
+        clase:"AA",
+        motivos:[]
+      });
+    }
+
+    const g = groups.get(key);
+    g.total += 1;
+    if(!g.empresa && v.empresa) g.empresa = v.empresa;
+
+    const hasLlegada = typeof v.llegadaTs === "number";
+    if(hasLlegada){
+      g.llegadas += 1;
+      const delay = v.llegadaTs - v.fechaHoraTs;
+      if(delay > graceMs){
+        g.tardes += 1;
+        const mins = Math.max(0, Math.round(delay / 60000));
+        g.minutosTardeTotal += mins;
+        if(delay > graveMs) g.tardesGraves += 1;
+      }else{
+        g.aTiempo += 1;
+      }
+    }else if(String(v.status).toLowerCase() === "programado" && v.fechaHoraTs < (nowTs - graceMs)){
+      g.noShow += 1;
+    }
+
+    const dictEstado = String(v.dictamen?.estado || "").toLowerCase();
+    const inc = String(v.dictamen?.incidencia || "SIN_INCIDENCIAS").trim();
+    if(dictEstado === "rechazado") g.rechazos += 1;
+    if(inc && inc !== "SIN_INCIDENCIAS") g.incidenciasCalidad += 1;
+    if(hasLlegada && (!v.ocNo || !v.facturaNo)) g.docsIncompletos += 1;
+    if(String(v.incidenciasSalida || "").trim()) g.incidenciasSalida += 1;
+  });
+
+  return Array.from(groups.values()).map(g => {
+    const descuentos =
+      (g.noShow * 20) +
+      (g.tardes * 5) +
+      (g.tardesGraves * 5) +
+      (g.incidenciasCalidad * 15) +
+      (g.rechazos * 25) +
+      (g.docsIncompletos * 3) +
+      (g.incidenciasSalida * 10);
+
+    g.score = Math.max(0, Math.min(100, 100 - descuentos));
+    g.pctAsistencia = g.total ? Math.round((g.llegadas / g.total) * 100) : 0;
+    g.pctPuntualidad = g.llegadas ? Math.round((g.aTiempo / g.llegadas) * 100) : 0;
+    g.promTarde = g.tardes ? Math.round(g.minutosTardeTotal / g.tardes) : 0;
+    g.clase = proveedorEvalClass(g.score, g);
+
+    const motivos = [];
+    if(g.noShow) motivos.push(`${g.noShow} no asist.`);
+    if(g.tardes) motivos.push(`${g.tardes} tarde${g.tardesGraves ? ` (${g.tardesGraves} graves)` : ""}`);
+    if(g.rechazos) motivos.push(`${g.rechazos} rechazo calidad`);
+    if(g.incidenciasCalidad) motivos.push(`${g.incidenciasCalidad} inc. calidad`);
+    if(g.incidenciasSalida) motivos.push(`${g.incidenciasSalida} inc. salida`);
+    if(g.docsIncompletos) motivos.push(`${g.docsIncompletos} docs incompletos`);
+    if(g.total < 3) motivos.push("muestra baja");
+    g.motivos = motivos.length ? motivos : ["Sin penalizaciones relevantes"];
+    return g;
+  }).sort((a,b) => b.score - a.score || b.total - a.total || a.proveedor.localeCompare(b.proveedor));
+}
+
+function renderEvaluacionProveedores(rows){
+  const wrap = document.getElementById("evalProvWrap");
+  const summary = document.getElementById("evalProvSummary");
+  if(!wrap) return;
+  const data = rows || [];
+  const counts = data.reduce((acc,r)=>{ acc[r.clase] = (acc[r.clase] || 0) + 1; return acc; }, {});
+  if(summary){
+    summary.innerHTML = `
+      <span class="pill"><span class="dot ok"></span>AA: <b style="color:var(--text);">${counts.AA || 0}</b></span>
+      <span class="pill"><span class="dot info"></span>A: <b style="color:var(--text);">${counts.A || 0}</b></span>
+      <span class="pill"><span class="dot warn"></span>B: <b style="color:var(--text);">${counts.B || 0}</b></span>
+      <span class="pill"><span class="dot bad"></span>C: <b style="color:var(--text);">${counts.C || 0}</b></span>
+    `;
+  }
+
+  if(!data.length){
+    wrap.innerHTML = `<div class="pill"><span class="dot muted"></span>Sin datos para evaluar proveedores en este rango.</div>`;
+    return;
+  }
+
+  wrap.innerHTML = `
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Clase</th>
+          <th>Proveedor</th>
+          <th>Score</th>
+          <th>Citas</th>
+          <th>Asistencia</th>
+          <th>Puntualidad</th>
+          <th>Tardes</th>
+          <th>No asist.</th>
+          <th>Calidad</th>
+          <th>Motivos</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.map(r => `
+          <tr>
+            <td>${proveedorEvalBadge(r.clase)}</td>
+            <td><b>${esc(r.proveedor)}</b><br><small style="color:var(--muted);">${esc(r.empresa || "")}</small></td>
+            <td><b>${r.score}</b></td>
+            <td>${r.total}</td>
+            <td>${r.pctAsistencia}%</td>
+            <td>${r.pctPuntualidad}%</td>
+            <td>${r.tardes}${r.promTarde ? ` <small style="color:var(--muted);">prom. ${r.promTarde} min</small>` : ""}</td>
+            <td>${r.noShow}</td>
+            <td>${r.incidenciasCalidad} inc. / ${r.rechazos} rech.</td>
+            <td style="min-width:220px;white-space:normal;word-break:break-word;color:var(--muted);">${esc(r.motivos.join(" · "))}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function exportEvaluacionProveedoresExcel(){
+  if(!requirePerm("exportar_excel", "No tienes permiso para exportar.")) return;
+  const rep = window.__repEvalProveedores || { rows: [] };
+  const rows = rep.rows || [];
+  if(!rows.length){ toast("Evaluación", "No hay datos para exportar. Presiona Aplicar primero.", "warn"); return; }
+  if(!window.XLSX){ toast("Excel", "Aún no carga XLSX. Intenta de nuevo.", "warn", 2500); return; }
+
+  const headers = ["Clase","Score","Proveedor","Empresa","Citas","Llegadas","Asistencia %","Puntualidad %","A tiempo","Tardes","Tardes graves","Prom. min tarde","No asistieron","Incidencias calidad","Rechazos calidad","Docs incompletos","Incidencias salida","Motivos"];
+  const body = rows.map(r => [r.clase,r.score,r.proveedor,r.empresa,r.total,r.llegadas,r.pctAsistencia,r.pctPuntualidad,r.aTiempo,r.tardes,r.tardesGraves,r.promTarde,r.noShow,r.incidenciasCalidad,r.rechazos,r.docsIncompletos,r.incidenciasSalida,r.motivos.join(" | ")]);
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...body]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Evaluacion proveedores");
+  XLSX.writeFile(wb, `evaluacion_proveedores_${rep.from || ""}_${rep.to || ""}.xlsx`);
+  toast("Excel", "Evaluación de proveedores exportada.", "ok", 2200);
+}
 function renderReportes(){
   if(!hasPerm("ver_dashboard")){
     toast("Acceso denegado", "No tienes permiso para ver reportes.", "bad");
@@ -5739,7 +5924,7 @@ function renderReportes(){
   currentView = "reportes";
 
   const todayISO = new Date().toISOString().slice(0,10);
-  const weekAgo  = new Date(Date.now() - 6*24*60*60*1000).toISOString().slice(0,10);
+  const monthStartISO = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0,10);
 
   // ⚙️ tolerancia para puntualidad
   const LATE_GRACE_MIN = 10;
@@ -5832,7 +6017,7 @@ function renderReportes(){
       <div class="row" style="gap:12px; flex-wrap:wrap;">
         <div style="min-width:180px;">
           <label>Fecha inicio</label>
-          <input type="date" id="repFrom" value="${weekAgo}">
+          <input type="date" id="repFrom" value="${monthStartISO}">
         </div>
         <div style="min-width:180px;">
           <label>Fecha fin</label>
@@ -5869,6 +6054,20 @@ function renderReportes(){
         ${kpiCard("No asistieron (Programado)","kpiNoShow", "Solo citas vencidas sin llegada")}
       </div>
 
+      <div class="card" style="margin-bottom:18px;">
+        <div class="row" style="justify-content:space-between;align-items:flex-start;">
+          <div>
+            <h3 style="margin:0 0 4px;">Evaluación mensual de proveedores</h3>
+            <div style="color:var(--muted);font-size:12px;">Score 0-100 con clasificación AA, A, B o C según asistencia, puntualidad, calidad, documentos e incidencias.</div>
+          </div>
+          <div class="row" id="evalProvSummary" style="justify-content:flex-end;"></div>
+          <button class="secondary" data-action="repExportEvalProv">Exportar Excel</button>
+        </div>
+        <div class="divider"></div>
+        <div id="evalProvWrap" style="overflow:auto;min-height:80px;color:var(--muted);font-size:12px;">
+          Presiona Aplicar para calcular la evaluación del rango seleccionado.
+        </div>
+      </div>
       <!-- ✅ Gráficas: alturas responsivas y sin overflow -->
       <div style="
         display:grid;
@@ -6111,6 +6310,10 @@ const noShow = noShowList.length;
 
 _safeSetText("kpiNoShow", String(noShow));
 _safeSetColor("kpiNoShow", noShow > 0 ? "var(--bad)" : "var(--muted)");
+
+const evalRows = buildEvaluacionProveedores(data, { nowTs, graceMin: LATE_GRACE_MIN, graveMin: 30 });
+window.__repEvalProveedores = { from, to, area, rows: evalRows };
+renderEvaluacionProveedores(evalRows);
 
     // Gráficas
     renderChartVisitasPorArea(data);
@@ -6362,6 +6565,9 @@ appEl.addEventListener("click", (e) => {
 
   const inc = e.target.closest('[data-action="repOpenIncCalidad"]');
   if(inc) return openIncCalModal();
+
+  const expEval = e.target.closest('[data-action="repExportEvalProv"]');
+  if(expEval) return exportEvaluacionProveedoresExcel();
 });
 
 // -------------------------
@@ -8290,7 +8496,8 @@ table{width:100%;border-collapse:collapse;}
 th,td{border:1px solid #ddd;padding:6px;font-size:11px;}
 th{background:#f3f4f6;}
 @media print{button{display:none;}}
-</style>
+
+  </style>
 </head>
 <body>
 <button onclick="window.print()">Imprimir / Guardar PDF</button>
