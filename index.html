@@ -197,6 +197,44 @@
     }
     #histWrap{ min-width:0; overflow-x:auto; }
 
+
+    .reports-filter-row{
+      display:grid;
+      grid-template-columns: minmax(180px,216px) minmax(180px,216px) minmax(220px,264px) auto;
+      gap:14px;
+      align-items:end;
+      justify-content:start;
+    }
+    .reports-filter-row button{
+      min-height:42px;
+      padding:10px 16px;
+    }
+    .reports-kpi-grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap:14px;
+      margin-bottom:18px;
+    }
+    .report-kpi-card{
+      min-height:170px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      gap:12px;
+    }
+    .report-kpi-card h3{
+      margin:0;
+      font-size:20px;
+      line-height:1.2;
+    }
+    @media (max-width:1100px){
+      .reports-kpi-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width:720px){
+      .reports-filter-row{ grid-template-columns:1fr; }
+      .reports-kpi-grid{ grid-template-columns:1fr; }
+      .report-kpi-card{ min-height:140px; }
+    }
     .two{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
     @media (max-width:760px){ .two{ grid-template-columns:1fr; } }
     .divider{ height:1px; background: rgba(255,255,255,.08); margin:12px 0; }
@@ -2417,7 +2455,7 @@ html[data-theme="copper"] .agenda-slot *{
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "ACC-V42";
+  const APP_VERSION = "ACC-V45";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -6014,23 +6052,23 @@ function renderReportes(){
       <div class="divider"></div>
 
       <!-- Filtros -->
-      <div class="row" style="gap:12px; flex-wrap:wrap;">
-        <div style="min-width:180px;">
+      <div class="reports-filter-row">
+        <div>
           <label>Fecha inicio</label>
           <input type="date" id="repFrom" value="${monthStartISO}">
         </div>
-        <div style="min-width:180px;">
+        <div>
           <label>Fecha fin</label>
           <input type="date" id="repTo" value="${todayISO}">
         </div>
-        <div style="min-width:220px;">
+        <div>
           <label>Área</label>
           <select id="repArea">
             <option value="">Todas</option>
             ${AREAS.map(a => `<option value="${a}">${a}</option>`).join("")}
           </select>
         </div>
-        <div style="align-self:flex-end;">
+        <div>
           <button id="repApply">Aplicar</button>
         </div>
       </div>
@@ -6038,12 +6076,12 @@ function renderReportes(){
       <div class="divider"></div>
 
       <!-- ✅ KPIs: auto-fit para que SIEMPRE quepan -->
-      <div style="
-        display:grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap:12px;
-        margin-bottom:18px;
-      ">
+      
+      <div class="row" style="gap:8px;margin-bottom:14px;">
+        <button class="secondary" data-action="repTab" data-tab="resumen" aria-current="page">Resumen</button>
+        <button class="secondary" data-action="repTab" data-tab="evaluacion">Evaluación proveedores</button>
+      </div>
+      <div data-report-tab-panel="resumen" class="reports-kpi-grid">
         ${kpiCard("Total visitas","kpiTotal")}
         ${kpiCard("Tiempo promedio","kpiTiempo")}
         ${kpiCard("% Rechazo","kpiRechazo")}
@@ -6054,9 +6092,18 @@ function renderReportes(){
         ${kpiCard("No asistieron (Programado)","kpiNoShow", "Solo citas vencidas sin llegada")}
       </div>
 
+      <div data-report-tab-panel="evaluacion" style="display:none;">
+
+
       <div class="card" style="margin-bottom:18px;">
+
+
         <div class="row" style="justify-content:space-between;align-items:flex-start;">
+
+
           <div>
+
+
             <h3 style="margin:0 0 4px;">Evaluación mensual de proveedores</h3>
             <div style="color:var(--muted);font-size:12px;">Score 0-100 con clasificación AA, A, B o C según asistencia, puntualidad, calidad, documentos e incidencias.</div>
           </div>
@@ -6064,12 +6111,24 @@ function renderReportes(){
           <button class="secondary" data-action="repExportEvalProv">Exportar Excel</button>
         </div>
         <div class="divider"></div>
-        <div id="evalProvWrap" style="overflow:auto;min-height:80px;color:var(--muted);font-size:12px;">
+                <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:12px;">
+          <div class="pill" style="border-radius:12px;align-items:flex-start;white-space:normal;"><span class="dot ok" style="margin-top:5px;"></span><span><b style="color:var(--text);">AA</b><br>Excelente: proveedor confiable, puntual y sin penalizaciones relevantes.</span></div>
+          <div class="pill" style="border-radius:12px;align-items:flex-start;white-space:normal;"><span class="dot info" style="margin-top:5px;"></span><span><b style="color:var(--text);">A</b><br>Bueno: cumple en general, con detalles menores o muestra baja.</span></div>
+          <div class="pill" style="border-radius:12px;align-items:flex-start;white-space:normal;"><span class="dot warn" style="margin-top:5px;"></span><span><b style="color:var(--text);">B</b><br>Riesgo medio: tardanzas, no asistencias o incidencias que requieren seguimiento.</span></div>
+          <div class="pill" style="border-radius:12px;align-items:flex-start;white-space:normal;"><span class="dot bad" style="margin-top:5px;"></span><span><b style="color:var(--text);">C</b><br>Riesgo alto: incumplimientos frecuentes, rechazos o incidencias críticas.</span></div>
+        </div>        <div id="evalProvWrap" style="overflow:auto;min-height:80px;color:var(--muted);font-size:12px;">
           Presiona Aplicar para calcular la evaluación del rango seleccionado.
         </div>
       </div>
+
+      </div>
+
       <!-- ✅ Gráficas: alturas responsivas y sin overflow -->
+
+      <div data-report-tab-panel="resumen">
+
       <div style="
+
         display:grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         gap:12px;
@@ -6120,7 +6179,7 @@ const action =
   "";
 
   return `
-    <div class="card"
+    <div class="card report-kpi-card"
       ${clickable ? `data-action="${action}"` : ""} 
       style="${clickable ? "cursor:pointer;" : ""}">
       <h3>${title}</h3>
@@ -6568,6 +6627,20 @@ appEl.addEventListener("click", (e) => {
 
   const expEval = e.target.closest('[data-action="repExportEvalProv"]');
   if(expEval) return exportEvaluacionProveedoresExcel();
+
+  const tabBtn = e.target.closest('[data-action="repTab"]');
+  if(tabBtn){
+    const tab = tabBtn.dataset.tab || "resumen";
+    appEl.querySelectorAll('[data-report-tab-panel]').forEach(panel => {
+      panel.style.display = panel.dataset.reportTabPanel === tab ? '' : 'none';
+    });
+    appEl.querySelectorAll('[data-action="repTab"]').forEach(btn => {
+      if(btn.dataset.tab === tab) btn.setAttribute('aria-current','page');
+      else btn.removeAttribute('aria-current');
+    });
+
+    return;
+  }
 });
 
 // -------------------------
