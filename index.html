@@ -2455,7 +2455,7 @@ html[data-theme="copper"] .agenda-slot *{
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "ACC-V45";
+  const APP_VERSION = "ACC-V46";
 
   const appVersionEl = document.getElementById("appVersion");
   if(appVersionEl) appVersionEl.textContent = `Versión ${APP_VERSION}`;
@@ -4297,12 +4297,29 @@ function fmt(ts){
     }
 
     function saveVisitasLocal(){
+      // localStorage suele estar limitado a unos pocos MB. Guardar cada rango
+      // consultado terminaba llenando la cuota; Firebase conserva el historial.
+      const RETENCION_LOCAL_DIAS = 30;
+      const limiteTs = Date.now() - (RETENCION_LOCAL_DIAS * 24 * 60 * 60 * 1000);
+      const cacheLocal = visitas.filter(v =>
+        typeof v.fechaHoraTs !== "number" || v.fechaHoraTs >= limiteTs
+      );
+
       try{
-        localStorage.setItem(LS_KEY, JSON.stringify(visitas));
+        localStorage.setItem(LS_KEY, JSON.stringify(cacheLocal));
         return true;
       }catch(e){
-        console.warn(e);
-        toast("Almacenamiento", "No se pudo guardar local.", "warn", 3600);
+        console.warn("No se pudo guardar visitas_v3 en localStorage:", e);
+        const cuotaLlena = e?.name === "QuotaExceededError" ||
+          e?.name === "NS_ERROR_DOM_QUOTA_REACHED";
+        toast(
+          "Almacenamiento",
+          cuotaLlena
+            ? "La caché local está llena. Con conexión, limpia los datos locales y vuelve a cargar."
+            : "El navegador bloqueó el almacenamiento local.",
+          "warn",
+          5200
+        );
         return false;
       }
     }
