@@ -1,0 +1,492 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function myUid() {
+      return request.auth.uid;
+    }
+
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function myRole() {
+      return userDoc(myUid()).data.role;
+    }
+
+    function hasRole(r) {
+      return isAuth() && myRole() == r;
+    }
+
+    function isAdmin() { return hasRole("admin"); }
+    function isCoordinador() { return hasRole("coordinador"); }
+    function isJefe() { return hasRole("jefe"); }
+    function isCompras() { return hasRole("compras"); }
+    function isJefeCompras() { return hasRole("jefe_compras"); }
+    function isJefeTi() { return hasRole("jefe_ti"); }
+    function isGuardia() { return hasRole("guardia"); }
+    function isCalidad() { return hasRole("calidad"); }
+    function isContraloria() { return hasRole("contraloria"); }
+    function isProveedor() { return hasRole("proveedor"); }
+    function isAnfitrion() { return hasRole("anfitrion"); }
+
+    function isKioskoAnon() {
+      return isAuth()
+        && request.auth.token.firebase.sign_in_provider == "anonymous";
+    }
+
+    function canManageVales() {
+      return isAdmin()
+        || isCoordinador()
+        || isCompras()
+        || isJefeCompras()
+        || isJefeTi()
+        || isAnfitrion()
+        || isJefe();
+    }
+
+    function hasValeRoleOverride() {
+      return isAuth()
+        && exists(/databases/$(database)/documents/app_config/role_permissions)
+        && get(/databases/$(database)/documents/app_config/role_permissions).data.roles is map
+        && myRole() in get(/databases/$(database)/documents/app_config/role_permissions).data.roles;
+    }
+
+    function hasConfiguredRolePermission(permission) {
+      return hasValeRoleOverride()
+        && get(/databases/$(database)/documents/app_config/role_permissions).data.roles[myRole()] is list
+        && get(/databases/$(database)/documents/app_config/role_permissions).data.roles[myRole()].hasAny([permission]);
+    }
+
+    function canAuthorizeValeActivo() {
+      return isAdmin()
+        || hasConfiguredRolePermission("autorizar_vale_activo")
+        || (!hasValeRoleOverride() && (isJefe() || isJefeTi() || isContraloria()));
+    }
+
+    function canAuthorizeValePersonal() {
+      return isAdmin()
+        || hasConfiguredRolePermission("autorizar_vale_personal")
+        || (!hasValeRoleOverride() && (isJefe() || isJefeCompras() || isContraloria()));
+    }
+
+    match /app_config/{id} {
+      allow read: if isAuth();
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /users/{uid} {
+      allow read: if isAuth();
+      allow create: if isAuth() && uid == myUid();
+      allow update: if isAdmin()
+        && request.resource.data.role is string;
+      allow delete: if false;
+    }
+
+    match /proveedores/{id} {
+      allow read, list: if isAuth();
+      allow create, update, delete: if isAdmin() || isCoordinador();
+    }
+
+    match /visitas/{id} {
+      allow read: if isAuth()
+        && (
+          isAdmin()
+          || isCoordinador()
+          || isCompras()
+          || isJefeCompras()
+          || isGuardia()
+          || isCalidad()
+          || isContraloria()
+          || isJefe()
+          || isAnfitrion()
+          || (isProveedor() && request.query.limit <= 10)
+          || (isKioskoAnon() && request.query.limit <= 500)
+        );
+
+      allow create: if isAuth()
+        && request.resource.data.createdByUid == myUid()
+        && (
+          (
+            (isAdmin() || isCoordinador() || isCompras() || isJefeCompras())
+            && request.resource.data.status == "programado"
+          )
+          || (
+            (isAnfitrion() || isJefe())
+            && request.resource.data.tipoVisita == "visitante"
+            && request.resource.data.status == "programado"
+          )
+          || (
+            isKioskoAnon()
+            && request.resource.data.status == "pendiente_autorizacion"
+          )
+        );
+
+      allow update: if isAuth() && (
+        isAdmin()
+        || isCoordinador()
+
+        || (
+          isCompras()
+          && request.resource.data.createdByUid == resource.data.createdByUid
+          && (
+            (
+              resource.data.status == "pendiente_autorizacion"
+              && request.resource.data.status in ["programado", "cancelado"]
+            )
+            || (
+              resource.data.createdByUid == myUid()
+              && resource.data.status in ["programado", "cancelado"]
+              && request.resource.data.status in ["programado", "cancelado"]
+            )
+          )
+        )
+
+        || (
+          isJefeCompras()
+          && request.resource.data.createdByUid == resource.data.createdByUid
+          && resource.data.status in ["programado", "cancelado"]
+          && request.resource.data.status in ["programado", "cancelado"]
+        )
+
+        || (
+          request.resource.data.createdByUid == resource.data.createdByUid
+          && request.resource.data.status == resource.data.status
+        )
+
+        || (
+          isGuardia()
+          && resource.data.status in ["programado", "llegado"]
+          && request.resource.data.status in ["llegado", "dentro"]
+        )
+
+        || (
+          isCalidad()
+          && resource.data.status == "dentro"
+          && request.resource.data.status == "despachado"
+        )
+
+        || (
+          (isAdmin() || isCoordinador() || isGuardia())
+          && resource.data.status == "despachado"
+          && request.resource.data.status == "finalizado"
+        )
+
+        || (
+          (isAdmin() || isCoordinador() || isGuardia())
+          && resource.data.status == "dentro"
+          && resource.data.tipoVisita == "visitante"
+          && request.resource.data.status == "finalizado"
+        )
+      );
+
+      allow delete: if isAdmin() || isCoordinador();
+    }
+
+    match /visitantes/{id} {
+      allow read: if isAuth()
+        && (
+          isAdmin()
+          || isCoordinador()
+          || isCompras()
+          || isJefeCompras()
+          || isGuardia()
+          || isCalidad()
+          || isContraloria()
+          || isJefe()
+          || isJefeTi()
+          || isAnfitrion()
+          || (isKioskoAnon() && request.query.limit <= 500)
+        );
+
+      allow create: if isAuth()
+        && request.resource.data.createdByUid == myUid()
+        && request.resource.data.tipoVisita == "visitante"
+        && (
+          (
+            (isAdmin() || isCoordinador() || isCompras() || isJefeCompras() || isJefeTi() || isAnfitrion() || isJefe())
+            && request.resource.data.status == "programado"
+          )
+          || (
+            isKioskoAnon()
+            && request.resource.data.status == "pendiente_autorizacion"
+          )
+        );
+
+      allow update: if isAuth() && (
+        isAdmin()
+        || isCoordinador()
+
+        || (
+          request.resource.data.createdByUid == resource.data.createdByUid
+          && request.resource.data.tipoVisita == "visitante"
+          && request.resource.data.status == resource.data.status
+        )
+
+        || (
+          isGuardia()
+          && resource.data.status in ["programado", "llegado"]
+          && request.resource.data.status in ["llegado", "dentro"]
+        )
+
+        || (
+          (isAdmin() || isCoordinador() || isGuardia())
+          && resource.data.status == "dentro"
+          && request.resource.data.tipoVisita == "visitante"
+          && request.resource.data.status == "finalizado"
+        )
+      );
+
+      allow delete: if isAdmin() || isCoordinador();
+    }
+
+    match /resumen_diario/{fecha} {
+      allow read, list: if isAuth()
+        && (
+          isAdmin()
+          || isCoordinador()
+          || isCompras()
+          || isJefeCompras()
+          || isJefeTi()
+          || isGuardia()
+          || isCalidad()
+          || isContraloria()
+          || isAnfitrion()
+          || isJefe()
+        );
+
+      allow create, update: if isAuth()
+        && (
+          isAdmin()
+          || isCoordinador()
+          || isCompras()
+          || isJefeCompras()
+          || isGuardia()
+          || isCalidad()
+          || isAnfitrion()
+          || isJefe()
+        );
+
+      allow delete: if isAdmin() || isCoordinador();
+    }
+
+    match /vales_activos/{id} {
+      allow read, list: if isAuth()
+        && (
+          isAdmin()
+          || isCoordinador()
+          || isCompras()
+          || isJefeCompras()
+          || isJefeTi()
+          || isGuardia()
+          || isContraloria()
+          || isAnfitrion()
+          || isJefe()
+          || canAuthorizeValeActivo()
+        );
+
+      allow create: if isAuth()
+        && (
+          (
+            canManageVales()
+            && request.resource.data.createdByUid == myUid()
+          )
+          || (
+            isKioskoAnon()
+            && request.resource.data.createdBySource == "kiosko_vales_activos"
+            && request.resource.data.status == "pendiente_autorizacion"
+            && request.resource.data.autorizadorUid is string
+            && request.resource.data.autorizadorUid != ""
+          )
+        );
+
+      allow update: if isAuth()
+        && (
+          isAdmin()
+          || canAuthorizeValeActivo()
+          || isGuardia()
+          || (
+            canManageVales()
+            && resource.data.createdByUid == myUid()
+          )
+        );
+
+      allow delete: if isAdmin() || isCoordinador();
+    }
+
+    match /vales_personal/{id} {
+      allow read, list: if isAuth()
+        && (
+          isAdmin()
+          || isCoordinador()
+          || isCompras()
+          || isJefeCompras()
+          || isJefeTi()
+          || isGuardia()
+          || isContraloria()
+          || isAnfitrion()
+          || isJefe()
+          || canAuthorizeValePersonal()
+        );
+
+      allow create: if isAuth()
+        && (
+          (
+            canManageVales()
+            && request.resource.data.createdByUid == myUid()
+          )
+          || (
+            isKioskoAnon()
+            && request.resource.data.createdBySource == "kiosko_vales_personal"
+            && request.resource.data.status == "pendiente_autorizacion"
+            && request.resource.data.autorizadorUid is string
+            && request.resource.data.autorizadorUid != ""
+          )
+        );
+
+      allow update: if isAuth()
+        && (
+          isAdmin()
+          || canAuthorizeValePersonal()
+          || isGuardia()
+          || (
+            canManageVales()
+            && resource.data.createdByUid == myUid()
+          )
+        );
+
+      allow delete: if isAdmin() || isCoordinador();
+    }
+
+    match /bitacora_guardia/{id} {
+      allow read, list: if isAuth()
+        && (isAdmin() || isCoordinador() || isGuardia());
+
+      allow create: if isAuth()
+        && (isAdmin() || isCoordinador() || isGuardia())
+        && (
+          request.resource.data.autorUid == myUid()
+          || request.resource.data.operadorUid == myUid()
+        )
+        && request.resource.data.fecha is string
+        && request.resource.data.texto is string;
+
+      allow update: if isAuth()
+        && (
+          isAdmin()
+          || isCoordinador()
+          || (
+            isGuardia()
+            && (
+              resource.data.autorUid == myUid()
+              || resource.data.operadorUid == myUid()
+            )
+          )
+        );
+
+      allow delete: if isAdmin() || isCoordinador();
+    }
+
+    match /rondinero_puntos/{id} {
+      allow read, list: if isAuth()
+        && (isAdmin() || isCoordinador() || isGuardia() || isContraloria());
+
+      allow create, update, delete: if isAuth()
+        && (isAdmin() || isCoordinador());
+    }
+
+    match /rondinero_rutas/{id} {
+      allow read, list: if isAuth()
+        && (isAdmin() || isCoordinador() || isGuardia() || isContraloria());
+
+      allow create, update, delete: if isAuth()
+        && (isAdmin() || isCoordinador());
+    }
+
+    match /rondinero_rondines/{id} {
+      allow read, list: if isAuth()
+        && (
+          isAdmin()
+          || isCoordinador()
+          || isContraloria()
+          || (isGuardia() && resource.data.operadorUid == myUid())
+        );
+
+      allow create: if isAuth()
+        && (isAdmin() || isCoordinador() || isGuardia())
+        && request.resource.data.operadorUid == myUid();
+
+      allow update: if isAuth()
+        && (
+          isAdmin()
+          || isCoordinador()
+          || (
+            isGuardia()
+            && resource.data.operadorUid == myUid()
+            && request.resource.data.operadorUid == resource.data.operadorUid
+            && request.resource.data.guardiaUid == resource.data.guardiaUid
+          )
+        );
+
+      allow delete: if isAdmin() || isCoordinador();
+    }
+
+    match /rondinero_eventos/{id} {
+      allow read, list: if isAuth()
+        && (
+          isAdmin()
+          || isCoordinador()
+          || isContraloria()
+          || (isGuardia() && resource.data.operadorUid == myUid())
+        );
+
+      allow create: if isAuth()
+        && (isAdmin() || isCoordinador() || isGuardia())
+        && request.resource.data.operadorUid == myUid()
+        && request.resource.data.tipo in ["scan", "novedad"];
+
+      allow update: if isAuth()
+        && (
+          isAdmin()
+          || isCoordinador()
+          || (
+            isGuardia()
+            && resource.data.operadorUid == myUid()
+            && request.resource.data.operadorUid == resource.data.operadorUid
+            && request.resource.data.guardiaUid == resource.data.guardiaUid
+          )
+        );
+
+      allow delete: if isAdmin() || isCoordinador();
+    }
+
+    match /presence/{uid} {
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid;
+
+      allow read: if request.auth != null
+        && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
+          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "coordinador"
+        );
+
+      allow delete: if false;
+    }
+
+    match /sesiones_activas/{uid} {
+      allow read, list: if isAuth() && (isAdmin() || isCoordinador());
+
+      allow create, update: if isAuth()
+        && uid == myUid()
+        && request.resource.data.uid == myUid();
+
+      allow delete: if isAuth() && (isAdmin() || isCoordinador());
+    }
+  }
+}

@@ -1,0 +1,702 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Caborca Access Control | Kiosko Vales</title>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+    try{ document.documentElement.dataset.theme = localStorage.getItem("ui_theme") || "dark"; }catch{}
+  </script>
+  <style>
+    :root{ --bg:#0b1220; --panel:#111c33; --text:#e5e7eb; --muted:#94a3b8; --brand:#2563eb; --accent:#7c3aed; --ok:#22c55e; --bad:#ef4444; --border:rgba(255,255,255,.10); --font:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+    html[data-theme="light"]{ --bg:#f8fafc; --panel:#ffffff; --text:#0f172a; --muted:#64748b; --border:rgba(15,23,42,.14); }
+    html[data-theme="mint"]{ --bg:#ecfeff; --panel:#f0fdfa; --text:#0f3f3b; --muted:#2d6f67; --brand:#0f766e; --accent:#0e7490; --border:rgba(15,118,110,.22); }
+    html[data-theme="desert"]{ --bg:#f8ecd8; --panel:#fff7ed; --text:#3a2d1f; --muted:#7a6248; --brand:#a16207; --accent:#92400e; --border:rgba(120,85,45,.24); }
+    html[data-theme="copper"]{ --bg:#120b08; --panel:#1f130e; --text:#f7e7d4; --muted:#c8a38a; --brand:#b45309; --accent:#92400e; --border:rgba(244,164,96,.24); }
+    *{ box-sizing:border-box; }
+    body{ margin:0; min-height:100vh; font-family:var(--font); color:var(--text); background:radial-gradient(900px 480px at 18% 0%, rgba(37,99,235,.18), transparent 58%), radial-gradient(760px 420px at 90% 12%, rgba(214,166,76,.14), transparent 56%), var(--bg); }
+    main{ width:min(920px,100%); margin:0 auto; padding:18px 12px 80px; }
+    .head{ display:flex; justify-content:space-between; gap:14px; align-items:flex-start; margin:8px 0 14px; padding:14px; border:1px solid var(--border); border-radius:18px; background:linear-gradient(135deg, rgba(17,28,51,.78), rgba(15,23,42,.48)); box-shadow:0 18px 44px rgba(0,0,0,.22); backdrop-filter:blur(10px); }
+    .head-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+    .kiosk-brand{ display:flex; align-items:center; gap:12px; min-width:0; }
+    .kiosk-logo{ width:46px; height:46px; flex:0 0 auto; border-radius:14px; overflow:hidden; background:#fff; box-shadow:0 12px 26px rgba(2,6,23,.24); }
+    .kiosk-logo img{ width:100%; height:100%; display:block; object-fit:cover; }
+    .kiosk-copy{ min-width:0; }    h1{ margin:0; font-size:22px; line-height:1.1; letter-spacing:0; }
+    h2{ margin:0 0 10px; font-size:18px; }
+    .sub{ color:var(--muted); font-size:13px; margin-top:6px; }
+    .badge{ border:1px solid rgba(96,165,250,.45); color:#dbeafe; border-radius:999px; padding:7px 10px; font-size:12px; white-space:nowrap; background:rgba(37,99,235,.16); }
+    .card{ background:linear-gradient(180deg, rgba(17,28,51,.96), rgba(15,23,42,.94)); border:1px solid var(--border); border-radius:14px; padding:14px; box-shadow:0 18px 44px rgba(0,0,0,.35); }
+    .selector{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+    .type-card{ text-align:left; border:1px solid var(--border); background:linear-gradient(180deg, rgba(30,41,59,.9), rgba(15,23,42,.95)); color:var(--text); border-radius:14px; padding:16px; cursor:pointer; min-height:126px; }
+    .type-card strong{ display:block; font-size:18px; margin-bottom:8px; }
+    .type-card span{ display:block; color:var(--muted); font-size:13px; line-height:1.35; font-weight:500; }
+    .type-card.active{ border-color:rgba(96,165,250,.7); box-shadow:0 0 0 3px rgba(37,99,235,.18); }
+    .type-card.personal.active{ border-color:rgba(167,139,250,.7); box-shadow:0 0 0 3px rgba(124,58,237,.18); }
+    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    label{ display:block; color:var(--muted); font-size:12px; margin:0 0 6px; }
+    input, select, textarea{ width:100%; border:1px solid var(--border); background:rgba(2,6,23,.38); color:var(--text); border-radius:12px; padding:11px 12px; outline:none; font:inherit; }
+    textarea{ resize:vertical; min-height:82px; }
+    button{ width:100%; border:0; border-radius:12px; padding:12px 14px; background:linear-gradient(135deg,#0b1220,#2563eb 54%,#d6a64c); color:white; font-weight:900; cursor:pointer; font:inherit; box-shadow:0 14px 28px rgba(37,99,235,.22); transition:transform .06s ease, filter .16s ease, box-shadow .16s ease; }
+    button:hover{ filter:brightness(1.06); box-shadow:0 16px 34px rgba(37,99,235,.30); }
+    button:active{ transform:translateY(1px); }
+    .theme-btn{ width:auto; padding:7px 10px; background:rgba(148,163,184,.16); color:var(--text); border:1px solid var(--border); box-shadow:none; font-size:12px; white-space:nowrap; }
+    button.secondary{ background:rgba(148,163,184,.16); color:var(--text); border:1px solid var(--border); box-shadow:none; }
+    button.personal-btn{ background:linear-gradient(135deg,#0b1220,#7c3aed 52%,#d6a64c); }
+    button:disabled{ opacity:.65; cursor:not-allowed; }
+    .auth-card{ margin-bottom:14px; }
+    .auth-row{ display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; }
+    .session-pill{ display:none; align-items:center; justify-content:space-between; gap:10px; border:1px solid rgba(34,197,94,.35); background:rgba(34,197,94,.12); border-radius:12px; padding:10px; margin-bottom:14px; }
+    .session-pill.show{ display:flex; }
+    .session-pill b{ color:var(--text); }
+    .locked{ opacity:.42; pointer-events:none; filter:saturate(.7); }
+    .hint{ color:var(--muted); font-size:12px; line-height:1.35; }
+    .divider{ height:1px; background:var(--border); margin:14px 0; }
+    .form-card, .qr-card{ display:none; }
+    .form-card.show, .qr-card.show{ display:block; }
+    .qr-card{ margin-top:14px; text-align:center; }
+    #qrcode{ display:inline-block; background:white; padding:10px; border-radius:14px; }
+    .folio{ color:var(--muted); font-size:12px; margin-top:10px; overflow-wrap:anywhere; }
+    .pass-actions{ width:min(100%,580px); margin:0 auto 12px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+    .pass-actions .theme-btn{ width:100%; min-height:44px; }
+    .permit-pass{ width:min(100%,580px); margin:0 auto; overflow:hidden; border-radius:24px; background:#f8fafc; color:#0f172a; border:1px solid rgba(15,23,42,.12); box-shadow:0 24px 54px rgba(2,6,23,.24); text-align:left; }
+    .permit-hero{ position:relative; display:grid; grid-template-columns:1fr auto; gap:16px; min-height:220px; padding:30px 32px 56px; color:#fff; background:linear-gradient(135deg, rgba(3,18,37,.98), rgba(8,40,75,.96) 58%, rgba(34,197,94,.75)); }
+    .permit-hero::before{ content:""; position:absolute; inset:0; background:linear-gradient(120deg, transparent 0 42%, rgba(255,255,255,.05) 43% 45%, transparent 46%); opacity:.8; }
+    .permit-hero::after{ content:""; position:absolute; left:-8%; right:-8%; bottom:-32px; height:66px; background:#f8fafc; transform:skewY(4deg); transform-origin:left top; }
+    .permit-brand,.permit-title,.permit-kind{ position:relative; z-index:1; }
+    .permit-brand{ display:flex; align-items:center; gap:12px; margin-bottom:26px; }
+    .permit-logo{ width:46px; height:46px; border-radius:14px; display:grid; place-items:center; overflow:hidden; background:#fff; box-shadow:0 10px 24px rgba(2,6,23,.20); }
+    .permit-logo img{ width:100%; height:100%; display:block; object-fit:cover; }
+    .permit-brand strong{ display:block; font-size:13px; letter-spacing:4px; text-transform:uppercase; }
+    .permit-brand span{ display:block; margin-top:4px; color:rgba(255,255,255,.72); font-size:8px; letter-spacing:1.5px; text-transform:uppercase; }
+    .permit-title h2{ margin:0; color:#fff; font-size:38px; line-height:1; letter-spacing:2px; text-transform:uppercase; }
+    .permit-status{ margin-top:16px; color:#4ade80; font-size:17px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; }
+    .permit-title h2:empty,
+    .permit-status:empty{ display:none; }
+    .is-hidden{ display:none !important; }
+    .permit-kind{ min-width:160px; padding-top:42px; text-align:right; }
+    .permit-kind small{ display:block; color:rgba(255,255,255,.72); font-size:13px; letter-spacing:3px; text-transform:uppercase; }
+    .permit-kind b{ display:block; margin-top:9px; color:#fff; font-size:22px; letter-spacing:1px; text-transform:uppercase; }
+    .permit-kind i{ display:block; width:48px; height:3px; margin:16px 0 0 auto; background:#60a5fa; border-radius:999px; }
+    .permit-body{ position:relative; z-index:2; padding:0 32px; margin-top:-24px; }
+    .permit-person{ display:grid; grid-template-columns:68px 1fr minmax(150px,.75fr); gap:18px; align-items:center; padding-bottom:18px; border-bottom:1px solid rgba(15,23,42,.16); }
+    .permit-avatar,.permit-icon{ display:grid; place-items:center; border-radius:50%; color:#16a34a; background:#f8fafc; border:2px solid #dcfce7; font-weight:900; }
+    .permit-avatar{ width:68px; height:68px; font-size:26px; }
+    .permit-icon{ width:48px; height:48px; }
+    .permit-label{ color:#475569; font-size:11px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase; }
+    .permit-name{ margin-top:6px; color:#0f172a; font-size:26px; line-height:1.05; font-weight:900; overflow-wrap:anywhere; }
+    .permit-sub{ margin-top:7px; color:#475569; font-size:13px; font-weight:700; overflow-wrap:anywhere; }
+    .permit-role{ border-left:1px solid rgba(15,23,42,.16); padding-left:18px; }
+    .permit-role b{ display:block; margin-top:9px; color:#0f172a; font-size:16px; overflow-wrap:anywhere; }
+    .permit-role span{ display:block; margin-top:6px; color:#2563eb; font-size:13px; font-weight:800; overflow-wrap:anywhere; }
+    .permit-facts{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; padding:20px 0 14px; }
+    .permit-fact{ display:grid; grid-template-columns:48px 1fr; gap:10px; align-items:center; min-width:0; }
+    .permit-fact b{ display:block; margin-top:4px; color:#0f172a; font-size:15px; overflow-wrap:anywhere; }
+    .permit-fact span{ display:block; margin-top:4px; color:#16a34a; font-size:13px; font-weight:900; overflow-wrap:anywhere; }
+    .permit-qr-zone{ display:grid; grid-template-columns:1fr auto 1fr; gap:16px; align-items:center; padding:10px 0 14px; }
+    .permit-side{ display:grid; justify-items:center; gap:9px; color:#0f172a; text-align:center; font-size:11px; font-weight:900; text-transform:uppercase; }
+    .permit-side div{ white-space:pre-line; }
+    .permit-side i{ width:38px; height:3px; background:#22c55e; border-radius:999px; }
+    .permit-qr-card{ display:grid; justify-items:center; }
+    .permit-qr{ display:inline-block; padding:12px; border-radius:16px; background:#fff; box-shadow:0 14px 34px rgba(15,23,42,.14); }
+    .permit-code{ margin-top:10px; color:#16a34a; font-size:15px; font-weight:900; letter-spacing:2px; text-align:center; overflow-wrap:anywhere; }
+    .permit-code small{ display:block; margin-top:4px; color:#475569; font-size:10px; letter-spacing:2px; text-transform:uppercase; }
+    .permit-instructions{ display:grid; grid-template-columns:44px 1fr; gap:14px; align-items:center; margin:0 -14px; padding:15px 18px; border-radius:20px 20px 0 0; background:#e9f8ef; color:#334155; }
+    .permit-instructions b{ display:block; color:#0f172a; font-size:13px; letter-spacing:1px; text-transform:uppercase; }
+    .permit-instructions p{ margin:4px 0 0; font-size:12px; line-height:1.35; }
+    .permit-footer{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 32px; color:#fff; background:#020d1a; font-size:12px; font-weight:900; letter-spacing:1.5px; text-transform:uppercase; }
+    .permit-footer b{ color:#60a5fa; }
+    .toast{ position:fixed; left:12px; right:12px; bottom:14px; display:none; border-radius:14px; padding:12px; border:1px solid var(--border); background:rgba(17,28,51,.98); color:var(--text); box-shadow:0 18px 44px rgba(0,0,0,.35); }
+    .toast.show{ display:block; }
+    .toast.ok{ border-color:rgba(34,197,94,.45); }
+    .toast.bad{ border-color:rgba(239,68,68,.45); }
+    html[data-theme="light"] .card,
+    html[data-theme="light"] .type-card{ background:#ffffff; box-shadow:0 18px 44px rgba(15,23,42,.10); }
+    html[data-theme="light"] .badge{ background:#dbeafe; border-color:#93c5fd; color:#1e40af; }
+    html[data-theme="light"] input,
+    html[data-theme="light"] select,
+    html[data-theme="light"] textarea{ background:#ffffff; color:var(--text); }
+    html[data-theme="light"] .toast{ background:#ffffff; box-shadow:0 18px 44px rgba(15,23,42,.14); }
+    html[data-theme="mint"] .card, html[data-theme="mint"] .type-card,
+    html[data-theme="desert"] .card, html[data-theme="desert"] .type-card,
+    html[data-theme="copper"] .card, html[data-theme="copper"] .type-card{ background:var(--panel); box-shadow:0 18px 44px rgba(15,23,42,.12); }
+    html[data-theme="mint"] .badge{ background:#ccfbf1; border-color:#5eead4; color:#115e59; }
+    html[data-theme="desert"] .badge{ background:#fed7aa; border-color:#fdba74; color:#7c2d12; }
+    html[data-theme="copper"] .badge{ background:rgba(251,146,60,.18); border-color:rgba(251,146,60,.42); color:#fed7aa; }
+    html[data-theme="mint"] input, html[data-theme="mint"] select, html[data-theme="mint"] textarea,
+    html[data-theme="desert"] input, html[data-theme="desert"] select, html[data-theme="desert"] textarea,
+    html[data-theme="copper"] input, html[data-theme="copper"] select, html[data-theme="copper"] textarea{ background:rgba(255,255,255,.72); color:var(--text); border-color:var(--border); }
+    html[data-theme="copper"] input, html[data-theme="copper"] select, html[data-theme="copper"] textarea{ background:rgba(255,255,255,.08); }
+    html[data-theme="mint"] .theme-btn, html[data-theme="desert"] .theme-btn, html[data-theme="copper"] .theme-btn{ color:var(--text); border-color:var(--border); }
+    html[data-theme="mint"] .toast, html[data-theme="desert"] .toast, html[data-theme="copper"] .toast{ background:var(--panel); }
+    @media (max-width:720px){
+      main{ padding:14px 10px 74px; }
+      .head{ display:grid; }
+      .badge{ width:max-content; }
+      .selector,.grid,.auth-row,.pass-actions,.permit-person,.permit-facts,.permit-qr-zone{ grid-template-columns:1fr; }
+      .permit-hero{ grid-template-columns:1fr; min-height:auto; padding:24px 22px 50px; }
+      .permit-kind{ min-width:0; padding-top:0; text-align:left; }
+      .permit-kind i{ margin-left:0; }
+      .permit-title h2{ font-size:30px; }
+      .permit-body{ padding:0 22px; }
+      .permit-role{ border-left:0; border-top:1px solid rgba(15,23,42,.16); padding:14px 0 0; }
+      .permit-footer{ display:grid; padding:14px 22px; }
+      h1{ font-size:20px; }
+    }
+
+    /* Branding contrast fixes */
+    html[data-theme="light"] body,
+    html[data-theme="mint"] body,
+    html[data-theme="desert"] body{
+      background:
+        radial-gradient(900px 480px at 18% 0%, rgba(37,99,235,.12), transparent 58%),
+        radial-gradient(760px 420px at 90% 12%, rgba(214,166,76,.18), transparent 56%),
+        var(--bg);
+    }
+    html[data-theme="light"] .head,
+    html[data-theme="mint"] .head,
+    html[data-theme="desert"] .head{
+      color:#fff;
+      border-color:rgba(214,166,76,.34);
+      background:linear-gradient(135deg, rgba(11,18,32,.96), rgba(37,99,235,.78) 58%, rgba(214,166,76,.86));
+      box-shadow:0 18px 44px rgba(15,23,42,.18);
+    }
+    html[data-theme="light"] .head .sub,
+    html[data-theme="mint"] .head .sub,
+    html[data-theme="desert"] .head .sub{
+      color:rgba(255,255,255,.78);
+    }
+    html[data-theme="light"] .head .badge,
+    html[data-theme="mint"] .head .badge,
+    html[data-theme="desert"] .head .badge{
+      color:#fff;
+      border-color:rgba(255,255,255,.34);
+      background:rgba(255,255,255,.16);
+    }
+    html[data-theme="light"] .theme-btn,
+    html[data-theme="mint"] .theme-btn,
+    html[data-theme="desert"] .theme-btn,
+    html[data-theme="light"] button.secondary,
+    html[data-theme="mint"] button.secondary,
+    html[data-theme="desert"] button.secondary{
+      color:#0f172a;
+      background:rgba(255,255,255,.88);
+      border-color:rgba(15,23,42,.18);
+      box-shadow:0 8px 18px rgba(15,23,42,.08);
+    }
+    html[data-theme="light"] .head .theme-btn,
+    html[data-theme="mint"] .head .theme-btn,
+    html[data-theme="desert"] .head .theme-btn{
+      color:#fff;
+      background:rgba(255,255,255,.14);
+      border-color:rgba(255,255,255,.32);
+      box-shadow:none;
+    }</style>
+</head>
+<body>
+  <main>
+    <div class="head">
+      <div class="kiosk-brand">
+        <div class="kiosk-logo"><img src="icon-192-cobre.png" alt="CA"></div>
+        <div class="kiosk-copy">
+          <h1>Caborca Access Control</h1>
+          <div class="sub" id="kioskSubtitle">Kiosko de vales - solicitudes y seguimiento por QR.</div>
+        </div>
+      </div>
+      <div class="head-actions">
+        <button class="theme-btn" id="btnTheme" type="button">Tema</button>
+        <div class="badge" id="kioskBadge">Activos / Personal</div>
+      </div>
+    </div>
+
+    <section class="selector" id="selector">
+      <button class="type-card personal active" type="button" data-type="personal">
+        <strong>Vale de personal</strong>
+        <span>Permiso de entrada o salida para colaborador, con tiempo autorizado y QR.</span>
+      </button>
+      <button class="type-card" type="button" data-type="activo">
+        <strong>Vale de activo</strong>
+        <span>Salida de herramientas, equipo, mobiliario u otro activo con seguimiento por QR.</span>
+      </button>
+    </section>
+
+    <form class="card form-card show" id="formPersonal">
+      <h2>Solicitud de vale de salida de personal</h2>
+      <div class="grid">
+        <div><label>Nombre colaborador *</label><input id="pNombreColaborador" autocomplete="name" required></div>
+        <div><label>Nomina *</label><input id="pNomina" required></div>
+        <div>
+          <label>Departamento *</label>
+          <select id="pDepartamento" required>
+            <option value="">Seleccione...</option>
+            <option>Administraci&oacute;n y Finanzas</option>
+            <option>Calidad</option>
+            <option>Comercializaci&oacute;n</option>
+            <option>Compras</option>
+            <option>Contraloria</option>
+            <option>Dise&ntilde;o y desarrollo</option>
+            <option>DOH</option>
+            <option>Ingenier&iacute;a</option>
+            <option>Mantenimiento</option>
+            <option>Operaciones</option>
+            <option>SYS</option>
+            <option>TI</option>
+            <option>Ventas</option>
+          </select>
+        </div>
+        <div>
+          <label>Tipo permiso *</label>
+          <select id="pTipoPermiso" required>
+            <option value="">Seleccione...</option>
+            <option>Salida</option>
+            <option>Entrada</option>
+          </select>
+        </div>
+        <div>
+          <label>Tiempo autorizado *</label>
+          <select id="pTiempoAutorizado" required>
+            <option value="">Seleccione...</option>
+            <option>15min</option>
+            <option>30min</option>
+            <option>1hr</option>
+            <option>Sin regreso</option>
+          </select>
+        </div>
+        <div><label>Fecha *</label><input id="pFecha" type="date" required></div>
+        <div>
+          <label>Autoriza *</label>
+          <select id="pAutorizador" required>
+            <option value="">Cargando autorizadores...</option>
+          </select>
+        </div>
+        <div style="grid-column:1/-1;"><label>Observaciones</label><textarea id="pObservaciones" placeholder="Ej. Entrada posterior a 8:15, cita medica, asunto personal..."></textarea></div>
+      </div>
+      <div class="divider"></div>
+      <p class="hint">La solicitud se registra y genera un QR para seguimiento en acceso.</p>
+      <button id="btnPersonal" class="personal-btn" type="submit">Enviar solicitud</button>
+    </form>
+
+    <form class="card form-card" id="formActivo">
+      <h2>Solicitud de vale de salida de activo</h2>
+      <div class="grid">
+        <div><label>Fecha *</label><input id="aFecha" type="date" required></div>
+        <div><label>Departamento *</label><input id="aDepartamento" required></div>
+        <div><label>Nombre / solicitante *</label><input id="aNombre" autocomplete="name" required></div>
+        <div>
+          <label>Tipo de activo *</label>
+          <select id="aTipoActivo" required>
+            <option value="">Seleccione...</option>
+            <option>Maquinaria y equipo de produccion</option>
+            <option>Formas, molduras y suajes</option>
+            <option>Equipo de Computo</option>
+            <option>Mobiliario y equipo de oficina</option>
+            <option>Herramientas</option>
+            <option>Otro</option>
+          </select>
+        </div>
+        <div>
+          <label>Motivo *</label>
+          <select id="aMotivo" required>
+            <option value="">Seleccione...</option>
+            <option>Reparacion</option>
+            <option>Prestamo</option>
+            <option>Devolucion</option>
+            <option>Venta</option>
+            <option>Traspaso a otra planta</option>
+            <option>Otro</option>
+          </select>
+        </div>
+        <div style="grid-column:1/-1;"><label>Descripcion *</label><textarea id="aDescripcion" required></textarea></div>
+        <div><label>No. serie</label><input id="aNoSerie"></div>
+        <div><label>Codigo / Lote</label><input id="aCodigoLote"></div>
+        <div><label>Fecha de retorno</label><input id="aFechaRetorno" type="date"></div>
+        <div>
+          <label>Autoriza *</label>
+          <select id="aAutorizador" required>
+            <option value="">Cargando autorizadores...</option>
+          </select>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <p class="hint">La solicitud se registra y genera un QR para seguimiento en acceso.</p>
+      <button id="btnActivo" type="submit">Enviar solicitud</button>
+    </form>
+
+    <section class="qr-card" id="qrCard">
+      <div class="pass-actions">
+        <button id="btnCompartirQR" type="button">Compartir QR</button>
+        <button id="btnGuardarQR" class="theme-btn" type="button">Guardar QR</button>
+        <button id="btnOtro" class="theme-btn" type="button">Crear otro vale</button>
+      </div>
+      <div class="permit-pass" id="permisoPass">
+        <div class="permit-hero">
+          <div>
+            <div class="permit-brand">
+              <div class="permit-logo"><img src="icon-192-cobre.png" alt="CA"></div>
+              <div><strong>Caborca Access</strong><span>Control - Seguridad - Registro</span></div>
+            </div>
+            <div class="permit-title">
+              <h2 id="passTitulo"></h2>
+              <div class="permit-status" id="passEstatus"></div>
+            </div>
+          </div>
+          <div class="permit-kind"><small id="passKindLabel">Permiso de</small><b id="passTipoGrande">Entrada / Salida</b><i></i></div>
+        </div>
+        <div class="permit-body">
+          <div class="permit-person">
+            <div class="permit-avatar" id="passAvatar">P</div>
+            <div>
+              <div class="permit-label" id="passSolicitadoLabel">Solicitado por</div>
+              <div class="permit-name" id="passNombre"></div>
+              <div class="permit-sub" id="passDato1"></div>
+              <div class="permit-sub" id="passDato2"></div>
+            </div>
+            <div class="permit-role">
+              <div class="permit-label" id="passRolLabel">Rol / relacion</div>
+              <b id="passRol"></b>
+              <span id="passDepto"></span>
+            </div>
+          </div>
+          <div class="permit-facts">
+            <div class="permit-fact"><div class="permit-icon">IN</div><div><div class="permit-label" id="passTipoLabel">Tipo de permiso</div><b id="passTipo"></b><span id="passTipoEstado" class="is-hidden"></span></div></div>
+            <div class="permit-fact"><div class="permit-icon">CAL</div><div><div class="permit-label">Fecha</div><b id="passFecha"></b><span id="passFechaSub"></span></div></div>
+            <div class="permit-fact"><div class="permit-icon">OK</div><div><div class="permit-label">Autoriza</div><b id="passAutoriza"></b><span id="passAutorizaSub" class="is-hidden"></span></div></div>
+          </div>
+          <div class="permit-qr-zone">
+            <div class="permit-side"><div class="permit-icon">OK</div><div id="passSideLeft">Solicitud<br>generada</div><i></i></div>
+            <div class="permit-qr-card"><div id="qrcode" class="permit-qr"></div><div class="permit-code"><span id="passCodigo"></span><small>Codigo de verificacion</small></div></div>
+            <div class="permit-side"><div class="permit-icon">QR</div><div id="passVigencia">Presentar<br>en acceso</div><i></i></div>
+          </div>
+          <div class="permit-instructions"><div class="permit-icon">i</div><div><b>Instrucciones</b><p id="passInstrucciones">Muestra este codigo QR en el acceso. Este permiso es personal e intransferible.</p></div></div>
+        </div>
+        <div class="permit-footer"><span>MA - Caborca Access Control</span><span>Folio: <b id="passFolio"></b></span></div>
+      </div>
+    </section>
+  </main>
+  <div id="toast" class="toast"></div>
+
+  <script type="module">
+    import {
+      toast,
+      crearSolicitudValeActivo,
+      crearSolicitudValePersonal,
+      escapeHtml,
+      fetchValeAutorizadores,
+      setupKioskoTheme
+    } from "./kiosko-common.js";
+
+    setupKioskoTheme();
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById("aFecha").value = today;
+    document.getElementById("pFecha").value = today;
+
+    const requestedType = new URLSearchParams(location.search).get("tipo");
+    const fixedKioskType = ["personal", "activo"].includes(requestedType) ? requestedType : "";
+    const formActivo = document.getElementById("formActivo");
+    const formPersonal = document.getElementById("formPersonal");
+    const qrCard = document.getElementById("qrCard");
+    const qrBox = document.getElementById("qrcode");
+    const autorizadorActivoSelect = document.getElementById("aAutorizador");
+    const autorizadorPersonalSelect = document.getElementById("pAutorizador");
+    const cards = [...document.querySelectorAll(".type-card")];
+    const selector = document.getElementById("selector");
+    let currentVale = null;
+    let currentPrefix = "";
+
+    function value(id){
+      return document.getElementById(id).value.trim();
+    }
+
+    function showType(type){
+      cards.forEach(card => card.classList.toggle("active", card.dataset.type === type));
+      formActivo.classList.toggle("show", type === "activo");
+      formPersonal.classList.toggle("show", type === "personal");
+      qrCard.classList.remove("show");
+      selector.style.display = fixedKioskType ? "none" : "";
+      if(type === "activo") loadAutorizadores(autorizadorActivoSelect, "activo");
+      if(type === "personal") loadAutorizadores(autorizadorPersonalSelect, "personal");
+    }
+
+    async function loadAutorizadores(selectEl, tipo){
+      if(!selectEl || selectEl.dataset.loaded === "true") return;
+      selectEl.innerHTML = `<option value="">Cargando autorizadores...</option>`;
+      try{
+        const list = await fetchValeAutorizadores(tipo);
+        if(!list.length){
+          selectEl.innerHTML = `<option value="">No hay autorizadores disponibles</option>`;
+          toast("No hay usuarios configurados para autorizar este tipo de vale.", "bad");
+          return;
+        }
+        selectEl.innerHTML = `<option value="">Seleccione autorizador...</option>` + list.map(u => `
+          <option
+            value="${escapeHtml(u.uid)}"
+            data-email="${escapeHtml(u.email)}"
+            data-nombre="${escapeHtml(u.nombre)}"
+            data-role="${escapeHtml(u.role)}"
+          >${escapeHtml(u.nombre)}</option>
+        `).join("");
+        selectEl.dataset.loaded = "true";
+      }catch(err){
+        console.error(err);
+        selectEl.innerHTML = `<option value="">No se pudieron cargar jefes</option>`;
+        toast("No se pudieron cargar jefes. Revisa permisos de Firestore.", "bad");
+      }
+    }
+
+    function initials(name){
+      return String(name || "P")
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0,2)
+        .map(x => x[0])
+        .join("")
+        .toUpperCase() || "P";
+    }
+
+    function fmtDate(value){
+      const d = new Date(`${value || ""}T00:00:00`);
+      if(Number.isNaN(d.getTime())) return "";
+      return d.toLocaleDateString("es-MX", { day:"2-digit", month:"short", year:"numeric" });
+    }
+
+    function setText(id, value){
+      const el = document.getElementById(id);
+      if(el) el.textContent = value || "";
+    }
+
+    function renderSolicitud(prefix, vale){
+      currentVale = vale;
+      currentPrefix = prefix;
+      const esPersonal = prefix === "VALE_PERSONAL";
+      const folio = vale.folio || vale.id;
+      const nombre = esPersonal ? vale.nombreColaborador : vale.nombre;
+      const tipo = esPersonal ? vale.tipoPermiso : "Salida de activo";
+      const depto = esPersonal ? vale.departamento : (vale.departamento || "");
+      const dato1 = esPersonal ? (vale.nomina ? `Nomina: ${vale.nomina}` : "") : (vale.tipoActivo ? `Activo: ${vale.tipoActivo}` : "");
+      const dato2 = esPersonal ? (vale.observaciones || "Permiso de personal") : (vale.descripcion || "Vale de activo");
+      const payload = `${prefix}:${vale.id}`;
+
+      qrBox.innerHTML = "";
+      new QRCode(qrBox, {
+        text: payload,
+        width: 260,
+        height: 260,
+        colorDark: "#111827",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      setText("passTitulo", "");
+      setText("passEstatus", "");
+      setText("passKindLabel", esPersonal ? "Permiso de" : "Vale de activo");
+      setText("passTipoGrande", esPersonal ? "Entrada / Salida" : folio);
+      setText("passAvatar", initials(nombre));
+      setText("passSolicitadoLabel", esPersonal ? "Solicitado por" : "Descripcion del activo");
+      setText("passNombre", esPersonal ? nombre : (vale.descripcion || "Vale de activo"));
+      setText("passDato1", esPersonal ? dato1 : (vale.noSerie ? `Numero de serie: ${vale.noSerie}` : ""));
+      setText("passDato2", esPersonal ? dato2 : [vale.tipoActivo, vale.codigoLote ? `Codigo/Lote: ${vale.codigoLote}` : ""].filter(Boolean).join(" | "));
+      setText("passRolLabel", esPersonal ? "Rol / relacion" : "Solicitado por");
+      setText("passRol", esPersonal ? "Empleado" : (vale.nombre || ""));
+      setText("passDepto", depto);
+      setText("passTipoLabel", esPersonal ? "Tipo de permiso" : "Motivo");
+      setText("passTipo", esPersonal ? tipo : (vale.motivo || "Salida de activo"));
+      setText("passTipoEstado", "");
+      setText("passFecha", fmtDate(vale.fecha));
+      setText("passFechaSub", esPersonal ? (vale.tiempoAutorizado || "") : (vale.fechaRetorno ? `Retorno: ${fmtDate(vale.fechaRetorno)}` : ""));
+      setText("passAutoriza", vale.autorizadorNombre || vale.autorizadorEmail || "");
+      setText("passAutorizaSub", "");
+      setText("passCodigo", String(payload).replace(/(.{4})/g, "$1 ").trim().toUpperCase());
+      setText("passSideLeft", esPersonal ? "Solicitud\ngenerada" : "Vale\ngenerado");
+      setText("passVigencia", esPersonal ? "Presentar\nen acceso" : "Salida\nde activo");
+      setText("passInstrucciones", esPersonal
+        ? "Muestra este codigo QR en el acceso. Este permiso es personal e intransferible."
+        : "Presenta este vale en el acceso al salir. El activo debe coincidir con la descripcion. Este vale es personal e intransferible.");
+      setText("passFolio", folio);
+      selector.style.display = "none";
+      formActivo.classList.remove("show");
+      formPersonal.classList.remove("show");
+      qrCard.classList.add("show");
+      window.scrollTo({ top:0, behavior:"smooth" });
+    }
+
+    function shareText(){
+      if(!currentVale) return "";
+      const esPersonal = currentPrefix === "VALE_PERSONAL";
+      return [
+        esPersonal ? "Permiso de personal" : "Vale de salida de activo",
+        `Folio: ${currentVale.folio || currentVale.id}`,
+        `Solicitante: ${esPersonal ? currentVale.nombreColaborador : currentVale.nombre}`,
+        `Departamento: ${currentVale.departamento || ""}`,
+        `Tipo: ${esPersonal ? currentVale.tipoPermiso : currentVale.tipoActivo}`,
+        `Fecha: ${fmtDate(currentVale.fecha)}`,
+        `Autoriza: ${currentVale.autorizadorNombre || currentVale.autorizadorEmail || ""}`
+      ].join("\n");
+    }
+
+    async function passBlob(){
+      const pass = document.getElementById("permisoPass");
+      if(!window.html2canvas) throw new Error("html2canvas no esta disponible.");
+      const canvas = await window.html2canvas(pass, {
+        backgroundColor:"#f8fafc",
+        scale:2,
+        useCORS:false,
+        allowTaint:false,
+        logging:false
+      });
+      return new Promise((resolve, reject) => {
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("No se pudo generar la imagen.")), "image/png", 0.95);
+      });
+    }
+
+    async function guardarQR(){
+      if(!currentVale) return;
+      try{
+        const blob = await passBlob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `permiso-${String(currentVale.id).slice(-8)}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast("Tarjeta guardada.", "ok");
+      }catch(err){
+        console.error(err);
+        toast(err?.message || "No se pudo guardar el QR.", "bad");
+      }
+    }
+
+    async function compartirQR(){
+      if(!currentVale) return;
+      try{
+        const text = shareText();
+        const blob = await passBlob();
+        const file = new File([blob], `permiso-${String(currentVale.id).slice(-8)}.png`, { type:"image/png" });
+        if(navigator.canShare?.({ files:[file] })){
+          await navigator.share({ title:"Permiso de acceso", text, files:[file] });
+        }else if(navigator.share){
+          await navigator.share({ title:"Permiso de acceso", text });
+          toast("Se compartio el texto. Guarda el QR y adjuntalo si tu equipo no permite archivos.", "ok");
+        }else{
+          await navigator.clipboard?.writeText(text);
+          toast("Texto copiado. Guarda el QR y adjuntalo manualmente.", "ok");
+        }
+      }catch(err){
+        console.warn(err);
+        toast("No se pudo compartir. Puedes guardar el QR.", "bad");
+      }
+    }
+
+    cards.forEach(card => card.addEventListener("click", () => {
+      if(!fixedKioskType) showType(card.dataset.type);
+    }));
+
+    if(fixedKioskType){
+      const isPersonal = fixedKioskType === "personal";
+      document.title = isPersonal ? "Kiosko de Vales de Personal" : "Kiosko de Vales de Activos";
+      document.getElementById("kioskSubtitle").textContent = isPersonal
+        ? "Kiosko exclusivo para solicitudes de vales de personal."
+        : "Kiosko exclusivo para solicitudes de salida de activos.";
+      document.getElementById("kioskBadge").textContent = isPersonal ? "Vales de Personal" : "Vales de Activos";
+      showType(fixedKioskType);
+    }else{
+      loadAutorizadores(autorizadorPersonalSelect, "personal");
+    }
+
+    document.getElementById("btnOtro").addEventListener("click", () => {
+      currentVale = null;
+      currentPrefix = "";
+      qrCard.classList.remove("show");
+      selector.style.display = fixedKioskType ? "none" : "";
+      const activeType = fixedKioskType || document.querySelector(".type-card.active")?.dataset?.type || "personal";
+      showType(activeType);
+      window.scrollTo({ top:0, behavior:"smooth" });
+    });
+    document.getElementById("btnGuardarQR").addEventListener("click", guardarQR);
+    document.getElementById("btnCompartirQR").addEventListener("click", compartirQR);
+
+    formActivo.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("btnActivo");
+      btn.disabled = true;
+      btn.textContent = "Enviando...";
+      try{
+        const autorizadorOption = autorizadorActivoSelect?.selectedOptions?.[0];
+        const autorizadorUid = autorizadorActivoSelect?.value || "";
+        if(!autorizadorUid){
+          toast("Selecciona quien autoriza el vale.", "bad");
+          return;
+        }
+        const vale = await crearSolicitudValeActivo({
+          folio: `KVA-${Date.now()}`,
+          fecha: value("aFecha"),
+          planta: "",
+          departamento: value("aDepartamento"),
+          nombre: value("aNombre"),
+          tipoActivo: value("aTipoActivo"),
+          motivo: value("aMotivo"),
+          descripcion: value("aDescripcion"),
+          noSerie: value("aNoSerie"),
+          codigoLote: value("aCodigoLote"),
+          fechaRetorno: value("aFechaRetorno"),
+          autorizadorUid,
+          autorizadorEmail: autorizadorOption?.dataset?.email || "",
+          autorizadorNombre: autorizadorOption?.dataset?.nombre || "",
+          autorizadorRole: autorizadorOption?.dataset?.role || "",
+          createdBySource: "kiosko_vales_activos"
+        });
+        renderSolicitud("VALE_ACTIVO", vale);
+        formActivo.reset();
+        document.getElementById("aFecha").value = today;
+        toast("Solicitud enviada. QR generado.", "ok");
+      }catch(err){
+        console.error(err);
+        toast(err?.message || "No se pudo enviar la solicitud.", "bad");
+      }finally{
+        btn.disabled = false;
+        btn.textContent = "Enviar solicitud";
+      }
+    });
+
+    formPersonal.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("btnPersonal");
+      btn.disabled = true;
+      btn.textContent = "Enviando...";
+      try{
+        const autorizadorOption = autorizadorPersonalSelect?.selectedOptions?.[0];
+        const autorizadorUid = autorizadorPersonalSelect?.value || "";
+        if(!autorizadorUid){
+          toast("Selecciona quien autoriza el vale.", "bad");
+          return;
+        }
+        const vale = await crearSolicitudValePersonal({
+          folio: `KVP-${Date.now()}`,
+          fecha: value("pFecha"),
+          nombreColaborador: value("pNombreColaborador"),
+          nomina: value("pNomina"),
+          departamento: value("pDepartamento"),
+          tipoPermiso: value("pTipoPermiso"),
+          tiempoAutorizado: value("pTiempoAutorizado"),
+          observaciones: value("pObservaciones"),
+          autorizadorUid,
+          autorizadorEmail: autorizadorOption?.dataset?.email || "",
+          autorizadorNombre: autorizadorOption?.dataset?.nombre || "",
+          autorizadorRole: autorizadorOption?.dataset?.role || "",
+          createdBySource: "kiosko_vales_personal"
+        });
+        renderSolicitud("VALE_PERSONAL", vale);
+        formPersonal.reset();
+        document.getElementById("pFecha").value = today;
+        toast("Solicitud enviada. QR generado.", "ok");
+      }catch(err){
+        console.error(err);
+        toast(err?.message || "No se pudo enviar la solicitud.", "bad");
+      }finally{
+        btn.disabled = false;
+        btn.textContent = "Enviar solicitud";
+      }
+    });
+  </script>
+</body>
+</html>
+
