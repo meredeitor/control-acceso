@@ -8510,6 +8510,106 @@ function rondineroQrText(puntoId){
   return `RONDINERO_POINT:${puntoId}`;
 }
 
+const RONDINERO_GPS_RADIO_DEFAULT_M = 30;
+const RONDINERO_GPS_PRECISION_MAX_M = 40;
+
+function obtenerUbicacionRondinero(){
+  return new Promise((resolve, reject) => {
+    if(!navigator.geolocation){
+      reject(new Error("Este dispositivo no tiene geolocalización disponible."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({
+        latitud: Number(pos.coords.latitude),
+        longitud: Number(pos.coords.longitude),
+        precisionMetros: Math.round(Number(pos.coords.accuracy) || 0),
+        gpsTs: Number(pos.timestamp) || Date.now()
+      }),
+      err => {
+        const mensajes = {
+          1: "Activa el permiso de ubicación para validar el punto.",
+          2: "No se pudo determinar la ubicación actual.",
+          3: "La ubicación tardó demasiado en responder. Intenta nuevamente."
+        };
+        reject(new Error(mensajes[err?.code] || "No se pudo obtener la ubicación."));
+      },
+      { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
+    );
+  });
+}
+
+function distanciaMetrosRondinero(lat1, lon1, lat2, lon2){
+  const rad = valor => valor * Math.PI / 180;
+  const dLat = rad(lat2 - lat1);
+  const dLon = rad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function puntoRondineroTieneGps(punto){
+  return punto?.latitud !== null && punto?.latitud !== undefined && punto?.latitud !== "" &&
+    punto?.longitud !== null && punto?.longitud !== undefined && punto?.longitud !== "" &&
+    Number.isFinite(Number(punto.latitud)) && Number.isFinite(Number(punto.longitud));
+}
+
+async function capturarGpsRondineroPunto(){
+  if(!requirePerm("rondinero_configurar","Tu rol no puede configurar puntos.")) return;
+  const btn = document.querySelector('[data-action="rondineroCapturarGps"]');
+  if(btn) btn.disabled = true;
+  try{
+    toast("GPS","Obteniendo ubicación precisa…","info",1800);
+    const gps = await obtenerUbicacionRondinero();
+    if(gps.precisionMetros > RONDINERO_GPS_PRECISION_MAX_M){
+      toast("GPS impreciso",`La precisión es de ±${gps.precisionMetros} m. Muévete a un área abierta e intenta otra vez.`,"warn",4500);
+      return;
+    }
+    const latEl = document.getElementById("rondPuntoLatitud");
+    const lonEl = document.getElementById("rondPuntoLongitud");
+    const precisionEl = document.getElementById("rondPuntoGpsPrecision");
+    if(latEl) latEl.value = gps.latitud.toFixed(7);
+    if(lonEl) lonEl.value = gps.longitud.toFixed(7);
+    if(precisionEl) precisionEl.textContent = `Ubicación capturada con precisión de ±${gps.precisionMetros} m.`;
+    toast("GPS capturado",`Precisión ±${gps.precisionMetros} m.`,"ok",2600);
+  }catch(e){
+    toast("GPS requerido",e?.message || "No se pudo obtener la ubicación.","bad",4500);
+  }finally{
+    if(btn) btn.disabled = false;
+  }
+}
+
+async function configurarGpsRondineroPuntoExistente(id){
+  if(!requirePerm("rondinero_configurar","Tu rol no puede configurar puntos.")) return;
+  const punto = rondineroPuntos.find(p => String(p.id) === String(id));
+  if(!punto) return;
+  if(!confirm(`Debes estar físicamente en “${punto.nombre || "este punto"}”. ¿Capturar la ubicación actual?`)) return;
+  try{
+    toast("GPS","Obteniendo ubicación precisa…","info",1800);
+    const gps = await obtenerUbicacionRondinero();
+    if(gps.precisionMetros > RONDINERO_GPS_PRECISION_MAX_M){
+      toast("GPS impreciso",`La precisión es de ±${gps.precisionMetros} m. Muévete a un área abierta e intenta otra vez.`,"warn",4800);
+      return;
+    }
+    punto.latitud = gps.latitud;
+    punto.longitud = gps.longitud;
+    punto.radioMetros = Math.max(5, Number(punto.radioMetros) || RONDINERO_GPS_RADIO_DEFAULT_M);
+    punto.gpsPrecisionCapturaMetros = gps.precisionMetros;
+    punto.gpsCapturadoTs = Date.now();
+    punto.gpsCapturadoPorUid = currentUser?.uid || "";
+    punto.updatedTs = Date.now();
+    saveRondineroLocal();
+    if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
+      await cloudUpsertRondineroPunto(punto);
+    }
+    toast("GPS configurado",`${punto.nombre}: precisión ±${gps.precisionMetros} m, radio ${punto.radioMetros} m.`,"ok",3800);
+    await renderRondinero();
+  }catch(e){
+    console.warn(e);
+    toast("GPS requerido",e?.message || "No se pudo guardar la ubicación.","bad",4800);
+  }
+}
+
 function rondineroGuardiaQrText(user){
   const payload = {
     uid: String(user?.uid || user?.id || ""),
@@ -8619,6 +8719,8 @@ function calcRondineroStats(rondines, eventos){
 }
 
 function renderRondineroPuntoCard(p){
+  const tieneGps = puntoRondineroTieneGps(p);
+  const radio = Math.max(5, Number(p.radioMetros) || RONDINERO_GPS_RADIO_DEFAULT_M);
   return `
     <div class="tarjeta history-card">
       <strong>${esc(p.nombre || "Punto")}</strong>
@@ -8627,9 +8729,11 @@ function renderRondineroPuntoCard(p){
       <div class="meta">
         <span class="pill"><span class="dot ${p.activo === false ? "bad" : "ok"}"></span>${p.activo === false ? "Inactivo" : "Activo"}</span>
         <span class="pill">Orden ${esc(p.orden || 0)}</span>
+        <span class="pill"><span class="dot ${tieneGps ? "ok" : "bad"}"></span>${tieneGps ? `GPS • radio ${esc(radio)} m` : "GPS pendiente"}</span>
       </div>
       <div class="row" style="margin-top:10px;">
         <button class="secondary" data-action="rondineroQR" data-id="${esc(p.id)}" data-no-sb="true">Ver QR</button>
+        ${hasPerm("rondinero_configurar") ? `<button class="secondary" data-action="rondineroConfigurarGps" data-id="${esc(p.id)}" data-no-sb="true">${tieneGps ? "Actualizar GPS" : "Configurar GPS"}</button>` : ""}
         ${hasPerm("rondinero_configurar") ? `<button class="secondary" data-action="rondineroTogglePunto" data-id="${esc(p.id)}" data-no-sb="true">${p.activo === false ? "Activar" : "Desactivar"}</button>` : ""}
       </div>
     </div>
@@ -8814,9 +8918,16 @@ async function renderRondinero(){
       <div><label>Nombre *</label><input id="rondPuntoNombre" placeholder="Ej. Caseta principal"></div>
       <div><label>Ubicación *</label><input id="rondPuntoUbicacion" placeholder="Ej. Acceso norte"></div>
       <div><label>Orden</label><input id="rondPuntoOrden" type="number" min="0" value="${puntos.length + 1}"></div>
+      <div><label>Latitud *</label><input id="rondPuntoLatitud" type="number" step="0.0000001" placeholder="Captura el GPS"></div>
+      <div><label>Longitud *</label><input id="rondPuntoLongitud" type="number" step="0.0000001" placeholder="Captura el GPS"></div>
+      <div><label>Radio permitido (m) *</label><input id="rondPuntoRadio" type="number" min="5" max="200" value="${RONDINERO_GPS_RADIO_DEFAULT_M}"></div>
       <div style="grid-column:1/-1;"><label>Descripción</label><textarea id="rondPuntoDesc" rows="2" placeholder="Referencia breve del punto"></textarea></div>
     </div>
-    <div class="row" style="margin-top:10px;"><button data-action="rondineroGuardarPunto">Guardar punto</button></div>
+    <div class="row" style="margin-top:10px;">
+      <button class="secondary" type="button" data-action="rondineroCapturarGps">Capturar ubicación actual</button>
+      <button data-action="rondineroGuardarPunto">Guardar punto</button>
+    </div>
+    <div id="rondPuntoGpsPrecision" style="margin-top:8px;color:var(--muted);font-size:12px;">Debes estar físicamente en el punto para capturar sus coordenadas.</div>
     <div style="height:12px;"></div>
     <div class="dashboard-pending-list">
       ${rondineroPuntos.length ? rondineroPuntos.map(renderRondineroPuntoCard).join("") : `<div style="color:var(--muted);font-size:12px;">Sin puntos registrados.</div>`}
@@ -8950,8 +9061,22 @@ async function guardarRondineroPunto(){
   const ubicacion = document.getElementById("rondPuntoUbicacion")?.value.trim() || "";
   const descripcion = document.getElementById("rondPuntoDesc")?.value.trim() || "";
   const orden = Number(document.getElementById("rondPuntoOrden")?.value || 0);
+  const latitudRaw = document.getElementById("rondPuntoLatitud")?.value.trim() || "";
+  const longitudRaw = document.getElementById("rondPuntoLongitud")?.value.trim() || "";
+  const latitud = latitudRaw === "" ? NaN : Number(latitudRaw);
+  const longitud = longitudRaw === "" ? NaN : Number(longitudRaw);
+  const radioMetros = Number(document.getElementById("rondPuntoRadio")?.value || RONDINERO_GPS_RADIO_DEFAULT_M);
   if(!nombre || !ubicacion){
     toast("Campos obligatorios","Nombre y ubicación son requeridos.","warn",2600);
+    return;
+  }
+  if(!Number.isFinite(latitud) || latitud < -90 || latitud > 90 ||
+     !Number.isFinite(longitud) || longitud < -180 || longitud > 180){
+    toast("GPS obligatorio","Captura una ubicación GPS válida antes de guardar el punto.","warn",3600);
+    return;
+  }
+  if(!Number.isFinite(radioMetros) || radioMetros < 5 || radioMetros > 200){
+    toast("Radio inválido","El radio permitido debe estar entre 5 y 200 metros.","warn",3400);
     return;
   }
   const id = `RP-${Date.now()}`;
@@ -8961,6 +9086,9 @@ async function guardarRondineroPunto(){
     ubicacion,
     descripcion,
     orden,
+    latitud,
+    longitud,
+    radioMetros: Math.round(radioMetros),
     qrCode: rondineroQrText(id),
     activo: true,
     createdByUid: currentUser?.uid || "",
@@ -9039,6 +9167,7 @@ async function renderRondineroDetalle(id){
               <div class="meta">
                 <span class="pill"><span class="dot ${ev ? "ok" : "bad"}"></span>${ev ? "Visitado" : "Omitido"}</span>
                 ${ev ? `<span class="pill">${esc(new Date(ev.createdTs || Date.now()).toLocaleString())}</span>` : ""}
+                ${ev?.gpsValidado ? `<span class="pill"><span class="dot ok"></span>GPS validado • ${esc(ev.gpsDistanciaMetros)} m • precisión ±${esc(ev.gpsPrecisionMetros)} m</span>` : (ev ? `<span class="pill"><span class="dot bad"></span>Sin evidencia GPS</span>` : "")}
               </div>
             </div>
           `;
@@ -9366,6 +9495,33 @@ async function registrarEscaneoRondinero(qrText){
     toast("Punto ya visitado","Este punto ya fue registrado en el rondín.","warn",2600);
     return renderRondinero();
   }
+  if(!puntoRondineroTieneGps(punto)){
+    toast("Punto sin GPS","Un administrador debe registrar las coordenadas de este punto antes de utilizarlo.","bad",4800);
+    return renderRondinero();
+  }
+  let gps;
+  try{
+    toast("Validando ubicación","Espera mientras comprobamos tu presencia en el punto…","info",2200);
+    gps = await obtenerUbicacionRondinero();
+  }catch(e){
+    toast("GPS requerido",e?.message || "No se pudo validar la ubicación.","bad",4800);
+    return renderRondinero();
+  }
+  if(gps.precisionMetros > RONDINERO_GPS_PRECISION_MAX_M){
+    toast("GPS impreciso",`Precisión actual ±${gps.precisionMetros} m; se requieren ${RONDINERO_GPS_PRECISION_MAX_M} m o menos.`,"bad",4800);
+    return renderRondinero();
+  }
+  const distanciaMetros = Math.round(distanciaMetrosRondinero(
+    gps.latitud,
+    gps.longitud,
+    Number(punto.latitud),
+    Number(punto.longitud)
+  ));
+  const radioPermitidoMetros = Math.max(5, Number(punto.radioMetros) || RONDINERO_GPS_RADIO_DEFAULT_M);
+  if(distanciaMetros > radioPermitidoMetros){
+    toast("Fuera del punto",`Estás a ${distanciaMetros} m; debes estar dentro de ${radioPermitidoMetros} m.`,"bad",5200);
+    return renderRondinero();
+  }
   const evento = {
     id: `RE-${Date.now()}`,
     rondinId: activo.id,
@@ -9373,6 +9529,13 @@ async function registrarEscaneoRondinero(qrText){
     puntoId: punto.id,
     puntoNombre: punto.nombre,
     ubicacion: punto.ubicacion || "",
+    gpsLatitud: gps.latitud,
+    gpsLongitud: gps.longitud,
+    gpsPrecisionMetros: gps.precisionMetros,
+    gpsDistanciaMetros: distanciaMetros,
+    gpsRadioPermitidoMetros: radioPermitidoMetros,
+    gpsTs: gps.gpsTs,
+    gpsValidado: true,
     estatus: "visitado",
     observaciones: "",
     guardiaUid: activo.guardiaUid || "",
@@ -14106,6 +14269,8 @@ function renderProveedores(lista){
           await renderRondinero();
           break;
         case "rondineroGuardarPunto": await guardarRondineroPunto(); break;
+        case "rondineroCapturarGps": await capturarGpsRondineroPunto(); break;
+        case "rondineroConfigurarGps": await configurarGpsRondineroPuntoExistente(el.dataset.id); break;
         case "rondineroTab":
           rondineroAdminTab = el.dataset.tab || "puntos";
           await renderRondinero();
@@ -14451,10 +14616,6 @@ window.addEventListener("offline",updateNet);
 </script>
 </body>
 </html>
-
-
-
-
 
 
 
