@@ -2917,7 +2917,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     <div class="title">
       <div class="logo"><img src="icon-192-cobre.png" alt="Caborca Access Control"></div>
       <div>
-        <h1>Caborca Access Control <span id="appVersion" class="version-badge">v144</span></h1>
+        <h1>Caborca Access Control <span id="appVersion" class="version-badge">v145</span></h1>
         <small>Proveedores • Visitantes • Control de Vales de Salida • Rondinero</small>
       </div>
     </div>
@@ -2944,7 +2944,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v144";
+  const APP_VERSION = "v145";
   const THEMES = ["dark", "light", "desert", "mint", "copper"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -4902,6 +4902,7 @@ function helpAboutHtml(){
         <h4>Acerca de la aplicación</h4>
         <p>Caborca Access Control centraliza el registro y seguimiento de proveedores, visitantes, vales de personal, vales de activos, actividades de guardia y rondines de seguridad.</p>
         <p>Incluye códigos QR, escaneo de gafetes, autorizaciones por rol, controles de entrada y salida, reportes operativos y funcionamiento con respaldo local.</p>
+        <p>Rondinero valida mediante GPS que la tablet esté físicamente dentro del radio autorizado de cada punto y conserva distancia y precisión como evidencia del recorrido.</p>
       </section>
       <section class="help-panel">
         <h4>Módulos principales</h4>
@@ -4915,6 +4916,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v145</b><span>Validación GPS de puntos Rondinero, radio configurable y evidencia de ubicación en el historial.</span></div>
           <div class="help-release"><b>v144</b><span>Autorizadores de vales filtrados por permisos configurados en Roles.</span></div>
           <div class="help-release"><b>v143</b><span>Kioscos independientes para vales de personal y vales de activos.</span></div>
           <div class="help-release"><b>v142</b><span>Nuevo menú de Ayuda, Acerca de y Guía rápida.</span></div>
@@ -4940,10 +4942,10 @@ function helpGuideHtml(){
       <details><summary>Proveedores</summary><div class="help-guide-content"><ol><li>Crea la cita con proveedor, empresa, área y documentación.</li><li>El guardia escanea el QR y registra la entrada.</li><li>Calidad puede dictaminar la entrega cuando corresponda.</li><li>La salida finaliza el registro y desactiva el QR.</li></ol></div></details>
       <details><summary>Vales de personal</summary><div class="help-guide-content">Genera el vale con número de nómina y datos del permiso. Puede utilizarse el QR del vale o escanear el QR del gafete. El flujo continúa con autorización, salida y regreso del colaborador.</div></details>
       <details><summary>Vales de activos</summary><div class="help-guide-content">Registra el activo, responsable, motivo y vigencia. El rol autorizado revisa el vale; Guardia registra la salida y posteriormente el regreso del activo.</div></details>
-      <details><summary>Guardia y Rondinero</summary><div class="help-guide-content">Guardia puede escanear accesos, registrar entradas y salidas, capturar novedades y ejecutar rondines. En Rondinero se escanean los puntos en el orden configurado y se registran incidencias.</div></details>
+      <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador debe acudir físicamente a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>El historial registra hora, distancia al punto y precisión GPS como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
       <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. Las exportaciones a Excel o PDF dependen de los permisos asignados.</div></details>
       <details><summary>Usuarios, roles y permisos</summary><div class="help-guide-content">El administrador aprueba usuarios, asigna roles y configura permisos. Los cambios en Roles afectan qué módulos y acciones puede utilizar cada perfil.</div></details>
-      <details><summary>Problemas frecuentes</summary><div class="help-guide-content"><ul><li>Si no aparece un cambio, actualiza la página para cargar la versión más reciente.</li><li>Si una operación indica falta de permisos, consulta al administrador.</li><li>Si no hay Internet, evita cerrar la sesión hasta recuperar la conexión y sincronizar.</li><li>Verifica que la cámara tenga permiso antes de escanear códigos QR.</li></ul></div></details>
+      <details><summary>Problemas frecuentes</summary><div class="help-guide-content"><ul><li>Si no aparece un cambio, actualiza la página para cargar la versión más reciente.</li><li>Si una operación indica falta de permisos, consulta al administrador.</li><li>Si no hay Internet, evita cerrar la sesión hasta recuperar la conexión y sincronizar.</li><li>Verifica que la cámara y la ubicación precisa tengan permiso antes de escanear códigos QR.</li><li>Si Rondinero indica <b>GPS impreciso</b>, colócate en un área abierta, activa la ubicación precisa y vuelve a intentar.</li><li>Si indica <b>Punto sin GPS</b>, un administrador debe acudir al punto y configurarlo desde Rondinero.</li></ul></div></details>
     </div>`;
 }
 
@@ -14616,7 +14618,6 @@ window.addEventListener("offline",updateNet);
 </script>
 </body>
 </html>
-
 
 
 
