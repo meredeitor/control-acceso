@@ -2917,7 +2917,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     <div class="title">
       <div class="logo"><img src="icon-192-cobre.png" alt="Caborca Access Control"></div>
       <div>
-        <h1>Caborca Access Control <span id="appVersion" class="version-badge">v147</span></h1>
+        <h1>Caborca Access Control <span id="appVersion" class="version-badge">v148</span></h1>
         <small>Proveedores • Visitantes • Control de Vales de Salida • Rondinero</small>
       </div>
     </div>
@@ -2944,7 +2944,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v147";
+  const APP_VERSION = "v148";
   const THEMES = ["dark", "light", "desert", "mint", "copper"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -4916,6 +4916,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v148</b><span>Recarga manual del catálogo de proveedores desde el formulario Nueva cita.</span></div>
           <div class="help-release"><b>v147</b><span>Edición de puntos Rondinero sin cambiar su QR, GPS ni rutas asociadas.</span></div>
           <div class="help-release"><b>v146</b><span>Alta anticipada de puntos Rondinero con configuración GPS posterior.</span></div>
           <div class="help-release"><b>v145</b><span>Validación GPS de puntos Rondinero, radio configurable y evidencia de ubicación en el historial.</span></div>
@@ -4941,7 +4942,7 @@ function helpGuideHtml(){
     <div class="help-guide">
       <details open><summary>Inicio y navegación</summary><div class="help-guide-content">Abre las secciones desde el menú lateral. Las opciones visibles dependen de tu rol. Usa Inicio para volver al tablero y Sincronizar cuando necesites actualizar la información de la nube.</div></details>
       <details><summary>Visitantes</summary><div class="help-guide-content"><ol><li>Programa la visita o autoriza una solicitud pendiente.</li><li>Al escanear el QR se registra la llegada y comienza el tiempo de espera.</li><li>Usa <b>Dar acceso</b> para registrar gafete y entrada.</li><li>Al salir, registra la salida para finalizar y obtener los tiempos de espera, permanencia y total.</li></ol></div></details>
-      <details><summary>Proveedores</summary><div class="help-guide-content"><ol><li>Crea la cita con proveedor, empresa, área y documentación.</li><li>El guardia escanea el QR y registra la entrada.</li><li>Calidad puede dictaminar la entrega cuando corresponda.</li><li>La salida finaliza el registro y desactiva el QR.</li></ol></div></details>
+      <details><summary>Proveedores</summary><div class="help-guide-content"><ol><li>Crea la cita con proveedor, empresa, área y documentación.</li><li>Si un proveedor recién registrado no aparece en la búsqueda, pulsa <b>Cargar proveedores</b> para actualizar el catálogo desde Firebase sin salir del formulario.</li><li>El guardia escanea el QR y registra la entrada.</li><li>Calidad puede dictaminar la entrega cuando corresponda.</li><li>La salida finaliza el registro y desactiva el QR.</li></ol></div></details>
       <details><summary>Vales de personal</summary><div class="help-guide-content">Genera el vale con número de nómina y datos del permiso. Puede utilizarse el QR del vale o escanear el QR del gafete. El flujo continúa con autorización, salida y regreso del colaborador.</div></details>
       <details><summary>Vales de activos</summary><div class="help-guide-content">Registra el activo, responsable, motivo y vigencia. El rol autorizado revisa el vale; Guardia registra la salida y posteriormente el regreso del activo.</div></details>
       <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>El historial registra hora, distancia al punto y precisión GPS como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
@@ -6661,17 +6662,106 @@ window.addEventListener('visibilitychange', ()=>{
 
     // ---- Eventos LOGIN ----
     const btnLogin = document.getElementById("btnLogin");
-    if(btnLogin){
-      btnLogin.onclick = async () => {
-        const email = $("#loginEmail").value.trim();
-        const pass  = $("#loginPass").value.trim();
 
-        if(!email || !pass){
-          return toast("Faltan datos","Correo y contraseña","warn");
-        }
-        await signInWithEmailAndPassword(auth, email, pass);
-      };
+if (btnLogin) {
+
+  btnLogin.onclick = async () => {
+
+    const email = $("#loginEmail").value.trim();
+    const pass  = $("#loginPass").value.trim();
+
+    if (!email || !pass) {
+      return toast(
+        "Faltan datos",
+        "Correo y contraseña",
+        "warn"
+      );
     }
+
+    // Evitar múltiples clics
+    btnLogin.disabled = true;
+
+    try {
+
+      await signInWithEmailAndPassword(auth, email, pass);
+
+    } catch (error) {
+
+      console.error("Error de login:", error);
+
+      switch (error.code) {
+
+        case "auth/invalid-credential":
+        case "auth/wrong-password":
+        case "auth/user-not-found":
+
+          toast(
+            "Acceso incorrecto",
+            "Correo o contraseña incorrectos",
+            "error"
+          );
+
+          break;
+
+        case "auth/too-many-requests":
+
+          toast(
+            "Demasiados intentos",
+            "Firebase bloqueó temporalmente el acceso. Espera unos minutos e intenta nuevamente.",
+            "warn"
+          );
+
+          break;
+
+        case "auth/invalid-email":
+
+          toast(
+            "Correo inválido",
+            "Verifica el formato del correo electrónico.",
+            "warn"
+          );
+
+          break;
+
+        case "auth/user-disabled":
+
+          toast(
+            "Usuario deshabilitado",
+            "Esta cuenta se encuentra deshabilitada.",
+            "error"
+          );
+
+          break;
+
+        case "auth/network-request-failed":
+
+          toast(
+            "Sin conexión",
+            "No fue posible conectar con Firebase.",
+            "error"
+          );
+
+          break;
+
+        default:
+
+          toast(
+            "Error de acceso",
+            "No fue posible iniciar sesión.",
+            "error"
+          );
+
+      }
+
+    } finally {
+
+      btnLogin.disabled = false;
+
+    }
+
+  };
+
+}
 
     // ---- Eventos REGISTRO ----
     const btnCreate = document.getElementById("btnCreate");
@@ -12051,6 +12141,8 @@ async function renderNuevo(tipoCita = "proveedor"){
           <label>Proveedor *</label>
           <input id="proveedorSearch" placeholder="Escribe nombre o código…" autocomplete="off"/>
           <div id="proveedorResults"></div>
+          <button class="secondary" type="button" data-action="recargarProveedoresNuevaCita" data-no-sb="true" style="margin-top:8px;">Cargar proveedores</button>
+          <small id="proveedoresNuevaCitaEstado" style="display:block;margin-top:6px;color:var(--muted);">${proveedoresCache.length ? `${proveedoresCache.length} proveedores disponibles.` : "Catálogo pendiente de cargar."}</small>
         </div>
 
         <div>
@@ -12415,6 +12507,40 @@ function setupProveedorAutocomplete(){
     input.dataset.codigo = opt.dataset.codigo;
     results.innerHTML = "";
   });
+}
+
+async function recargarProveedoresNuevaCita(){
+  if(currentView !== "nuevo") return;
+  const btn = document.querySelector('[data-action="recargarProveedoresNuevaCita"]');
+  const estado = document.getElementById("proveedoresNuevaCitaEstado");
+  const input = document.getElementById("proveedorSearch");
+  const valorActual = input?.value || "";
+  const codigoActual = input?.dataset.codigo || "";
+  if(btn){
+    btn.disabled = true;
+    btn.textContent = "Cargando…";
+  }
+  if(estado) estado.textContent = "Actualizando catálogo desde Firebase…";
+  try{
+    proveedoresLoaded = false;
+    await loadProveedores(true);
+    if(input){
+      input.value = valorActual;
+      input.dataset.codigo = codigoActual;
+      input.dispatchEvent(new Event("input", { bubbles:true }));
+    }
+    if(estado) estado.textContent = `${proveedoresCache.length} proveedores disponibles.`;
+    toast("Proveedores actualizados",`${proveedoresCache.length} proveedores cargados.`,"ok",2800);
+  }catch(e){
+    console.error(e);
+    if(estado) estado.textContent = "No se pudo actualizar el catálogo. Intenta nuevamente.";
+    toast("Error","No se pudieron cargar los proveedores.","bad",3600);
+  }finally{
+    if(btn){
+      btn.disabled = false;
+      btn.textContent = "Cargar proveedores";
+    }
+  }
 }
 
    function createVisitaFromForm(){
@@ -14343,6 +14469,7 @@ function renderProveedores(lista){
         case "rondineroCapturarGps": await capturarGpsRondineroPunto(); break;
         case "rondineroConfigurarGps": await configurarGpsRondineroPuntoExistente(el.dataset.id); break;
         case "rondineroEditarPunto": await editarRondineroPunto(el.dataset.id); break;
+        case "recargarProveedoresNuevaCita": await recargarProveedoresNuevaCita(); break;
         case "rondineroTab":
           rondineroAdminTab = el.dataset.tab || "puntos";
           await renderRondinero();
@@ -14688,7 +14815,6 @@ window.addEventListener("offline",updateNet);
 </script>
 </body>
 </html>
-
 
 
 
