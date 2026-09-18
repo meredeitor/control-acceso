@@ -2970,7 +2970,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     <div class="title">
       <div class="logo"><img src="icon-192-cobre.png" alt="Caborca Access Control"></div>
       <div>
-        <h1>Caborca Access Control <span id="appVersion" class="version-badge">v155</span></h1>
+        <h1>Caborca Access Control <span id="appVersion" class="version-badge">v156</span></h1>
         <small>Proveedores • Visitantes • Control de Vales de Salida • Rondinero</small>
       </div>
     </div>
@@ -2997,7 +2997,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v155";
+  const APP_VERSION = "v156";
   const THEMES = ["dark", "light", "desert", "mint", "copper"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -4978,6 +4978,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v156</b><span>El porcentaje de cumplimiento de Rondinero ahora se calcula con puntos visitados entre puntos esperados, incluso en recorridos incompletos.</span></div>
           <div class="help-release"><b>v155</b><span>Las novedades y sus fotografías ahora aparecen dentro de la tarjeta del punto relacionado en el detalle del rondín.</span></div>
           <div class="help-release"><b>v154</b><span>Editor visual de rutas con controles para agregar, quitar, subir y bajar puntos sin introducir números manualmente.</span></div>
           <div class="help-release"><b>v153</b><span>Edición y orden de rutas de Rondinero, más fotografía opcional comprimida para evidenciar novedades sin Firebase Storage.</span></div>
@@ -5014,7 +5015,7 @@ function helpGuideHtml(){
       <details><summary>Proveedores</summary><div class="help-guide-content"><ol><li>Crea la cita con proveedor, empresa, área y documentación.</li><li>Si un proveedor recién registrado no aparece en la búsqueda, pulsa <b>Cargar proveedores</b> para actualizar el catálogo desde Firebase sin salir del formulario.</li><li>El guardia escanea el QR y registra la entrada.</li><li>Calidad puede dictaminar la entrega cuando corresponda.</li><li>La salida finaliza el registro y desactiva el QR.</li></ol></div></details>
       <details><summary>Vales de personal</summary><div class="help-guide-content">Genera el vale con número de nómina y datos del permiso. Puede utilizarse el QR del vale o escanear el QR del gafete. El flujo continúa con autorización, salida y regreso del colaborador.</div></details>
       <details><summary>Vales de activos</summary><div class="help-guide-content">Registra el activo, responsable, motivo y vigencia. El rol autorizado revisa el vale; Guardia registra la salida y posteriormente el regreso del activo.</div></details>
-      <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>En la pestaña <b>Rutas</b>, usa <b>Editar y ordenar</b>. El editor visual permite agregar o quitar puntos y cambiar la secuencia con los botones <b>Subir</b> y <b>Bajar</b>. La lista de arriba hacia abajo será el orden exacto del recorrido.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>Al reportar una novedad selecciona el punto relacionado; el último punto escaneado aparece preseleccionado. También puede tomar una fotografía opcional, comprimida como JPEG de máximo 640 px y 180 KB sin Firebase Storage.</li><li>En el detalle, cada novedad y su fotografía se muestran dentro de la misma tarjeta del punto para revisarlas de un vistazo.</li><li>El historial registra hora, distancia al punto, precisión GPS y la fotografía de la novedad como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
+      <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>En la pestaña <b>Rutas</b>, usa <b>Editar y ordenar</b>. El editor visual permite agregar o quitar puntos y cambiar la secuencia con los botones <b>Subir</b> y <b>Bajar</b>. La lista de arriba hacia abajo será el orden exacto del recorrido.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>Al reportar una novedad selecciona el punto relacionado; el último punto escaneado aparece preseleccionado. También puede tomar una fotografía opcional, comprimida como JPEG de máximo 640 px y 180 KB sin Firebase Storage.</li><li>En el detalle, cada novedad y su fotografía se muestran dentro de la misma tarjeta del punto para revisarlas de un vistazo.</li><li>El cumplimiento se calcula dividiendo los puntos visitados entre los puntos esperados. Un rondín incompleto conserva su avance real en lugar de mostrar automáticamente 0%.</li><li>El historial registra hora, distancia al punto, precisión GPS y la fotografía de la novedad como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
       <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. Las exportaciones a Excel o PDF dependen de los permisos asignados.</div></details>
       <details><summary>Usuarios, roles y permisos</summary><div class="help-guide-content"><p>El administrador aprueba usuarios, asigna roles y configura permisos. Los cambios en Roles afectan qué módulos y acciones puede utilizar cada perfil.</p><p>Para dar de alta varias cuentas, entra a <b>Configuración → Usuarios</b> y pulsa <b>Agregar usuarios</b>. Pega una fila por persona con el formato <b>Nombre; Correo; Contraseña temporal; Rol; Área; Empresa; Teléfono</b>. También puedes copiar filas desde Excel; las columnas separadas por tabulaciones se reconocen automáticamente.</p><p>Si una cuenta ya existe en Authentication pero no tiene perfil en Firestore, vuelve a incluirla con su contraseña temporal: la aplicación reconstruirá el documento en <b>users</b> y lo verificará directamente en el servidor.</p></div></details>
       <details><summary>Problemas frecuentes</summary><div class="help-guide-content"><ul><li>Si no aparece un cambio, actualiza la página para cargar la versión más reciente.</li><li>Si una operación indica falta de permisos, consulta al administrador.</li><li>Si no hay Internet, evita cerrar la sesión hasta recuperar la conexión y sincronizar.</li><li>Verifica que la cámara y la ubicación precisa tengan permiso antes de escanear códigos QR.</li><li>Si Rondinero indica <b>GPS impreciso</b>, colócate en un área abierta, activa la ubicación precisa y vuelve a intentar.</li><li>Si indica <b>Punto sin GPS</b>, un administrador debe acudir al punto y configurarlo desde Rondinero.</li></ul></div></details>
@@ -8869,7 +8870,9 @@ function calcRondineroStats(rondines, eventos){
   const tiempoProm = conTiempo.length
     ? Math.round(conTiempo.reduce((sum, r) => sum + r.tiempoTotalMin, 0) / conTiempo.length)
     : 0;
-  const cumplimiento = total ? Math.round((completados / total) * 100) : 0;
+  const cumplimiento = puntosEsperados
+    ? Math.round((puntosVisitados / puntosEsperados) * 100)
+    : (total ? Math.round((completados / total) * 100) : 0);
   return {
     total,
     completados,
@@ -9133,7 +9136,7 @@ async function renderRondinero(){
           <strong>${esc(g.guardia)}</strong>
           <div class="meta">
             <span class="pill">${esc(g.total)} rondines</span>
-            <span class="pill"><span class="dot ok"></span>${esc(g.cumplimiento)}%</span>
+            <span class="pill" title="Puntos visitados entre puntos esperados"><span class="dot ok"></span>${esc(g.cumplimiento)}% de puntos</span>
             <span class="pill">${esc(g.completados)} completos</span>
             <span class="pill">${esc(g.incompletos)} incompletos</span>
           </div>
@@ -9153,7 +9156,7 @@ async function renderRondinero(){
           <strong>${esc(t.turno)}</strong>
           <div class="meta">
             <span class="pill">${esc(t.total)} rondines</span>
-            <span class="pill"><span class="dot ok"></span>${esc(t.cumplimiento)}%</span>
+            <span class="pill" title="Puntos visitados entre puntos esperados"><span class="dot ok"></span>${esc(t.cumplimiento)}% de puntos</span>
             <span class="pill">${esc(t.completados)} completos</span>
             <span class="pill">${esc(t.incompletos)} incompletos</span>
             <span class="pill">${esc(t.puntosOmitidos)} omitidos</span>
@@ -9210,7 +9213,7 @@ async function renderRondinero(){
         <div class="tarjeta"><strong>${puntos.length}</strong><small>Puntos activos</small></div>
         <div class="tarjeta"><strong>${rutas.length}</strong><small>Rutas activas</small></div>
         <div class="tarjeta"><strong>${statsHoy.total}</strong><small>Rondines hoy</small></div>
-        <div class="tarjeta"><strong>${statsHoy.cumplimiento}%</strong><small>Cumplimiento hoy</small></div>
+        <div class="tarjeta"><strong>${statsHoy.cumplimiento}%</strong><small>Cumplimiento de puntos hoy</small></div>
         <div class="tarjeta"><strong>${statsTotal.tiempoProm} min</strong><small>Tiempo promedio</small></div>
         <div class="tarjeta"><strong>${statsTotal.puntosOmitidos}</strong><small>Puntos omitidos</small></div>
         <div class="tarjeta"><strong>${statsTotal.novedades}</strong><small>Novedades</small></div>
