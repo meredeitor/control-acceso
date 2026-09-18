@@ -2,7 +2,7 @@
 
 Aplicacion PWA para control operativo de accesos, citas, vales, bitacora de guardias, reportes y rondines de seguridad.
 
-Version actual visible en la app: `v151`.
+Version actual visible en la app: `v152`.
 
 ## Modulos principales
 
@@ -324,8 +324,8 @@ Esto fuerza a los equipos a descargar la nueva version de la app.
 
 Version actual:
 
-- Aplicacion visible: `v151`
-- Service Worker: `caborca-access-control-v151`
+- Aplicacion visible: `v152`
+- Service Worker: `caborca-access-control-v152`
 
 ## Mantenimiento recomendado
 
