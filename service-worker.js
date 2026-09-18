@@ -1,4 +1,4 @@
-const CACHE_NAME = "caborca-access-control-v152";
+const CACHE_NAME = "caborca-access-control-v153";
 
 // Archivos base que siempre quieres offline
 const STATIC_ASSETS = [
