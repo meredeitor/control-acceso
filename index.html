@@ -2958,7 +2958,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     <div class="title">
       <div class="logo"><img src="icon-192-cobre.png" alt="Caborca Access Control"></div>
       <div>
-        <h1>Caborca Access Control <span id="appVersion" class="version-badge">v150</span></h1>
+        <h1>Caborca Access Control <span id="appVersion" class="version-badge">v151</span></h1>
         <small>Proveedores • Visitantes • Control de Vales de Salida • Rondinero</small>
       </div>
     </div>
@@ -2985,7 +2985,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v150";
+  const APP_VERSION = "v151";
   const THEMES = ["dark", "light", "desert", "mint", "copper"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3046,7 +3046,7 @@ document.getElementById("appVersion").textContent = APP_VERSION;
 
   import {
   getFirestore,
-  collection, doc, getDoc, getDocs, addDoc, writeBatch,
+  collection, doc, getDoc, getDocFromServer, getDocs, addDoc, writeBatch,
   setDoc, updateDoc, deleteDoc,
   query, orderBy, limit, where,
   serverTimestamp,
@@ -4963,6 +4963,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v151</b><span>El alta masiva ahora recupera perfiles faltantes y verifica en el servidor que cada usuario quede guardado.</span></div>
           <div class="help-release"><b>v150</b><span>Alta masiva de usuarios desde Administración sin cerrar la sesión del administrador.</span></div>
           <div class="help-release"><b>v149</b><span>Botón de tema flotante y visible en celulares y tablets.</span></div>
           <div class="help-release"><b>v148</b><span>Recarga manual del catálogo de proveedores desde el formulario Nueva cita.</span></div>
@@ -4996,7 +4997,7 @@ function helpGuideHtml(){
       <details><summary>Vales de activos</summary><div class="help-guide-content">Registra el activo, responsable, motivo y vigencia. El rol autorizado revisa el vale; Guardia registra la salida y posteriormente el regreso del activo.</div></details>
       <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>El historial registra hora, distancia al punto y precisión GPS como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
       <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. Las exportaciones a Excel o PDF dependen de los permisos asignados.</div></details>
-      <details><summary>Usuarios, roles y permisos</summary><div class="help-guide-content"><p>El administrador aprueba usuarios, asigna roles y configura permisos. Los cambios en Roles afectan qué módulos y acciones puede utilizar cada perfil.</p><p>Para dar de alta varias cuentas, entra a <b>Configuración → Usuarios</b> y pulsa <b>Agregar usuarios</b>. Pega una fila por persona con el formato <b>Nombre; Correo; Contraseña temporal; Rol; Área; Empresa; Teléfono</b>. También puedes copiar filas desde Excel; las columnas separadas por tabulaciones se reconocen automáticamente.</p></div></details>
+      <details><summary>Usuarios, roles y permisos</summary><div class="help-guide-content"><p>El administrador aprueba usuarios, asigna roles y configura permisos. Los cambios en Roles afectan qué módulos y acciones puede utilizar cada perfil.</p><p>Para dar de alta varias cuentas, entra a <b>Configuración → Usuarios</b> y pulsa <b>Agregar usuarios</b>. Pega una fila por persona con el formato <b>Nombre; Correo; Contraseña temporal; Rol; Área; Empresa; Teléfono</b>. También puedes copiar filas desde Excel; las columnas separadas por tabulaciones se reconocen automáticamente.</p><p>Si una cuenta ya existe en Authentication pero no tiene perfil en Firestore, vuelve a incluirla con su contraseña temporal: la aplicación reconstruirá el documento en <b>users</b> y lo verificará directamente en el servidor.</p></div></details>
       <details><summary>Problemas frecuentes</summary><div class="help-guide-content"><ul><li>Si no aparece un cambio, actualiza la página para cargar la versión más reciente.</li><li>Si una operación indica falta de permisos, consulta al administrador.</li><li>Si no hay Internet, evita cerrar la sesión hasta recuperar la conexión y sincronizar.</li><li>Verifica que la cámara y la ubicación precisa tengan permiso antes de escanear códigos QR.</li><li>Si Rondinero indica <b>GPS impreciso</b>, colócate en un área abierta, activa la ubicación precisa y vuelve a intentar.</li><li>Si indica <b>Punto sin GPS</b>, un administrador debe acudir al punto y configurarlo desde Rondinero.</li></ul></div></details>
     </div>`;
 }
@@ -11946,11 +11947,21 @@ async function createBulkUsers(){
       const user = parsed.users[i];
       if(progress) progress.textContent = `Creando ${i + 1} de ${parsed.users.length}: ${user.email}`;
       let authCreated = false;
+      let recoveredExistingAccount = false;
       try{
-        const cred = await createUserWithEmailAndPassword(secondaryAuth, user.email, user.password);
-        authCreated = true;
+        let cred;
+        try{
+          cred = await createUserWithEmailAndPassword(secondaryAuth, user.email, user.password);
+          authCreated = true;
+        }catch(authError){
+          if(!String(authError?.code || "").includes("email-already-in-use")) throw authError;
+          if(progress) progress.textContent = `Recuperando perfil ${i + 1} de ${parsed.users.length}: ${user.email}`;
+          cred = await signInWithEmailAndPassword(secondaryAuth, user.email, user.password);
+          recoveredExistingAccount = true;
+        }
         const approved = approvedRequested && user.role !== ROLES.PENDIENTE;
-        await setDoc(doc(db, COL_USERS, cred.user.uid), {
+        const profileRef = doc(db, COL_USERS, cred.user.uid);
+        await setDoc(profileRef, {
           uid: cred.user.uid, email: user.email, nombre: user.nombre,
           empresa: user.empresa || "", telefono: user.telefono || "", area: user.area || "",
           role: user.role, aprobado: approved, solicitadoTs: Date.now(),
@@ -11959,12 +11970,29 @@ async function createBulkUsers(){
           createdByUid: currentUser?.uid || "", createdByEmail: currentUser?.email || "",
           createdAt: serverTimestamp(), updatedTs: Date.now()
         });
-        operationResults.push({ ok:true, email:user.email, message:"cuenta y perfil creados" });
+        const verifiedProfile = await getDocFromServer(profileRef);
+        if(!verifiedProfile.exists() || String(verifiedProfile.data()?.email || "").toLowerCase() !== user.email){
+          throw new Error("Firebase no confirmó el perfil en Firestore");
+        }
+        operationResults.push({
+          ok:true,
+          email:user.email,
+          uid:cred.user.uid,
+          message: recoveredExistingAccount ? "perfil recuperado y verificado en Firestore" : "cuenta y perfil verificados en Firebase"
+        });
       }catch(e){
         if(authCreated && secondaryAuth?.currentUser){
           await deleteAuthUser(secondaryAuth.currentUser).catch(() => {});
         }
-        operationResults.push({ ok:false, email:user.email, message: authCreated ? `no se pudo crear el perfil; la cuenta fue revertida: ${bulkUserErrorMessage(e)}` : bulkUserErrorMessage(e) });
+        operationResults.push({
+          ok:false,
+          email:user.email,
+          message: authCreated
+            ? `no se pudo confirmar el perfil; la cuenta nueva fue revertida: ${bulkUserErrorMessage(e)}`
+            : recoveredExistingAccount
+              ? `la cuenta existe, pero no se pudo recuperar el perfil: ${bulkUserErrorMessage(e)}`
+              : bulkUserErrorMessage(e)
+        });
       }finally{
         if(secondaryAuth?.currentUser) await signOut(secondaryAuth).catch(() => {});
       }
@@ -11980,9 +12008,9 @@ async function createBulkUsers(){
   if(progress) progress.textContent = `Proceso terminado: ${okCount} creados, ${failCount} con error.`;
   if(results) results.innerHTML = operationResults.map(r => `
     <div class="pill ${r.ok ? "ok" : "bad"}" style="display:flex;margin-bottom:6px;white-space:normal;">
-      <span class="dot ${r.ok ? "ok" : "bad"}"></span><b>${esc(r.email)}</b>&nbsp;—&nbsp;${esc(r.message)}
+      <span class="dot ${r.ok ? "ok" : "bad"}"></span><b>${esc(r.email)}</b>&nbsp;—&nbsp;${esc(r.message)}${r.uid ? ` (UID: ${esc(r.uid)})` : ""}
     </div>`).join("");
-  if(input) input.value = "";
+  if(input && failCount === 0) input.value = "";
   toast("Alta de usuarios",`${okCount} creados; ${failCount} con error.`,failCount ? "warn" : "ok",5000);
   await loadAdminUsers();
   updatePendingBadge(true);
@@ -15033,8 +15061,6 @@ window.addEventListener("offline",updateNet);
 </script>
 </body>
 </html>
-
-
 
 
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = "caborca-access-control-v150";
+const CACHE_NAME = "caborca-access-control-v151";
 
 // Archivos base que siempre quieres offline
 const STATIC_ASSETS = [
@@ -89,4 +89,3 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
-
