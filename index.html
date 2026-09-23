@@ -2295,6 +2295,33 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     .access-auth-form button{background:linear-gradient(135deg,#0b1220,#0f766e 58%,#84cc16);box-shadow:0 10px 22px rgba(15,118,110,.22);}
     .access-auth-form #btnResetPassword{background:transparent;color:var(--text);border:1px solid var(--border);box-shadow:none;}
     .access-auth-form #btnResetPassword:hover{background:rgba(148,163,184,.10);}
+    /* Contraste independiente para el acceso en los temas de superficie clara. */
+    html[data-theme="light"] .access-auth-form,
+    html[data-theme="desert"] .access-auth-form,
+    html[data-theme="mint"] .access-auth-form{
+      background:rgba(255,255,255,.94);color:#0f172a;
+      border-color:rgba(15,23,42,.14);box-shadow:0 14px 34px rgba(15,23,42,.12);
+    }
+    html[data-theme="light"] .access-auth-form label,
+    html[data-theme="desert"] .access-auth-form label,
+    html[data-theme="mint"] .access-auth-form label,
+    html[data-theme="light"] .access-auth-switch,
+    html[data-theme="desert"] .access-auth-switch,
+    html[data-theme="mint"] .access-auth-switch,
+    html[data-theme="light"] #resetPasswordStatus,
+    html[data-theme="desert"] #resetPasswordStatus,
+    html[data-theme="mint"] #resetPasswordStatus{color:#475569 !important;}
+    html[data-theme="light"] .access-auth-switch b,
+    html[data-theme="desert"] .access-auth-switch b,
+    html[data-theme="mint"] .access-auth-switch b{color:#166534;}
+    html[data-theme="light"] .access-auth-form #btnResetPassword,
+    html[data-theme="desert"] .access-auth-form #btnResetPassword,
+    html[data-theme="mint"] .access-auth-form #btnResetPassword{
+      color:#0f172a;background:#f8fafc;border-color:#cbd5e1;
+    }
+    html[data-theme="light"] .access-auth-form #btnResetPassword:hover,
+    html[data-theme="desert"] .access-auth-form #btnResetPassword:hover,
+    html[data-theme="mint"] .access-auth-form #btnResetPassword:hover{background:#e2e8f0;}
     @media(max-width:980px){.access-auth-card{grid-template-columns:1fr}.access-auth-brand{min-height:260px}}
     @media(max-width:640px){.access-auth-view{padding:12px 0}.access-auth-card{padding:12px;border-radius:12px}.access-auth-brand{min-height:220px;padding:20px}.access-auth-brand h2{font-size:1.65rem}}
 
@@ -2980,7 +3007,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     <div class="title">
       <div class="logo"><img src="icon-192-cobre.png" alt="Caborca Access Control"></div>
       <div>
-        <h1>Caborca Access Control <span id="appVersion" class="version-badge">v161</span></h1>
+        <h1>Caborca Access Control <span id="appVersion" class="version-badge">v162</span></h1>
         <small>Proveedores • Visitantes • Control de Vales de Salida • Rondinero</small>
       </div>
     </div>
@@ -3007,7 +3034,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v161";
+  const APP_VERSION = "v162";
   const THEMES = ["dark", "light", "desert", "mint", "copper"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -4989,6 +5016,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v162</b><span>Mejor contraste del inicio de sesión en temas claros y diagnóstico visible del envío de correos para recuperar la contraseña.</span></div>
           <div class="help-release"><b>v161</b><span>Generación y descarga de PDF completo desde el detalle del rondín, incluyendo puntos, GPS, novedades y fotografías.</span></div>
           <div class="help-release"><b>v160</b><span>Recuperación de contraseña por correo desde la pantalla de inicio de sesión mediante Firebase Authentication.</span></div>
           <div class="help-release"><b>v159</b><span>El rol Jefe ve únicamente los vales de personal donde está asignado como autorizador y cuenta con un menú compacto y ordenado.</span></div>
@@ -6873,9 +6901,9 @@ if (btnLogin) {
         if(resetStatus) resetStatus.textContent = "Solicitando enlace de recuperación...";
         try{
           await sendPasswordResetEmail(auth, email);
-          const neutralMessage = "Si el correo está registrado, recibirás un enlace para crear una contraseña nueva. Revisa también Spam o Correo no deseado.";
-          if(resetStatus) resetStatus.textContent = neutralMessage;
-          toast("Recuperación solicitada",neutralMessage,"ok",6500);
+          const successMessage = `Firebase aceptó el envío a ${email}. Revisa Recibidos, Spam y Correo no deseado; puede tardar unos minutos.`;
+          if(resetStatus) resetStatus.textContent = successMessage;
+          toast("Correo solicitado",successMessage,"ok",7500);
         }catch(error){
           console.error("Error solicitando recuperación:", error);
           const code = String(error?.code || "");
@@ -6888,10 +6916,22 @@ if (btnLogin) {
           }else if(code.includes("network-request-failed")){
             if(resetStatus) resetStatus.textContent = "No fue posible contactar a Firebase. Revisa la conexión.";
             toast("Sin conexión","No se pudo enviar la solicitud.","bad",4200);
-          }else{
+          }else if(code.includes("user-not-found")){
             const neutralMessage = "Si el correo está registrado, recibirás un enlace para crear una contraseña nueva. Revisa también Spam o Correo no deseado.";
             if(resetStatus) resetStatus.textContent = neutralMessage;
-            toast("Recuperación solicitada",neutralMessage,"info",6500);
+            toast("Solicitud procesada",neutralMessage,"info",6500);
+          }else if(code.includes("operation-not-allowed")){
+            const message = "La recuperación por correo no está habilitada en Firebase Authentication. Contacta al administrador.";
+            if(resetStatus) resetStatus.textContent = message;
+            toast("Recuperación no habilitada",message,"bad",6500);
+          }else if(code.includes("unauthorized-domain")){
+            const message = "Este dominio no está autorizado en Firebase. Contacta al administrador.";
+            if(resetStatus) resetStatus.textContent = message;
+            toast("Dominio no autorizado",message,"bad",6500);
+          }else{
+            const message = `Firebase rechazó la solicitud (${code || "error desconocido"}). Contacta al administrador.`;
+            if(resetStatus) resetStatus.textContent = message;
+            toast("No se pudo solicitar el correo",message,"bad",6500);
           }
         }finally{
           btnResetPassword.disabled = false;
