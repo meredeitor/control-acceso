@@ -84,8 +84,24 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isAuth();
       allow create: if isAuth() && uid == myUid();
-      allow update: if isAdmin()
-        && request.resource.data.role is string;
+      allow update: if (
+          isAdmin()
+          && request.resource.data.role is string
+        ) || (
+          isJefe()
+          && uid == myUid()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "pinHash",
+            "pinEnabled",
+            "pinUpdatedTs",
+            "pinUpdatedAt"
+          ])
+          && request.resource.data.pinHash is string
+          && request.resource.data.pinHash.size() == 64
+          && request.resource.data.pinEnabled == true
+          && request.resource.data.pinUpdatedTs is int
+          && request.resource.data.pinUpdatedAt is timestamp
+        );
       allow delete: if false;
     }
 

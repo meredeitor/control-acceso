@@ -3173,7 +3173,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v168</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v169</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3198,7 +3198,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v168";
+  const APP_VERSION = "v169";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5207,6 +5207,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v169</b><span>El rol Jefe puede crear y modificar su propio PIN con una regla restringida que impide cambiar otros datos de usuario.</span></div>
           <div class="help-release"><b>v168</b><span>Iconos de instalación específicos para iPhone y Android, con fondo sólido, tamaños correctos y referencias versionadas para evitar que Safari genere un icono con inicial.</span></div>
           <div class="help-release"><b>v167</b><span>Los tableros de Vales de personal y Vales de activos muestran dos columnas en tablets, conservando una columna en celulares pequeños.</span></div>
           <div class="help-release"><b>v166</b><span>El dashboard conserva su vista al buscar, actualizar o terminar la sincronización inicial, evitando regresos inesperados al menú principal.</span></div>
@@ -5288,6 +5289,7 @@ function canShowConfig(){
 function canConfigurePin(){
   return !!currentUser && (
     currentUser.role === ROLES.ADMIN ||
+    currentUser.role === ROLES.JEFE ||
     canAuthorizeAnyValeRole(currentUser.role) ||
     hasPerm("autorizar_vale_activo") ||
     hasPerm("autorizar_vale_personal")
