@@ -3007,7 +3007,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     <div class="title">
       <div class="logo"><img src="icon-192-cobre.png" alt="Caborca Access Control"></div>
       <div>
-        <h1>Caborca Access Control <span id="appVersion" class="version-badge">v162</span></h1>
+        <h1>Caborca Access Control <span id="appVersion" class="version-badge">v163</span></h1>
         <small>Proveedores • Visitantes • Control de Vales de Salida • Rondinero</small>
       </div>
     </div>
@@ -3034,7 +3034,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v162";
+  const APP_VERSION = "v163";
   const THEMES = ["dark", "light", "desert", "mint", "copper"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5016,6 +5016,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v163</b><span>Confirmación visible y persistente al guardar Mi PIN, con indicador de proceso y mensajes claros si Firestore rechaza el cambio.</span></div>
           <div class="help-release"><b>v162</b><span>Mejor contraste del inicio de sesión en temas claros y diagnóstico visible del envío de correos para recuperar la contraseña.</span></div>
           <div class="help-release"><b>v161</b><span>Generación y descarga de PDF completo desde el detalle del rondín, incluyendo puntos, GPS, novedades y fotografías.</span></div>
           <div class="help-release"><b>v160</b><span>Recuperación de contraseña por correo desde la pantalla de inicio de sesión mediante Firebase Authentication.</span></div>
@@ -12034,9 +12035,11 @@ async function importarPersonasVisitaActuales(){
           <label>Confirmar PIN</label>
           <input id="pinConfirmar" type="password" inputmode="numeric" autocomplete="new-password" maxlength="12" placeholder="Repite el PIN">
 
+          <div id="miPinStatus" role="status" aria-live="polite" style="min-height:22px;font-size:13px;font-weight:750;color:var(--muted);"></div>
+
           <div class="divider"></div>
           <div class="row">
-            <button class="ok" data-action="guardarMiPin">Guardar PIN</button>
+            <button id="btnGuardarMiPin" class="ok" data-action="guardarMiPin">Guardar PIN</button>
             <button class="secondary" data-action="home">Cancelar</button>
           </div>
         </div>
@@ -12061,17 +12064,57 @@ async function importarPersonasVisitaActuales(){
         return;
       }
 
-      const pinHash = await hashPin(pin);
-      await updateDoc(doc(db, COL_USERS, currentUser.uid), {
-        pinHash,
-        pinEnabled: true,
-        pinUpdatedTs: Date.now(),
-        pinUpdatedAt: serverTimestamp()
-      });
+      const statusEl = document.getElementById("miPinStatus");
+      const saveBtn = document.getElementById("btnGuardarMiPin");
+      if(saveBtn){
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Guardando…";
+      }
+      if(statusEl){
+        statusEl.style.color = "var(--muted)";
+        statusEl.textContent = "Guardando y verificando el PIN…";
+      }
 
-      sessionStorage.removeItem(PIN_SESSION_KEY);
-      toast("PIN guardado", "Tu PIN fue actualizado.", "ok", 2600);
-      await renderMiPin();
+      try{
+        const pinHash = await hashPin(pin);
+        const userRef = doc(db, COL_USERS, currentUser.uid);
+        await setDoc(userRef, {
+          pinHash,
+          pinEnabled: true,
+          pinUpdatedTs: Date.now(),
+          pinUpdatedAt: serverTimestamp()
+        }, { merge:true });
+
+        const saved = await getDocFromServer(userRef);
+        if(!saved.exists() || saved.data()?.pinHash !== pinHash){
+          throw new Error("No fue posible verificar el PIN guardado.");
+        }
+
+        sessionStorage.removeItem(PIN_SESSION_KEY);
+        await renderMiPin();
+        const confirmedStatus = document.getElementById("miPinStatus");
+        if(confirmedStatus){
+          confirmedStatus.style.color = "var(--ok)";
+          confirmedStatus.textContent = "✓ PIN guardado y verificado correctamente.";
+        }
+        toast("PIN guardado", "Tu PIN fue actualizado y verificado.", "ok", 4200);
+      }catch(error){
+        console.error("No se pudo guardar el PIN:", error);
+        const message = String(error?.code || "").includes("permission-denied")
+          ? "No tienes permiso para guardar el PIN. Contacta al administrador."
+          : (error?.message || "No se pudo guardar el PIN. Revisa tu conexión e intenta nuevamente.");
+        if(statusEl){
+          statusEl.style.color = "var(--bad)";
+          statusEl.textContent = message;
+        }
+        toast("PIN no guardado", message, "bad", 5200);
+      }finally{
+        const currentBtn = document.getElementById("btnGuardarMiPin");
+        if(currentBtn){
+          currentBtn.disabled = false;
+          currentBtn.textContent = "Guardar PIN";
+        }
+      }
     }
 
 
