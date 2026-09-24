@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Caborca Access Control</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/png" href="icon-192-cobre.png" />
+  <link rel="icon" type="image/png" href="icon-shield-master.png" />
+  <link rel="apple-touch-icon" href="icon-shield-master.png" />
   <meta name="theme-color" content="#0f172a" />
 
   <!-- Cargar librerías pesadas sin bloquear render -->
@@ -59,6 +60,16 @@
     }
     .title h1{ font-size:16px; margin:0; line-height:1.1; }
     .title small{ display:block; color:var(--muted); font-size:12px; margin-top:2px; }
+    .brand-shield{
+      flex:0 0 auto;width:48px;height:56px;display:block;
+      background:transparent url("icon-shield-master.png") center/contain no-repeat;
+      border-radius:8px;
+    }
+    .brand-lockup{display:flex;align-items:center;gap:9px;min-width:0}
+    .brand-words{font-weight:950;line-height:.86;letter-spacing:-.045em;font-size:20px;white-space:nowrap}
+    .brand-words .brand-caborca{display:block;color:var(--text)}
+    .brand-words .brand-access{display:block;color:#0868f2;margin-top:5px}
+    .brand-version{display:inline-flex;vertical-align:middle;margin-left:6px;transform:translateY(-2px);letter-spacing:0}
     .actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
     .container{ max-width:1250px; margin:0 auto; padding:16px 14px 80px; }
     .app-watermark{
@@ -591,6 +602,33 @@ height: 100vh;
 @media (max-width: 420px){
   .sidebar{ width: min(86vw, 320px); }
 }
+/* La portada sustituye al menú lateral. Se conserva su HTML temporalmente
+   para mantener compatibles los manejadores de navegación existentes. */
+.sidebar,.sb-overlay{display:none !important}
+.main-wrap{margin-left:0 !important}
+.hamb{display:inline-flex !important;align-items:center;justify-content:center;gap:7px}
+.hamb .home-label{font-size:12px;font-weight:850}
+#btnHamb{
+  width:44px;min-width:44px;height:44px;min-height:44px;padding:0 !important;
+  color:#fff !important;background:linear-gradient(145deg,#1687ff,#075ddb) !important;
+  border:1px solid rgba(255,255,255,.72) !important;border-radius:14px !important;
+  box-shadow:0 8px 20px rgba(8,104,242,.32),inset 0 1px 0 rgba(255,255,255,.32) !important;
+}
+#btnHamb:hover{background:linear-gradient(145deg,#2994ff,#0754c6) !important;transform:translateY(-1px)}
+#btnHamb:active{transform:translateY(1px);box-shadow:0 4px 12px rgba(8,104,242,.28) !important}
+#btnHamb svg{width:22px;height:22px;stroke-width:2.2}
+#btnHamb .home-label{display:none}
+#btnHamb{order:1 !important}
+#btnTheme{order:2 !important}
+#btnLogoutTop{
+  width:44px;min-width:44px;height:44px;min-height:44px;padding:0 !important;
+  display:inline-flex;align-items:center;justify-content:center;color:#fff !important;
+  background:linear-gradient(145deg,#f05252,#c81e1e) !important;border:1px solid rgba(255,255,255,.68) !important;
+  border-radius:14px !important;box-shadow:0 8px 20px rgba(200,30,30,.28),inset 0 1px 0 rgba(255,255,255,.28) !important;
+  order:3 !important;
+}
+#btnLogoutTop:hover{background:linear-gradient(145deg,#ff6464,#b71919) !important;transform:translateY(-1px)}
+#btnLogoutTop svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
 .agenda-slot{
   font-weight: 600;
   transition: transform .05s ease, filter .15s ease;
@@ -2295,6 +2333,30 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     .access-auth-form button{background:linear-gradient(135deg,#0b1220,#0f766e 58%,#84cc16);box-shadow:0 10px 22px rgba(15,118,110,.22);}
     .access-auth-form #btnResetPassword{background:transparent;color:var(--text);border:1px solid var(--border);box-shadow:none;}
     .access-auth-form #btnResetPassword:hover{background:rgba(148,163,184,.10);}
+    .access-auth-card{position:relative;overflow:hidden;border-radius:28px;background:linear-gradient(155deg,rgba(255,255,255,.12),rgba(59,130,246,.07));border-color:rgba(96,165,250,.22)}
+    .access-auth-brand{position:relative;overflow:hidden;align-content:center;background:linear-gradient(155deg,#0868f2 0%,#0757c9 54%,#0b2d67 100%);border-radius:22px}
+    .access-auth-brand::before{content:"";position:absolute;width:310px;height:310px;right:-170px;top:-160px;border-radius:50%;background:rgba(255,255,255,.11)}
+    .access-auth-brand::after{content:"";position:absolute;inset:auto -30px -45px 18%;height:150px;background:linear-gradient(155deg,rgba(191,226,255,.28),rgba(255,255,255,.06));clip-path:polygon(0 65%,35% 20%,58% 50%,100% 0,100% 100%,0 100%)}
+    .access-auth-brand-content{position:relative;z-index:2;display:grid;gap:18px;max-width:430px}
+    .access-auth-shield{width:96px;height:106px;object-fit:contain;filter:drop-shadow(0 14px 22px rgba(0,28,84,.28))}
+    .access-auth-brand-name{font-weight:950;font-size:clamp(2rem,4vw,3.1rem);line-height:.86;letter-spacing:-.055em}
+    .access-auth-brand-name span{display:block;color:#fff}.access-auth-brand-name span:last-child{margin-top:9px;color:#cce7ff}
+    .access-auth-brand-copy{max-width:370px;font-size:.94rem;line-height:1.55 !important}
+    .access-auth-features{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+    .access-auth-features span{padding:6px 10px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(255,255,255,.10);font-size:.7rem;font-weight:800;color:#eef7ff}
+    .access-auth-form{position:relative;border-radius:22px;padding:30px;background:rgba(15,23,42,.92);box-shadow:0 20px 45px rgba(0,0,0,.22)}
+    .access-auth-form h2{font-size:1.7rem;color:var(--text)}
+    .access-auth-form .auth-intro{margin:-5px 0 5px;color:var(--muted);font-size:.82rem;line-height:1.45}
+    .access-auth-form input{min-height:50px;border-radius:13px;padding:12px 14px;font-size:1rem}
+    .access-auth-form #btnLogin,.access-auth-form #btnCreate{min-height:50px;border-radius:14px;background:linear-gradient(145deg,#1687ff,#075ddb);box-shadow:0 12px 24px rgba(8,104,242,.28)}
+    .access-auth-form #btnResetPassword{min-height:46px;border-radius:14px}
+    .auth-theme-toggle{position:absolute;z-index:3;right:16px;top:16px;width:44px;height:44px;min-height:44px;padding:0;border-radius:14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.32);color:#fff;box-shadow:0 8px 18px rgba(0,0,0,.15);font-size:1.25rem}
+    .auth-theme-toggle:hover{background:rgba(255,255,255,.24);transform:translateY(-1px)}
+    html[data-theme="light"] .access-auth-card{background:linear-gradient(155deg,#edf6ff,#fff);border-color:rgba(37,99,235,.15);box-shadow:0 28px 70px rgba(15,78,160,.15)}
+    html[data-theme="light"] .access-auth-form{background:rgba(255,255,255,.97)}
+    html[data-theme="dark"] .access-auth-card{background:linear-gradient(155deg,#111c33,#0b1220);border-color:rgba(96,165,250,.22)}
+    html[data-theme="dark"] .access-auth-form{background:rgba(11,18,32,.96);border-color:rgba(96,165,250,.16)}
+    html[data-theme="dark"] .access-auth-switch b{color:#7dd3fc}
     /* Contraste independiente para el acceso en los temas de superficie clara. */
     html[data-theme="light"] .access-auth-form,
     html[data-theme="desert"] .access-auth-form,
@@ -2322,8 +2384,96 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     html[data-theme="light"] .access-auth-form #btnResetPassword:hover,
     html[data-theme="desert"] .access-auth-form #btnResetPassword:hover,
     html[data-theme="mint"] .access-auth-form #btnResetPassword:hover{background:#e2e8f0;}
-    @media(max-width:980px){.access-auth-card{grid-template-columns:1fr}.access-auth-brand{min-height:260px}}
-    @media(max-width:640px){.access-auth-view{padding:12px 0}.access-auth-card{padding:12px;border-radius:12px}.access-auth-brand{min-height:220px;padding:20px}.access-auth-brand h2{font-size:1.65rem}}
+
+    /* Portada de módulos */
+    .access-home{
+      --home-blue:#0868f2;
+      position:relative;isolation:isolate;overflow:hidden;
+      width:min(1080px,100%);min-height:calc(100dvh - 155px);margin:0 auto;
+      padding:clamp(22px,4vw,48px);border-radius:28px;
+      background:linear-gradient(160deg,#ffffff 0%,#f8fbff 62%,#eaf5ff 100%);
+      border:1px solid rgba(37,99,235,.12);box-shadow:0 24px 60px rgba(15,78,160,.13);
+      color:#10204a;
+    }
+    .access-home::before{content:"";position:absolute;z-index:-1;width:340px;height:340px;right:-170px;top:-190px;border-radius:50%;background:rgba(42,146,255,.10)}
+    .access-home-head{display:flex;align-items:center;gap:14px;margin-bottom:clamp(28px,5vw,50px)}
+    .access-home-logo{display:grid;place-items:center;width:58px;height:66px;filter:drop-shadow(0 9px 14px rgba(8,104,242,.20))}
+    .access-home-logo svg{width:100%;height:100%}
+    .access-home-name{font-weight:950;font-size:clamp(1.25rem,3vw,1.85rem);line-height:.95;letter-spacing:-.04em}
+    .access-home-name span{display:block;color:var(--home-blue)}
+    .access-home-menu{margin-left:auto;display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:14px;background:#eef6ff;color:#17417f;box-shadow:none;font-size:1.35rem;padding:0}
+    .access-home-menu:hover{background:#dfeeff;transform:translateY(-1px)}
+    .access-home-welcome{max-width:560px;margin-bottom:26px}
+    .access-home-welcome h2{margin:0;color:#10204a;font-size:clamp(2rem,5vw,3.35rem);line-height:1;letter-spacing:-.055em;text-transform:none}
+    .access-home-welcome p{margin:10px 0 0;color:#68779b;font-size:clamp(.94rem,2vw,1.08rem);line-height:1.45}
+    .access-home-grid{position:relative;z-index:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;max-width:720px;padding-bottom:120px}
+    .access-home-card{
+      display:grid;grid-template-columns:62px minmax(0,1fr) 24px;align-items:center;gap:14px;
+      min-height:104px;padding:15px 16px;border:1px solid #e5edf8;border-radius:20px;
+      background:rgba(255,255,255,.96);color:#10204a;text-align:left;box-shadow:0 12px 28px rgba(27,79,145,.10);
+      transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+    }
+    .access-home-card:hover{transform:translateY(-3px);border-color:#bfd8ff;box-shadow:0 17px 34px rgba(27,79,145,.16)}
+    .access-home-card:focus-visible{outline:3px solid rgba(8,104,242,.25);outline-offset:3px}
+    .access-home-icon{display:grid;place-items:center;width:62px;height:62px;border-radius:18px}
+    .access-home-icon svg{width:37px;height:37px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+    .access-home-icon.provider{color:#1775ed;background:#dcecff}.access-home-icon.visitor{color:#0d9b78;background:#d7f7ec}
+    .access-home-icon.vales{color:#e98413;background:#fff0d7}.access-home-icon.rounds{color:#7c3aed;background:#ede4ff}
+    .access-home-card strong{display:block;margin-bottom:4px;color:#10204a;font-size:1rem}
+    .access-home-card small{display:block;color:#7483a5;font-size:.76rem;line-height:1.3}
+    .access-home-arrow{color:#72a4ee;font-size:1.5rem;font-weight:400;text-align:center}
+    .access-home-scene{position:absolute;z-index:1;right:-10px;bottom:-5px;width:min(47%,490px);opacity:.97;pointer-events:none}
+    .access-home-scene svg{display:block;width:100%;height:auto}
+    .access-menu-grid{position:relative;z-index:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding-bottom:130px}
+    .access-menu-group{overflow:hidden;border:1px solid #e2ebf7;border-radius:22px;background:rgba(255,255,255,.96);box-shadow:0 12px 28px rgba(27,79,145,.09)}
+    .access-menu-group[open]{border-color:#bfd8ff;box-shadow:0 17px 34px rgba(27,79,145,.14)}
+    .access-menu-group-head{display:flex;align-items:center;gap:12px;padding:17px;cursor:pointer;list-style:none;user-select:none}
+    .access-menu-group-head::-webkit-details-marker{display:none}
+    .access-menu-group-head:hover{background:#f5faff}
+    .access-menu-group-head .access-home-icon{width:48px;height:48px;border-radius:15px;font-size:1.45rem}
+    .access-menu-group-head h3{margin:0;color:#10204a;font-size:1.04rem}
+    .access-menu-group-head p{margin:3px 0 0;color:#7483a5;font-size:.74rem}
+    .access-menu-caret{margin-left:auto;color:#72a4ee;font-size:1.5rem;line-height:1;transition:transform .18s ease}
+    .access-menu-group[open] .access-menu-caret{transform:rotate(90deg)}
+    .access-menu-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:0 17px 17px}
+    .access-menu-link{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;min-height:112px;padding:13px 9px;border:1px solid #e0eaf7;border-radius:17px;background:linear-gradient(155deg,#fff,#f2f8ff);color:#17366a;box-shadow:0 8px 18px rgba(27,79,145,.09);text-align:center;font-size:.78rem;font-weight:850}
+    .access-menu-link:hover{background:linear-gradient(155deg,#fff,#e5f2ff);border-color:#a9ccf8;transform:translateY(-3px);box-shadow:0 13px 24px rgba(27,79,145,.15)}
+    .access-kiosk-icon{display:grid;place-items:center;width:56px;height:56px;border-radius:17px;background:linear-gradient(145deg,#dcecff,#edf6ff);font-size:1.85rem;line-height:1;box-shadow:inset 0 1px 0 #fff,0 7px 14px rgba(8,104,242,.12)}
+    .access-menu-link:nth-child(3n+2) .access-kiosk-icon{background:linear-gradient(145deg,#d8f7ed,#ecfff8)}
+    .access-menu-link:nth-child(3n) .access-kiosk-icon{background:linear-gradient(145deg,#fff0d7,#fff8ec)}
+    .access-kiosk-label{display:block;line-height:1.2}
+    html[data-theme="dark"] .access-home,html[data-theme="copper"] .access-home{background:linear-gradient(155deg,#f8fbff,#e9f5ff);color:#10204a}
+    @media(max-width:720px){
+      .access-home{min-height:calc(100dvh - 110px);padding:20px 18px 0;border-radius:22px}
+      .access-home-head{margin-bottom:28px}.access-home-logo{width:48px;height:56px}.access-home-menu{width:40px;height:40px}
+      .access-home-welcome{margin-bottom:20px}.access-home-welcome h2{font-size:2rem}.access-home-welcome p{max-width:270px}
+      .access-home-grid{grid-template-columns:1fr;gap:11px;padding-bottom:190px}
+      .access-home-card{grid-template-columns:56px minmax(0,1fr) 20px;min-height:84px;padding:11px 13px;border-radius:17px}
+      .access-home-icon{width:56px;height:56px;border-radius:16px}.access-home-icon svg{width:32px;height:32px}
+      .access-home-scene{width:92%;right:-12%;bottom:-2px}
+      .access-menu-grid{grid-template-columns:1fr;gap:12px;padding-bottom:125px}
+      .access-menu-group{border-radius:18px}.access-menu-group-head{padding:14px}.access-menu-links{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 14px 14px}
+      .access-menu-link{min-height:105px;padding:11px 7px;font-size:.75rem}.access-kiosk-icon{width:52px;height:52px;font-size:1.7rem}
+    }
+    @media(max-width:360px){.access-menu-links{grid-template-columns:1fr}.access-home-scene{opacity:.58}}
+    @media(min-width:721px) and (max-width:1000px){.access-home-scene{width:54%;opacity:.82}}
+
+    /* Tema oscuro completo para la nueva portada y su menú tipo kiosco. */
+    html[data-theme="dark"] .access-home{background:linear-gradient(155deg,#0b1220 0%,#111c33 62%,#102746 100%);border-color:rgba(96,165,250,.22);color:#f8fafc;box-shadow:0 24px 60px rgba(0,0,0,.34)}
+    html[data-theme="dark"] .access-home::before{background:rgba(37,99,235,.14)}
+    html[data-theme="dark"] .access-home-welcome h2,html[data-theme="dark"] .access-menu-group-head h3{color:#f8fafc}
+    html[data-theme="dark"] .access-home-welcome p,html[data-theme="dark"] .access-menu-group-head p{color:#a9b8d2}
+    html[data-theme="dark"] .access-menu-group{background:rgba(17,28,51,.96);border-color:rgba(96,165,250,.20);box-shadow:0 14px 30px rgba(0,0,0,.25)}
+    html[data-theme="dark"] .access-menu-group[open]{border-color:rgba(96,165,250,.48);box-shadow:0 18px 38px rgba(0,0,0,.32)}
+    html[data-theme="dark"] .access-menu-group-head:hover{background:rgba(59,130,246,.10)}
+    html[data-theme="dark"] .access-menu-link{background:linear-gradient(155deg,#182846,#101c32);border-color:rgba(96,165,250,.20);color:#eaf2ff;box-shadow:0 8px 18px rgba(0,0,0,.22)}
+    html[data-theme="dark"] .access-menu-link:hover{background:linear-gradient(155deg,#1d3459,#142641);border-color:rgba(96,165,250,.52)}
+    html[data-theme="dark"] .access-kiosk-icon{background:linear-gradient(145deg,#183b68,#1d4c82);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 7px 16px rgba(0,0,0,.24)}
+    html[data-theme="dark"] .access-menu-link:nth-child(3n+2) .access-kiosk-icon{background:linear-gradient(145deg,#124c48,#17635c)}
+    html[data-theme="dark"] .access-menu-link:nth-child(3n) .access-kiosk-icon{background:linear-gradient(145deg,#5a3c15,#76501d)}
+    html[data-theme="dark"] .access-home-scene{opacity:.38;filter:saturate(.75) brightness(.72)}
+    @media(max-width:980px){.access-auth-card{grid-template-columns:1fr}.access-auth-brand{min-height:270px}.access-auth-brand-content{grid-template-columns:auto 1fr;align-items:center}.access-auth-brand-copy,.access-auth-features{grid-column:1/-1}}
+    @media(max-width:640px){.access-auth-view{padding:10px 0}.access-auth-card{padding:10px;border-radius:20px}.access-auth-brand{min-height:215px;padding:20px}.access-auth-brand-content{gap:10px}.access-auth-shield{width:68px;height:76px}.access-auth-brand-name{font-size:1.8rem}.access-auth-brand-copy{font-size:.78rem}.access-auth-features{display:none}.access-auth-form{padding:22px 16px}.auth-theme-toggle{right:14px;top:14px}}
 
     body.auth-mode .sidebar,
     body.auth-mode header,
@@ -2720,7 +2870,18 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
       .access-auth-brand h2{
         font-size:1.45rem;
       }
-    }</style>
+    }
+
+    body,header,.card,.tarjeta,.modal,input,select,textarea,.access-home,.access-menu-group,.access-menu-link{
+      transition:background-color .28s ease,background .28s ease,color .28s ease,border-color .28s ease,box-shadow .28s ease;
+    }
+    #btnTheme::before{content:attr(data-icon) !important;margin-right:7px;font-size:19px;line-height:1;display:inline-block}
+    #btnTheme.theme-pop::before{animation:themeIconPop .42s ease}
+    @keyframes themeIconPop{0%{transform:rotate(-35deg) scale(.65);opacity:.2}60%{transform:rotate(18deg) scale(1.2);opacity:1}100%{transform:rotate(0) scale(1)}}
+    html[data-theme="light"] #btnTheme{background:#fff !important;color:#111827 !important;border-color:#f59e0b !important}
+    html[data-theme="dark"] #btnTheme{background:#17233d !important;color:#eef6ff !important;border-color:#60a5fa !important;box-shadow:0 5px 16px rgba(37,99,235,.28)}
+    @media(max-width:680px){#btnTheme::before{margin-right:0}}
+    </style>
 </head>
 
 <body class="auth-mode">
@@ -3004,17 +3165,14 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="main-wrap">
 <header>
   <div class="topbar">
-    <div class="title">
-      <div class="logo"><img src="icon-192-cobre.png" alt="Caborca Access Control"></div>
-      <div>
-        <h1>Caborca Access Control <span id="appVersion" class="version-badge">v163</span></h1>
-        <small>Proveedores • Visitantes • Control de Vales de Salida • Rondinero</small>
-      </div>
+    <div class="title brand-lockup" aria-label="Caborca Access Control">
+      <span class="brand-shield" aria-hidden="true"></span>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v164</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
- <button class="hamb" id="btnHamb" title="Menú">
-  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-</button>
+ <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
+   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v11h14V10"/><path d="M9 21v-7h6v7"/></svg><span class="home-label">Inicio</span>
+ </button>
       <span class="pill" title="Estado de conexión">
         <span class="dot info" id="netDot"></span>
         <span id="netText">En línea</span>
@@ -3034,21 +3192,15 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v163";
-  const THEMES = ["dark", "light", "desert", "mint", "copper"];
+  const APP_VERSION = "v164";
+  const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
-    light: "Tema: Claro",
-    desert: "Tema: Desierto",
-    mint: "Tema: Menta",
-    copper: "Tema: Cobre"
+    light: "Tema: Claro"
   };
   const THEME_COLORS = {
     dark: "#0f172a",
-    light: "#f6f8fc",
-    desert: "#F7F3E8",
-    mint: "#ECFEFF",
-    copper: "#1F1300"
+    light: "#f6f8fc"
   };
 
   function setTheme(mode){
@@ -3059,6 +3211,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   if(btn){
     const label = THEME_LABELS[next] || "Tema";
     btn.textContent = label;
+    btn.dataset.icon = next === "light" ? "☀" : "☾";
     btn.setAttribute("aria-label", `${label}. Pulsa para cambiar el tema de color.`);
     btn.title = `${label}. Pulsa para cambiar.`;
   }
@@ -3067,13 +3220,21 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
 
 function initTheme(){
   const saved = localStorage.getItem("ui_theme");
-  setTheme(saved || "dark");
+  const normalized = THEMES.includes(saved) ? saved : (saved === "copper" ? "dark" : "light");
+  setTheme(normalized);
 }
 
 function toggleTheme(){
   const cur = document.documentElement.getAttribute("data-theme") || "dark";
   const idx = THEMES.indexOf(cur);
   setTheme(THEMES[(idx + 1) % THEMES.length]);
+  const btn = document.getElementById("btnTheme");
+  if(btn){
+    btn.classList.remove("theme-pop");
+    void btn.offsetWidth;
+    btn.classList.add("theme-pop");
+    setTimeout(()=>btn.classList.remove("theme-pop"),420);
+  }
 }
 
 initTheme();
@@ -4113,14 +4274,38 @@ function rememberModuleReturnForVisita(v = {}){
 }
 
 function renderModuleHome(){
-  const target = rememberModuleReturn(moduleReturnView);
-  if(target === "dashboard_visitantes") return renderDashboardHoy("visitantes");
-  if(target === "vales_activos") return renderValesActivos();
-  if(target === "vales_personal") return renderValesPersonal();
-  if(target === "bitacora_guardia") return renderBitacoraGuardia();
-  if(target === "rondinero") return renderRondinero();
-  if(target === "rondinero_guardia") return renderRondineroGuardia();
-  return renderDashboardHoy("proveedores");
+  currentView = "module_home";
+  try{ setActiveSb(""); }catch{}
+  if(qSearch){qSearch.value="";qSearch.style.display="none";}
+
+  const firstName = esc(String(currentUser?.nombre || currentUser?.name || "").trim().split(/\s+/)[0] || "");
+  const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"👤",vales_activos:"📦",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",help_guide:"?",help_about:"ⓘ"};
+  const link = (key,label,show=true) => show ? `<button class="access-menu-link" data-sb="${key}"><span class="access-kiosk-icon" aria-hidden="true">${menuIcons[key] || "•"}</span><span class="access-kiosk-label">${label}</span></button>` : "";
+  const group = (title,description,icon,iconClass,items) => {
+    const links = items.filter(Boolean).join("");
+    return links ? `<details class="access-menu-group"><summary class="access-menu-group-head"><span class="access-home-icon ${iconClass}">${icon}</span><div><h3>${title}</h3><p>${description}</p></div><span class="access-menu-caret" aria-hidden="true">›</span></summary><div class="access-menu-links">${links}</div></details>` : "";
+  };
+  const groups = [
+    group("Proveedores","Citas y control de accesos","🚚","provider",[
+      link("dashboard_proveedores","Dashboard",hasPerm("ver_dashboard") && !isVisitanteOnlyRole()),link("nuevo","Nueva cita",canCreateProveedorCita() && !isVisitanteOnlyRole()),link("citas_proveedores","Consultar citas",hasPerm("ver_citas_compras") && !isVisitanteOnlyRole())]),
+    group("Visitantes","Registro y seguimiento","👥","visitor",[
+      link("dashboard_visitantes","Dashboard",hasPerm("ver_dashboard")),link("nuevo_visitante","Nueva cita",canCreateVisitanteCita()),link("citas_visitantes","Consultar citas",hasPerm("ver_citas_compras"))]),
+    group("Vales","Salidas de personal y activos","🎟","vales",[
+      link("vales_personal","Vales de personal",hasPerm("ver_vales_personal")),link("vales_activos","Vales de activos",hasPerm("ver_vales_activos"))]),
+    group("Guardia y Rondinero","Operación de seguridad","🛡","rounds",[
+      link("scan","Escanear QR",hasPerm("escanear_qr")),link("bitacora_guardia","Bitácora",hasPerm("ver_bitacora_guardia")),link("rondinero","Rondinero",hasPerm("rondinero_ver"))]),
+    group("Reportes","Consultas y exportaciones","📊","provider",[
+      link("historial","Historial",hasPerm("ver_historial")),link("reportes","Indicadores",hasPerm("ver_reportes")),link("reporte_cambios","Cambios",hasPerm("ver_reporte_cambios")),link("export_excel","Exportar Excel",hasPerm("exportar_excel")),link("export_pdf","Exportar PDF",hasPerm("exportar_excel"))]),
+    group("Configuración","Usuarios y seguridad","⚙","visitor",[
+      link("mi_pin","Mi PIN",canConfigurePin()),link("roles","Usuarios",hasPerm("admin_roles")),link("role_permissions","Roles y permisos",hasPerm("admin_roles")),link("personas_visita","Directorio",currentUser?.role === ROLES.ADMIN),link("proveedores","Catálogo proveedores",currentUser?.role === ROLES.ADMIN),link("sesiones_activas","Sesiones activas",hasPerm("ver_sesiones_activas"))]),
+    group("Ayuda","Información y asistencia","?","vales",[link("help_guide","Guía rápida"),link("help_about","Acerca de")])
+  ].filter(Boolean).join("");
+  appEl.innerHTML = `
+    <section class="access-home">
+      <div class="access-home-welcome"><h2>Bienvenido${firstName ? `, ${firstName}` : ""}</h2><p>Selecciona una opción para gestionar el control de accesos.</p></div>
+      <div class="access-menu-grid">${groups || `<div style="color:#68779b">No hay módulos disponibles para este perfil.</div>`}</div>
+      <div class="access-home-scene" aria-hidden="true"><svg viewBox="0 0 560 275"><defs><linearGradient id="homeSky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#e4f4ff"/><stop offset="1" stop-color="#cce9ff"/></linearGradient><linearGradient id="homeBuilding" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8cc8f5"/><stop offset="1" stop-color="#4b91cf"/></linearGradient></defs><path fill="url(#homeSky)" d="M0 86 90 55l92 24 103-45 118 39 157-55v257H0z"/><path fill="#c2e3f8" d="m0 147 106-46 70 21 98-54 121 47 165-66v226H0z"/><ellipse cx="80" cy="250" rx="58" ry="12" fill="#a7d1ec"/><path fill="#7caaca" d="M48 238h12l4-78-11-13-10 14z"/><circle cx="54" cy="139" r="27" fill="#8bbbd3"/><circle cx="38" cy="160" r="22" fill="#83b1ca"/><circle cx="69" cy="162" r="24" fill="#92c1d7"/><path fill="url(#homeBuilding)" d="M172 118h290v132H172z"/><path fill="#2879bd" d="M151 107 327 53l171 53v19H151z"/><path fill="#d8efff" d="M194 138h90v112h-90z"/><path fill="#2e6eaa" d="M304 135h118v115H304z"/><path fill="#78b9e7" d="M320 151h38v82h-38zM371 151h35v82h-35z"/><path fill="#f5fbff" d="M422 155h25v95h-25z"/><path fill="#de3d3d" d="M0 236h178v12H0z"/><path fill="#fff" d="m8 236 18 12h22l-18-12zm52 0 18 12h22l-18-12zm52 0 18 12h22l-18-12z"/><path fill="#5e8db2" d="M12 225h6v37h-6zm150 0h6v37h-6z"/></svg></div>
+    </section>`;
 }
 
 function isDashboardView(){
@@ -4990,7 +5175,7 @@ function collapseSidebarSubs(){
 function helpAboutHtml(){
   return `
     <div class="help-about-hero">
-      <img class="help-about-logo" src="icon-192-cobre.png" alt="Logo de Caborca Access Control">
+      <span class="help-about-logo brand-shield" role="img" aria-label="Escudo de Caborca Access Control"></span>
       <div>
         <h2>Caborca Access Control</h2>
         <p>Plataforma unificada para gestionar accesos, visitas y movimientos internos.</p>
@@ -5016,6 +5201,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v164</b><span>Nueva interfaz adaptable con menú principal por módulos y roles, identidad visual renovada, temas claro y oscuro, acceso y recuperación de contraseña modernizados, y arranque de Rondinero con respuesta inmediata y mensajes claros de validación y sincronización.</span></div>
           <div class="help-release"><b>v163</b><span>Confirmación visible y persistente al guardar Mi PIN, con indicador de proceso y mensajes claros si Firestore rechaza el cambio.</span></div>
           <div class="help-release"><b>v162</b><span>Mejor contraste del inicio de sesión en temas claros y diagnóstico visible del envío de correos para recuperar la contraseña.</span></div>
           <div class="help-release"><b>v161</b><span>Generación y descarga de PDF completo desde el detalle del rondín, incluyendo puntos, GPS, novedades y fotografías.</span></div>
@@ -5459,7 +5645,7 @@ const helpModalEl = document.getElementById("helpModal");
 if(helpModalEl) helpModalEl.addEventListener("click", e => { if(e.target === helpModalEl) closeHelpModal(); });
 document.addEventListener("keydown", e => { if(e.key === "Escape" && helpModalEl?.classList.contains("show")) closeHelpModal(); });
 
-if(btnHamb){ btnHamb.addEventListener('click', (e)=>{ e.preventDefault(); sbToggle(); }); }
+if(btnHamb){ btnHamb.addEventListener('click', (e)=>{ e.preventDefault(); renderHome(); }); }
 if(sbOverlay){ sbOverlay.addEventListener('click', sbClose); }
 
 
@@ -6758,6 +6944,14 @@ window.addEventListener('visibilitychange', ()=>{
     return;
   }
   if(hamb) hamb.style.display = "";
+  const logoutBtn = document.createElement("button");
+  logoutBtn.id = "btnLogoutTop";
+  logoutBtn.type = "button";
+  logoutBtn.dataset.top = "logout";
+  logoutBtn.title = "Cerrar sesión";
+  logoutBtn.setAttribute("aria-label", "Cerrar sesión");
+  logoutBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"/><path d="M14 8l4 4-4 4"/><path d="M8 12h10"/></svg>`;
+  actionsBar.appendChild(logoutBtn);
   userPill.style.display = "";
   const dot = currentUser.role === ROLES.ADMIN ? "bad" : (currentUser.role === ROLES.PENDIENTE ? "warn" : "ok");
   userPill.innerHTML = `<span class="dot ${dot}"></span>${esc(currentUser.nombre)} • ${esc(String(currentUser.role||"").toUpperCase())}`;
@@ -6783,6 +6977,21 @@ window.addEventListener('visibilitychange', ()=>{
 
   function render(){
     appEl.innerHTML = isRegister ? renderRegisterForm() : renderLoginForm();
+
+    const authThemeBtn = document.querySelector("[data-auth-theme]");
+    const syncAuthTheme = () => {
+      if(!authThemeBtn) return;
+      const mode = document.documentElement.getAttribute("data-theme") || "dark";
+      authThemeBtn.textContent = mode === "light" ? "☀" : "☾";
+      authThemeBtn.title = mode === "light" ? "Tema claro. Cambiar a oscuro." : "Tema oscuro. Cambiar a claro.";
+      authThemeBtn.setAttribute("aria-label", authThemeBtn.title);
+    };
+    syncAuthTheme();
+    if(authThemeBtn) authThemeBtn.onclick = () => {
+      toggleTheme();
+      authThemeBtn.animate([{transform:"rotate(-30deg) scale(.7)"},{transform:"rotate(12deg) scale(1.15)"},{transform:"rotate(0) scale(1)"}],{duration:420,easing:"ease"});
+      syncAuthTheme();
+    };
 
     // ---- Eventos LOGIN ----
     const btnLogin = document.getElementById("btnLogin");
@@ -6999,16 +7208,18 @@ function renderLoginForm(){
   <section class="access-auth-view">
     <article class="access-auth-card">
       <div class="access-auth-brand">
-        <span class="access-auth-mark">CA</span>
-        <div>
-          <p class="eyebrow">Acceso seguro</p>
-          <h2>Caborca Access Control</h2>
-          <p>Caborca Suite para proveedores, visitantes, vales de salida y rondinero.</p>
+        <button class="auth-theme-toggle" type="button" data-auth-theme aria-label="Cambiar tema">☾</button>
+        <div class="access-auth-brand-content">
+          <img class="access-auth-shield" src="icon-shield-master.png" alt="Escudo de Caborca Access Control">
+          <div class="access-auth-brand-name"><span>Caborca</span><span>Access Control</span></div>
+          <p class="access-auth-brand-copy">Control seguro para proveedores, visitantes, vales de salida y rondines.</p>
+          <div class="access-auth-features"><span>Acceso seguro</span><span>Control centralizado</span><span>Operación móvil</span></div>
         </div>
       </div>
 
       <div class="access-auth-form">
         <h2>Iniciar sesión</h2>
+        <p class="auth-intro">Ingresa tus datos para acceder a Caborca Access Control.</p>
         <label>Correo electrónico</label>
         <input id="loginEmail" type="email" autocomplete="email" />
 
@@ -7034,16 +7245,18 @@ function renderRegisterForm(){
   <section class="access-auth-view">
     <article class="access-auth-card">
       <div class="access-auth-brand">
-        <span class="access-auth-mark">CA</span>
-        <div>
-          <p class="eyebrow">Cuenta pendiente</p>
-          <h2>Caborca Access Control</h2>
-          <p>Registra tu cuenta para solicitar acceso. Un administrador asignará tu rol.</p>
+        <button class="auth-theme-toggle" type="button" data-auth-theme aria-label="Cambiar tema">☾</button>
+        <div class="access-auth-brand-content">
+          <img class="access-auth-shield" src="icon-shield-master.png" alt="Escudo de Caborca Access Control">
+          <div class="access-auth-brand-name"><span>Caborca</span><span>Access Control</span></div>
+          <p class="access-auth-brand-copy">Solicita una cuenta; un administrador revisará y asignará tu acceso.</p>
+          <div class="access-auth-features"><span>Registro protegido</span><span>Permisos por rol</span></div>
         </div>
       </div>
 
       <div class="access-auth-form">
         <h2>Agregar cuenta</h2>
+        <p class="auth-intro">Completa la información requerida para solicitar acceso.</p>
         <label>Nombre completo *</label>
         <input id="regNombre" autocomplete="name" />
 
@@ -9135,8 +9348,15 @@ async function renderRondineroGuardia(){
               ${rutas.map(r => `<option value="${esc(r.id)}">${esc(r.nombre)}${r.turno ? ` • ${esc(r.turno)}` : ""}</option>`).join("")}
             </select>
           ` : ""}
-          <div class="row" style="margin-top:12px;">
-            <button data-action="rondineroIniciar" ${rutas.length && rondineroGuardiaCred ? "" : "disabled"}>Iniciar rondín</button>
+          <div style="margin-top:12px;color:var(--muted);font-size:12px;">
+            ${!rutas.length
+              ? "Para iniciar se necesita al menos una ruta activa con puntos asignados."
+              : !rondineroGuardiaCred
+                ? "Primero escanea la credencial del guardia."
+                : "Todo listo. Presiona el botón para comenzar el recorrido."}
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <button data-action="rondineroIniciar">Iniciar rondín</button>
           </div>
         </div>
       `}
@@ -9993,28 +10213,35 @@ function renderRondineroQR(id){
 
 async function iniciarRondinero(){
   if(!requirePerm("rondinero_ejecutar","Tu rol no puede iniciar rondines.")) return;
-  if(hasPerm("rondinero_configurar") || hasPerm("rondinero_reportes")){
-    await syncRondinero(true);
-  }else{
-    await syncRondineroGuardia(true);
+  const btn = document.querySelector('[data-action="rondineroIniciar"]');
+  if(btn?.dataset.busy === "1") return;
+  if(btn){
+    btn.dataset.busy = "1";
+    btn.disabled = true;
+    btn.textContent = "Iniciando…";
   }
-  if(getRondineroActivo()){
-    toast("Rondinero","Ya tienes un rondín en curso.","warn",2600);
-    return renderRondinero();
-  }
-  if(!rondineroGuardiaCred?.uid){
-    toast("Guardia requerido","Escanea la credencial del guardia antes de iniciar.","warn",3200);
-    return renderRondinero();
-  }
-  const rutaId = document.getElementById("rondRutaInicio")?.value || "";
-  const rutas = getRondineroRutasActivas();
-  const ruta = rutas.find(r => String(r.id) === String(rutaId)) || rutas[0];
-  const puntos = ruta ? getRondineroPuntosPorRuta(ruta.id) : [];
-  if(!puntos.length){
-    toast("Rondinero","La ruta seleccionada no tiene puntos activos.","warn",2600);
-    return;
-  }
-  const rondin = {
+  try{
+    if(getRondineroActivo()){
+      toast("Rondinero","Ya tienes un rondín en curso.","warn",3200);
+      return await renderRondinero();
+    }
+    if(!rondineroGuardiaCred?.uid){
+      toast("Guardia requerido","Escanea la credencial del guardia antes de iniciar.","warn",4200);
+      return;
+    }
+    const rutaId = document.getElementById("rondRutaInicio")?.value || "";
+    const rutas = getRondineroRutasActivas();
+    if(!rutas.length){
+      toast("Ruta requerida","No hay rutas activas disponibles. Pide a un administrador que configure una.","warn",4600);
+      return;
+    }
+    const ruta = rutas.find(r => String(r.id) === String(rutaId)) || rutas[0];
+    const puntos = getRondineroPuntosPorRuta(ruta.id);
+    if(!puntos.length){
+      toast("Ruta sin puntos","La ruta seleccionada no tiene puntos activos asignados.","warn",4600);
+      return;
+    }
+    const rondin = {
     id: `ROND-${Date.now()}`,
     fecha: todayISO(),
     rutaId: ruta?.id || "",
@@ -10034,18 +10261,32 @@ async function iniciarRondinero(){
     novedadesCount: 0,
     createdTs: Date.now(),
     updatedTs: Date.now()
-  };
-  rondineroRondines.unshift(rondin);
-  saveRondineroLocal();
-  if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
-    try{ await cloudUpsertRondineroRondin(rondin); }
-    catch(e){
-      console.warn(e);
-      toast("Permisos Firebase","No se pudo guardar el rondín en la nube. Revisa reglas de Rondinero.","warn",4200);
+    };
+    rondineroRondines.unshift(rondin);
+    if(!saveRondineroLocal()){
+      rondineroRondines = rondineroRondines.filter(r => r.id !== rondin.id);
+      toast("No se pudo iniciar","El dispositivo no permitió guardar el recorrido.","bad",4600);
+      return;
+    }
+    toast("Rondinero","Rondín iniciado. Ya puedes escanear el primer punto.","ok",3200);
+    await renderRondinero();
+
+    if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
+      cloudUpsertRondineroRondin(rondin).catch(e => {
+        console.warn(e);
+        toast("Sincronización pendiente","El rondín inició en este dispositivo. Firebase se reintentará al registrar el siguiente punto.","warn",6200);
+      });
+    }
+  }catch(e){
+    console.error("No se pudo iniciar el rondín:", e);
+    toast("No se pudo iniciar","Ocurrió un error al preparar el rondín. Intenta nuevamente.","bad",4600);
+  }finally{
+    if(btn?.isConnected){
+      btn.dataset.busy = "0";
+      btn.disabled = false;
+      btn.textContent = "Iniciar rondín";
     }
   }
-  toast("Rondinero","Rondín iniciado.","ok",2200);
-  await renderRondinero();
 }
 
 function renderRondineroScanner(){
@@ -13569,7 +13810,7 @@ if(!esVisitante && existeCitaEnHorario(fechaHora, area)){
         <div class="appointment-pass-hero">
           <div>
             <div class="appointment-pass-brand">
-              <img src="icon-192-cobre.png" alt="Caborca Access Control" data-html2canvas-ignore="true">
+              <img src="icon-shield-master.png" alt="Caborca Access Control" data-html2canvas-ignore="true">
               <div>
                 <strong>Caborca Access Control</strong>
                 <span>Seguridad - Confianza - Registro</span>
@@ -15247,11 +15488,6 @@ function renderProveedores(lista){
       setAuthShell(false);
       if(currentUser.role === ROLES.PENDIENTE) return renderPendiente();
       if(currentUser.role === ROLES.PROVEEDOR) return renderProveedor();
-      if(currentUser.role === ROLES.JEFE){
-        moduleReturnView = "vales_personal";
-        return renderValesPersonal();
-      }
-      if(isVisitanteOnlyRole()) return renderDashboardHoy("visitantes");
       return renderModuleHome();
     }
 
@@ -15272,6 +15508,20 @@ function renderProveedores(lista){
       const id = el.dataset.id;
 
       switch(action){
+        case "abrirMenuInicio": btnHamb?.click(); break;
+        case "homeModulo": {
+          const moduleKey = el.dataset.module;
+          if(moduleKey === "proveedores") await renderDashboardHoy("proveedores");
+          else if(moduleKey === "visitantes") await renderDashboardHoy("visitantes");
+          else if(moduleKey === "vales"){
+            if(hasPerm("ver_vales_personal")) await renderValesPersonal();
+            else await renderValesActivos();
+          }else if(moduleKey === "rondinero"){
+            if(hasPerm("rondinero_ver")) await renderRondinero();
+            else await renderBitacoraGuardia();
+          }
+          break;
+        }
         case "closeHelpModal": closeHelpModal(); break;
         case "home":
           lockView = false;

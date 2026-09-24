@@ -1,4 +1,4 @@
-const CACHE_NAME = "caborca-access-control-v163";
+const CACHE_NAME = "caborca-access-control-v164";
 
 // Archivos base que siempre quieres offline
 const STATIC_ASSETS = [
@@ -13,6 +13,7 @@ const STATIC_ASSETS = [
   "./manifest.json",
   "./icon-192-cobre.png",
   "./icon-512-cobre.png",
+  "./icon-shield-master.png",
   "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js",
   "https://unpkg.com/html5-qrcode",
   "https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js",
