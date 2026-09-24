@@ -2445,6 +2445,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     .access-menu-link:nth-child(3n+2) .access-kiosk-icon{background:linear-gradient(145deg,#d8f7ed,#ecfff8)}
     .access-menu-link:nth-child(3n) .access-kiosk-icon{background:linear-gradient(145deg,#fff0d7,#fff8ec)}
     .access-kiosk-label{display:block;line-height:1.2}
+    .access-kiosk-description{display:block;margin-top:-4px;color:#6f819e;font-size:.64rem;font-weight:650;line-height:1.25}
     html[data-theme="dark"] .access-home,html[data-theme="copper"] .access-home{background:linear-gradient(155deg,#f8fbff,#e9f5ff);color:#10204a}
     @media(max-width:720px){
       .access-home{min-height:calc(100dvh - 110px);padding:20px 18px 0;border-radius:22px}
@@ -2471,6 +2472,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     html[data-theme="dark"] .access-menu-group-head:hover{background:rgba(59,130,246,.10)}
     html[data-theme="dark"] .access-menu-link{background:linear-gradient(155deg,#182846,#101c32);border-color:rgba(96,165,250,.20);color:#eaf2ff;box-shadow:0 8px 18px rgba(0,0,0,.22)}
     html[data-theme="dark"] .access-menu-link:hover{background:linear-gradient(155deg,#1d3459,#142641);border-color:rgba(96,165,250,.52)}
+    html[data-theme="dark"] .access-kiosk-description{color:#aebed8}
     html[data-theme="dark"] .access-kiosk-icon{background:linear-gradient(145deg,#183b68,#1d4c82);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 7px 16px rgba(0,0,0,.24)}
     html[data-theme="dark"] .access-menu-link:nth-child(3n+2) .access-kiosk-icon{background:linear-gradient(145deg,#124c48,#17635c)}
     html[data-theme="dark"] .access-menu-link:nth-child(3n) .access-kiosk-icon{background:linear-gradient(145deg,#5a3c15,#76501d)}
@@ -2887,6 +2889,45 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     html[data-theme="light"] #btnTheme{background:#fff !important;color:#111827 !important;border-color:#f59e0b !important}
     html[data-theme="dark"] #btnTheme{background:#17233d !important;color:#eef6ff !important;border-color:#60a5fa !important;box-shadow:0 5px 16px rgba(37,99,235,.28)}
     @media(max-width:680px){#btnTheme::before{margin-right:0}}
+
+    /* Prueba visual: Dashboard moderno de Proveedores */
+    .provider-dashboard-modern{display:grid;gap:18px}
+    .provider-dashboard-hero{position:relative;overflow:hidden;display:flex;justify-content:space-between;align-items:center;gap:18px;padding:22px 24px;border:1px solid rgba(37,99,235,.18);border-radius:24px;background:linear-gradient(135deg,#f8fbff 0%,#eaf3ff 58%,#d8ebff 100%);box-shadow:0 18px 45px rgba(30,64,175,.12)}
+    .provider-dashboard-hero::after{content:"";position:absolute;right:-38px;bottom:-72px;width:230px;height:230px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,.20),rgba(37,99,235,0) 68%)}
+    .provider-dashboard-hero-copy{position:relative;z-index:1;display:flex;align-items:center;gap:16px;min-width:0}
+    .provider-dashboard-hero-icon{display:grid;place-items:center;width:64px;height:64px;flex:0 0 64px;border-radius:20px;background:linear-gradient(145deg,#1787ff,#0757cf);color:#fff;font-size:31px;box-shadow:0 12px 28px rgba(15,105,235,.28)}
+    .provider-dashboard-hero h2{margin:0;color:#07152f;font-size:clamp(22px,3vw,32px);letter-spacing:-.5px}
+    .provider-dashboard-hero p{margin:5px 0 0;color:#52627d;font-size:13px}
+    .provider-dashboard-date{position:relative;z-index:1;display:flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid rgba(37,99,235,.18);border-radius:999px;background:rgba(255,255,255,.78);color:#183153;font-size:12px;font-weight:800;white-space:nowrap}
+    .provider-dashboard-modern .dashboard-toolbar{margin:0;padding:14px;border:1px solid var(--border);border-radius:18px;background:var(--panel);box-shadow:0 10px 28px rgba(15,23,42,.08)}
+    .provider-dashboard-modern .dashboard-toolbar>.pill:first-child{display:none}
+    .provider-dashboard-modern .dashboard-pending-pill{border-color:rgba(245,158,11,.30);background:rgba(245,158,11,.10)}
+    .provider-dashboard-modern .grid.cols-5{gap:14px;align-items:start}
+    .provider-dashboard-modern .provider-stage{min-width:0;padding:10px;border:1px solid var(--border);border-radius:20px;background:color-mix(in srgb,var(--panel) 82%,var(--bg));box-shadow:0 10px 28px rgba(15,23,42,.06)}
+    .provider-dashboard-modern .provider-stage>.card{padding:15px;border:0;border-radius:15px;background:linear-gradient(145deg,color-mix(in srgb,var(--panel) 90%,#fff),color-mix(in srgb,var(--panel2) 92%,#dbeafe));box-shadow:none}
+    .provider-dashboard-modern .provider-stage>.card .title{font-size:12px;text-transform:uppercase;letter-spacing:.55px;color:var(--muted)}
+    .provider-dashboard-modern .provider-stage>.card .big{margin-top:5px;font-size:30px;color:var(--text)}
+    .provider-dashboard-modern .provider-stage>br{display:none}
+    .provider-dashboard-modern .provider-visit-card{margin-top:10px;padding:15px;border:1px solid color-mix(in srgb,var(--border) 75%,#3b82f6);border-radius:16px;background:var(--panel);box-shadow:0 8px 22px rgba(15,23,42,.08);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+    .provider-dashboard-modern .provider-visit-card:hover{transform:translateY(-2px);border-color:rgba(37,99,235,.38);box-shadow:0 14px 30px rgba(30,64,175,.14)}
+    .provider-dashboard-modern .provider-visit-card>strong{display:block;font-size:14px;line-height:1.25;color:var(--text)}
+    .provider-dashboard-modern .provider-visit-card>small{display:block;margin-top:4px;color:var(--muted)}
+    .provider-dashboard-modern .provider-visit-card .meta{margin-top:12px;gap:6px}
+    .provider-dashboard-modern .provider-visit-card .pill,.provider-dashboard-modern .provider-visit-card .badge-dictamen{font-size:10px;padding:4px 7px}
+    .rondinero-modern .rondinero-stat-grid{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))!important;gap:12px}
+    .rondinero-modern .rondinero-stat-grid>.tarjeta{padding:16px;border:1px solid var(--border);border-radius:17px;background:linear-gradient(145deg,color-mix(in srgb,var(--panel) 92%,#fff),color-mix(in srgb,var(--panel2) 90%,#dbeafe));box-shadow:0 8px 22px rgba(15,23,42,.06)}
+    .rondinero-modern .rondinero-stat-grid>.tarjeta strong{display:block;font-size:25px;line-height:1.05;color:var(--text)}
+    .rondinero-modern .rondinero-stat-grid>.tarjeta small{display:block;margin-top:6px;color:var(--muted);line-height:1.25}
+    .rondinero-modern .rondinero-workspace{padding:16px;border:1px solid var(--border);border-radius:20px;background:var(--panel);box-shadow:0 10px 28px rgba(15,23,42,.06)}
+    .rondinero-modern .rondinero-workspace>.divider:first-child{display:none}
+    .rondinero-modern .rondinero-tabs{margin-bottom:14px}
+    .rondinero-modern .rondinero-guard-card{border-radius:19px;background:var(--panel);box-shadow:0 10px 28px rgba(15,23,42,.08)}
+    [data-theme="dark"] .provider-dashboard-hero{border-color:rgba(59,130,246,.28);background:linear-gradient(135deg,#111d35 0%,#102c55 58%,#0d4077 100%)}
+    [data-theme="dark"] .provider-dashboard-hero h2{color:#f8fbff}
+    [data-theme="dark"] .provider-dashboard-hero p{color:#b5c7e5}
+    [data-theme="dark"] .provider-dashboard-date{border-color:rgba(147,197,253,.25);background:rgba(7,21,47,.55);color:#e8f2ff}
+    @media(max-width:900px){.provider-dashboard-hero{padding:18px}.provider-dashboard-modern .grid.cols-5{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+    @media(max-width:520px){.provider-dashboard-hero{align-items:flex-start;flex-direction:column}.provider-dashboard-hero-icon{width:54px;height:54px;flex-basis:54px;border-radius:17px;font-size:26px}.provider-dashboard-date{align-self:flex-start}.provider-dashboard-modern .grid.cols-5{grid-template-columns:1fr!important}}
     </style>
 </head>
 
@@ -3037,7 +3078,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     <div class="sb-sub" id="sbGuardiaSub">
       <div class="sb-btn" data-sb="scan">
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h6v6H5z"/><path d="M13 5h6v6h-6z"/><path d="M5 13h6v6H5z"/><path d="M14 14h1"/><path d="M17 13h2v2h-2z"/><path d="M13 18h6"/></svg></span>
-        <span class="sb-txt">Escanear QR</span>
+        <span class="sb-txt">Escáner de accesos</span>
       </div>
       <div class="sb-btn" data-sb="bitacora_guardia">
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v18H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg></span>
@@ -3173,7 +3214,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v169</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v170</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3198,7 +3239,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v169";
+  const APP_VERSION = "v170";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -4286,7 +4327,7 @@ function renderModuleHome(){
 
   const firstName = esc(String(currentUser?.nombre || currentUser?.name || "").trim().split(/\s+/)[0] || "");
   const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"👤",vales_activos:"📦",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",help_guide:"?",help_about:"ⓘ"};
-  const link = (key,label,show=true) => show ? `<button class="access-menu-link" data-sb="${key}"><span class="access-kiosk-icon" aria-hidden="true">${menuIcons[key] || "•"}</span><span class="access-kiosk-label">${label}</span></button>` : "";
+  const link = (key,label,show=true,description="") => show ? `<button class="access-menu-link" data-sb="${key}"><span class="access-kiosk-icon" aria-hidden="true">${menuIcons[key] || "•"}</span><span class="access-kiosk-label">${label}</span>${description ? `<span class="access-kiosk-description">${description}</span>` : ""}</button>` : "";
   const group = (title,description,icon,iconClass,items) => {
     const links = items.filter(Boolean).join("");
     return links ? `<details class="access-menu-group"><summary class="access-menu-group-head"><span class="access-home-icon ${iconClass}">${icon}</span><div><h3>${title}</h3><p>${description}</p></div><span class="access-menu-caret" aria-hidden="true">›</span></summary><div class="access-menu-links">${links}</div></details>` : "";
@@ -4299,7 +4340,7 @@ function renderModuleHome(){
     group("Vales","Salidas de personal y activos","🎟","vales",[
       link("vales_personal","Vales de personal",hasPerm("ver_vales_personal")),link("vales_activos","Vales de activos",hasPerm("ver_vales_activos"))]),
     group("Guardia y Rondinero","Operación de seguridad","🛡","rounds",[
-      link("scan","Escanear QR",hasPerm("escanear_qr")),link("bitacora_guardia","Bitácora",hasPerm("ver_bitacora_guardia")),link("rondinero","Rondinero",hasPerm("rondinero_ver"))]),
+      link("scan","Escáner de accesos",hasPerm("escanear_qr"),"Proveedores, visitantes y vales"),link("bitacora_guardia","Bitácora",hasPerm("ver_bitacora_guardia")),link("rondinero","Rondinero",hasPerm("rondinero_ver"))]),
     group("Reportes","Consultas y exportaciones","📊","provider",[
       link("historial","Historial",hasPerm("ver_historial")),link("reportes","Indicadores",hasPerm("ver_reportes")),link("reporte_cambios","Cambios",hasPerm("ver_reporte_cambios")),link("export_excel","Exportar Excel",hasPerm("exportar_excel")),link("export_pdf","Exportar PDF",hasPerm("exportar_excel"))]),
     group("Configuración","Usuarios y seguridad","⚙","visitor",[
@@ -5207,6 +5248,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v170</b><span>Imagen visual renovada en los dashboards de Proveedores, Visitantes, Vales y Rondinero, con tarjetas adaptables, temas claro y oscuro y el acceso general renombrado como Escáner de accesos.</span></div>
           <div class="help-release"><b>v169</b><span>El rol Jefe puede crear y modificar su propio PIN con una regla restringida que impide cambiar otros datos de usuario.</span></div>
           <div class="help-release"><b>v168</b><span>Iconos de instalación específicos para iPhone y Android, con fondo sólido, tamaños correctos y referencias versionadas para evitar que Safari genere un icono con inicial.</span></div>
           <div class="help-release"><b>v167</b><span>Los tableros de Vales de personal y Vales de activos muestran dos columnas en tablets, conservando una columna en celulares pequeños.</span></div>
@@ -7466,6 +7508,12 @@ function renderRegisterForm(){
       const today = new Date();
       const term = (dashboardSearchTerm || "").trim().toLowerCase();
       const dashboardTitle = dashboardTipo === "visitantes" ? "Visitantes" : "Proveedores";
+      const modernDashboard = true;
+      const dashboardHeroIcon = dashboardTipo === "visitantes" ? "👥" : "🚚";
+      const dashboardHeroTitle = dashboardTipo === "visitantes" ? "Dashboard de visitantes" : "Dashboard de proveedores";
+      const dashboardHeroText = dashboardTipo === "visitantes"
+        ? "Registro, seguimiento y permanencia de visitantes en planta."
+        : "Control de citas, llegadas y permanencia en planta.";
       const searchPlaceholder = dashboardTipo === "visitantes"
         ? "Buscar visitante, empresa o anfitrión..."
         : "Buscar proveedor, empresa o material...";
@@ -7501,7 +7549,7 @@ function renderRegisterForm(){
       ` : "";
 
       const col = (title, dotClass, items) => `
-        <div class="col">
+        <div class="col ${modernDashboard ? "provider-stage" : ""}">
           
 <div class="card">
   <div class="title">
@@ -7541,7 +7589,7 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
         if(v.ocNo && v.facturaNo) docColor="ok";
         else if(v.ocNo || v.facturaNo) docColor="warn";
         return `
-          <div class="tarjeta history-card tipo-${esc(tipo)} ${v.visitaEspecial ? "visita-especial" : ""} ${qrVencido ? "qr-vencido" : ""}" data-action="ficha" data-id="${esc(v.id)}">
+          <div class="tarjeta history-card ${modernDashboard ? "provider-visit-card" : ""} tipo-${esc(tipo)} ${v.visitaEspecial ? "visita-especial" : ""} ${qrVencido ? "qr-vencido" : ""}" data-action="ficha" data-id="${esc(v.id)}">
             ${qrVencido ? `<div class="qr-banda-inactivo">QR inactivo por retraso</div>` : ""}
             <strong>${esc(isVisitante(v) ? getVisitanteResumen(v) : nombreAcceso)}</strong>
             <small>${esc(empresaAcceso || tipoLabel)}</small>
@@ -7640,6 +7688,19 @@ ${incLabel ? `
       `;
 
       appEl.innerHTML = `
+        <section class="${modernDashboard ? "provider-dashboard-modern" : ""}">
+        ${modernDashboard ? `
+          <div class="provider-dashboard-hero">
+            <div class="provider-dashboard-hero-copy">
+              <div class="provider-dashboard-hero-icon" aria-hidden="true">${dashboardHeroIcon}</div>
+              <div>
+                <h2>${dashboardHeroTitle}</h2>
+                <p>${dashboardHeroText}</p>
+              </div>
+            </div>
+            <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${new Date().toLocaleDateString()}</div>
+          </div>
+        ` : ""}
         <div class="dashboard-toolbar">
           <div class="pill">
             <span class="dot brand"></span> ${esc(dashboardTitle)}: <b style="color:var(--text);">${new Date().toLocaleDateString()}</b>
@@ -7660,6 +7721,7 @@ ${incLabel ? `
         </div>
 
         ${dashboardContent}
+        </section>
       `;
     
     }
@@ -8186,7 +8248,7 @@ async function renderValesActivos(){
   const { generados, pendientes, fuera, regresoCancelado } = getValeCounts(list);
 
   const col = (title, dotClass, items) => `
-    <div class="col">
+    <div class="col provider-stage">
       <div class="card">
         <div class="title">
           <span class="dot ${dotClass}" style="margin-right:8px;"></span>
@@ -8209,18 +8271,25 @@ async function renderValesActivos(){
   `;
 
   appEl.innerHTML = `
-    <div class="row vale-dashboard-head">
-      <div>
-        <h2 style="margin:0 0 4px;">Vales de salida de activos</h2>
-        <div style="color:var(--muted);font-size:12px;">Control de activos, autorización, salida, regreso y QR.</div>
+    <section class="provider-dashboard-modern vale-dashboard-modern">
+      <div class="provider-dashboard-hero">
+        <div class="provider-dashboard-hero-copy">
+          <div class="provider-dashboard-hero-icon" aria-hidden="true">📦</div>
+          <div>
+            <h2>Vales de salida de activos</h2>
+            <p>Control de activos, autorización, salida, regreso y QR.</p>
+          </div>
+        </div>
+        <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${new Date().toLocaleDateString()}</div>
       </div>
-      <div class="row">
+      <div class="dashboard-toolbar vale-dashboard-head">
+        <span class="pill">Total: <b style="color:var(--text);margin-left:6px;">${list.length}</b></span>
         ${hasPerm("crear_vale_activo") ? `<button data-action="openValeModal">Nuevo vale</button>` : ""}
         ${hasPerm("escanear_qr") ? `<button class="secondary" data-action="scan" data-from="vales_activos">Escanear QR</button>` : ""}
       </div>
-    </div>
 
-    ${valesContent}
+      ${valesContent}
+    </section>
 
     ${renderValeActivoModal()}
   `;
@@ -8231,7 +8300,7 @@ function renderValeActivoCard(v){
   const autorizadoPor = v.autorizadoPorNombre || "";
   const autorizador = v.autorizadorNombre || v.autorizadorEmail || "";
   return `
-    <div class="tarjeta history-card tipo-proveedor" data-action="verValeQR" data-id="${esc(v.id)}">
+    <div class="tarjeta history-card provider-visit-card tipo-proveedor" data-action="verValeQR" data-id="${esc(v.id)}">
       <strong>Folio ${esc(v.folio || v.id)}</strong>
       <small>${esc(v.descripcion || "Activo sin descripción")}</small>
       <div class="meta">
@@ -8818,7 +8887,7 @@ async function renderValesPersonal(){
   const { generados, pendientes, fuera, regresoCancelado } = getValeCounts(list);
 
   const col = (title, dotClass, items) => `
-    <div class="col">
+    <div class="col provider-stage">
       <div class="card">
         <div class="title">
           <span class="dot ${dotClass}" style="margin-right:8px;"></span>
@@ -8841,18 +8910,25 @@ async function renderValesPersonal(){
   `;
 
   appEl.innerHTML = `
-    <div class="row vale-dashboard-head">
-      <div>
-        <h2 style="margin:0 0 4px;">Vales de salida de personal</h2>
-        <div style="color:var(--muted);font-size:12px;">${currentUser?.role === ROLES.JEFE ? "Mostrando únicamente los vales donde estás asignado como autorizador." : "Control de permisos del día en curso, salida, regreso y tiempo autorizado."}</div>
+    <section class="provider-dashboard-modern vale-dashboard-modern">
+      <div class="provider-dashboard-hero">
+        <div class="provider-dashboard-hero-copy">
+          <div class="provider-dashboard-hero-icon" aria-hidden="true">👤</div>
+          <div>
+            <h2>Vales de salida de personal</h2>
+            <p>${currentUser?.role === ROLES.JEFE ? "Mostrando únicamente los vales donde estás asignado como autorizador." : "Control de permisos del día en curso, salida, regreso y tiempo autorizado."}</p>
+          </div>
+        </div>
+        <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${new Date().toLocaleDateString()}</div>
       </div>
-      <div class="row">
+      <div class="dashboard-toolbar vale-dashboard-head">
+        <span class="pill">Total: <b style="color:var(--text);margin-left:6px;">${list.length}</b></span>
         ${hasPerm("crear_vale_personal") ? `<button data-action="openValePersonalModal">Nuevo vale</button>` : ""}
         ${hasPerm("escanear_qr") ? `<button class="secondary" data-action="scan" data-from="vales_personal">Escanear QR</button>` : ""}
       </div>
-    </div>
 
-    ${valesContent}
+      ${valesContent}
+    </section>
 
     ${renderValePersonalModal()}
   `;
@@ -8873,7 +8949,7 @@ function renderValePersonalCard(v){
     ? "border-color:rgba(239,68,68,.85); background:linear-gradient(180deg, rgba(127,29,29,.42), rgba(69,10,10,.28)); box-shadow:0 18px 44px rgba(127,29,29,.28);"
     : "";
   return `
-    <div class="tarjeta history-card tipo-visitante" data-action="verValePersonalQR" data-id="${esc(v.id)}" style="${cardStyle}">
+    <div class="tarjeta history-card provider-visit-card tipo-visitante" data-action="verValePersonalQR" data-id="${esc(v.id)}" style="${cardStyle}">
       <strong>${esc(v.nombreColaborador || "Colaborador")}</strong>
       <small>Nómina: ${esc(v.nomina || "-")} • ${esc(v.departamento || "Departamento")}</small>
       <div class="meta">
@@ -9293,22 +9369,25 @@ async function renderRondineroGuardia(){
   const novedades = eventos.filter(e => e.tipo === "novedad").length;
 
   appEl.innerHTML = `
-    <div class="card">
-      <div class="row" style="justify-content:space-between;align-items:flex-start;">
-        <div>
-          <h2 style="margin:0 0 4px;">Mi rondín</h2>
-          <div style="color:var(--muted);font-size:12px;">Escanea los puntos asignados y reporta novedades del recorrido.</div>
+    <section class="provider-dashboard-modern rondinero-modern">
+      <div class="provider-dashboard-hero">
+        <div class="provider-dashboard-hero-copy">
+          <div class="provider-dashboard-hero-icon" aria-hidden="true">🛡️</div>
+          <div>
+            <h2>Mi rondín</h2>
+            <p>Escanea los puntos asignados y reporta novedades del recorrido.</p>
+          </div>
         </div>
-        <div class="row">
-          <button class="secondary" data-action="rondineroRefresh">Actualizar</button>
-          <button class="secondary" data-action="home">Volver</button>
-        </div>
+        <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${new Date().toLocaleDateString()}</div>
+      </div>
+      <div class="dashboard-toolbar">
+        <span class="pill"><span class="dot ${activo ? "ok" : "muted"}"></span>${activo ? "Rondín en curso" : "Sin rondín activo"}</span>
+        <button class="secondary" data-action="rondineroRefresh">Actualizar</button>
+        <button class="secondary" data-action="home">Volver</button>
       </div>
 
-      <div class="divider"></div>
-
       ${activo ? `
-        <div class="tarjeta history-card">
+        <div class="tarjeta history-card rondinero-guard-card">
           <div class="row" style="justify-content:space-between;align-items:flex-start;">
             <div>
               <strong>Rondín en curso</strong>
@@ -9328,19 +9407,19 @@ async function renderRondineroGuardia(){
         </div>
 
         <div class="divider"></div>
-        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));">
+        <div class="grid rondinero-stat-grid">
           <div class="tarjeta"><strong>${visitadosCount}</strong><small>Puntos registrados</small></div>
           <div class="tarjeta"><strong>${Math.max(0, totalCount - visitadosCount)}</strong><small>Puntos pendientes</small></div>
           <div class="tarjeta"><strong>${novedades}</strong><small>Novedades</small></div>
         </div>
 
         <div style="height:12px;"></div>
-        <div class="tarjeta history-card">
+        <div class="tarjeta history-card rondinero-guard-card">
           <strong>Último registro</strong>
           <small>${ultimoScan ? esc(new Date(ultimoScan.createdTs || Date.now()).toLocaleString()) : "Aún no hay puntos registrados."}</small>
         </div>
       ` : `
-        <div class="tarjeta history-card">
+        <div class="tarjeta history-card rondinero-guard-card">
           <strong>Sin rondín en curso</strong>
           <small>${rutas.length ? "Escanea la credencial del guardia y selecciona la ruta asignada." : "No hay rutas activas configuradas."}</small>
           <div style="height:10px;"></div>
@@ -9372,7 +9451,7 @@ async function renderRondineroGuardia(){
           </div>
         </div>
       `}
-    </div>
+    </section>
   `;
 }
 
@@ -9545,21 +9624,23 @@ async function renderRondinero(){
   }[rondineroAdminTab] || "";
 
   appEl.innerHTML = `
-    <div class="card">
-      <div class="row" style="justify-content:space-between;align-items:flex-start;">
-        <div>
-          <h2 style="margin:0 0 4px;">Rondinero</h2>
-          <div style="color:var(--muted);font-size:12px;">Rondines digitales por puntos QR, evidencia GPS y fotografías comprimidas en novedades.</div>
+    <section class="provider-dashboard-modern rondinero-modern">
+      <div class="provider-dashboard-hero">
+        <div class="provider-dashboard-hero-copy">
+          <div class="provider-dashboard-hero-icon" aria-hidden="true">🛡️</div>
+          <div>
+            <h2>Rondinero</h2>
+            <p>Rondines digitales por puntos QR, evidencia GPS y fotografías comprimidas en novedades.</p>
+          </div>
         </div>
-        <div class="row">
-          <button class="secondary" data-action="rondineroRefresh">Actualizar</button>
-          <button class="secondary" data-action="home">Volver</button>
-        </div>
+        <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${new Date().toLocaleDateString()}</div>
       </div>
-
-      <div class="divider"></div>
-
-      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));">
+      <div class="dashboard-toolbar">
+        <span class="pill">Hoy: <b style="color:var(--text);margin-left:6px;">${statsHoy.total} rondines</b></span>
+        <button class="secondary" data-action="rondineroRefresh">Actualizar</button>
+        <button class="secondary" data-action="home">Volver</button>
+      </div>
+      <div class="grid rondinero-stat-grid">
         <div class="tarjeta"><strong>${puntos.length}</strong><small>Puntos activos</small></div>
         <div class="tarjeta"><strong>${rutas.length}</strong><small>Rutas activas</small></div>
         <div class="tarjeta"><strong>${statsHoy.total}</strong><small>Rondines hoy</small></div>
@@ -9569,9 +9650,11 @@ async function renderRondinero(){
         <div class="tarjeta"><strong>${statsTotal.novedades}</strong><small>Novedades</small></div>
       </div>
 
-      ${tabNav}
-      ${activeTabContent}
-    </div>
+      <div class="rondinero-workspace">
+        ${tabNav}
+        ${activeTabContent}
+      </div>
+    </section>
     <div class="modal-overlay vale-modal" id="rondRutaEditModal" style="display:none;">
       <div class="modal" style="max-width:960px;">
         <div class="modal-head">
@@ -14095,8 +14178,8 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
 
       appEl.innerHTML = `
         <div class="card">
-          <h2 style="margin:0 0 6px;">Escanear QR</h2>
-          <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">Escanea el QR de la operación o el QR del gafete para localizar un vale de personal vigente.</p>
+          <h2 style="margin:0 0 6px;">Escáner de accesos</h2>
+          <p style="margin:0 0 10px;color:var(--muted);font-size:12px;">Escanea códigos de proveedores, visitantes y vales, o el QR del gafete para localizar un permiso de personal vigente.</p>
           <div id="reader"></div>
           <div class="divider"></div>
           <div class="row"><button class="secondary" data-action="home">Cancelar</button></div>
