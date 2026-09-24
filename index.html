@@ -3214,7 +3214,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v170</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v171</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3239,7 +3239,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v170";
+  const APP_VERSION = "v171";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -4303,7 +4303,7 @@ function rememberModuleReturn(view = currentView){
     moduleReturnView = "dashboard_proveedores";
   }else if(view === "vales_activos" || view === "vale_qr"){
     moduleReturnView = "vales_activos";
-  }else if(view === "vales_personal" || view === "vale_personal_qr"){
+  }else if(view === "vales_personal" || view === "vale_personal_qr" || view === "vale_personal_operacion"){
     moduleReturnView = "vales_personal";
   }else if(view === "bitacora_guardia"){
     moduleReturnView = "bitacora_guardia";
@@ -5248,6 +5248,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v171</b><span>Flujo operativo corregido al escanear vales de personal, opciones completas de tiempo autorizado con entrada posterior a las 8:15 a.m. y nueva identidad visual unificada para los kioscos.</span></div>
           <div class="help-release"><b>v170</b><span>Imagen visual renovada en los dashboards de Proveedores, Visitantes, Vales y Rondinero, con tarjetas adaptables, temas claro y oscuro y el acceso general renombrado como Escáner de accesos.</span></div>
           <div class="help-release"><b>v169</b><span>El rol Jefe puede crear y modificar su propio PIN con una regla restringida que impide cambiar otros datos de usuario.</span></div>
           <div class="help-release"><b>v168</b><span>Iconos de instalación específicos para iPhone y Android, con fondo sólido, tamaños correctos y referencias versionadas para evitar que Safari genere un icono con inicial.</span></div>
@@ -8787,7 +8788,7 @@ function parseTiempoAutorizadoMin(value=""){
   const v = String(value || "").toLowerCase();
   if(v.includes("15")) return 15;
   if(v.includes("30")) return 30;
-  if(v.includes("1hr") || v.includes("1 hr") || v.includes("60")) return 60;
+  if(v.includes("1hr") || v.includes("1 hr") || v.includes("1 hora") || v.includes("60")) return 60;
   return null;
 }
 
@@ -10797,10 +10798,13 @@ function renderValePersonalModal(){
               <label>Tiempo autorizado *</label>
               <select id="vpTiempoAutorizado">
                 <option value="">— Selecciona —</option>
-                <option>15min</option>
-                <option>30min</option>
-                <option>1hr</option>
-                <option>Sin regreso</option>
+                <option>Salida 15 minutos</option>
+                <option>Salida 30 minutos</option>
+                <option>Salida 1 hora</option>
+                <option>Sin horario estimado de regreso</option>
+                <option>Salida sin regreso</option>
+                <option>Trabajo en horario o días no laborables (Límite de hora: 07:00 a.m. - 7:00 p.m.)</option>
+                <option>Entrada posterior a las 8:15 a.m.</option>
               </select>
             </div>
             <div>
@@ -10837,6 +10841,25 @@ async function openValePersonalModal(){
   }
   const modal = document.getElementById("valePersonalModal");
   if(modal) modal.style.display = "flex";
+  const tipo = document.getElementById("vpTipoPermiso");
+  if(tipo){
+    tipo.onchange = syncValePersonalTiempoPorTipo;
+    syncValePersonalTiempoPorTipo();
+  }
+}
+
+function syncValePersonalTiempoPorTipo(){
+  const tipo = document.getElementById("vpTipoPermiso");
+  const tiempo = document.getElementById("vpTiempoAutorizado");
+  if(!tipo || !tiempo) return;
+  const entrada = tipo.value === "Entrada";
+  if(entrada){
+    tiempo.value = "Entrada posterior a las 8:15 a.m.";
+    tiempo.disabled = true;
+  }else{
+    tiempo.disabled = false;
+    if(tiempo.value === "Entrada posterior a las 8:15 a.m.") tiempo.value = "";
+  }
 }
 
 function closeValePersonalModal(){
@@ -10940,6 +10963,45 @@ async function updateValePersonalStatus(id, status){
   }
   toast("Vale actualizado", isValePersonalEntrada(v) && status === ValeStatus.REGRESO_CANCELADO ? "Ingreso registrado y vale finalizado." : valeStatusLabel(status), "ok", 2200);
   await renderValesPersonal();
+}
+
+function renderValePersonalOperacion(id){
+  if(!requirePerm("ver_vales_personal","Tu rol no puede ver vales de personal.")) return;
+  currentView = "vale_personal_operacion";
+  moduleReturnView = "vales_personal";
+  const v = valesPersonal.find(x => String(x.id) === String(id));
+  if(!v){
+    toast("No encontrado","No se encontró el vale de personal.","warn",3200);
+    return renderValesPersonal();
+  }
+  const esEntrada = isValePersonalEntrada(v);
+  const accion = v.status === ValeStatus.GENERADO
+    ? (esEntrada ? "Registrar ingreso" : "Marcar salida")
+    : v.status === ValeStatus.FUERA
+      ? "Registrar regreso"
+      : "Consultar vale";
+  appEl.innerHTML = `
+    <section class="provider-dashboard-modern vale-dashboard-modern">
+      <div class="provider-dashboard-hero">
+        <div class="provider-dashboard-hero-copy">
+          <div class="provider-dashboard-hero-icon" aria-hidden="true">▦</div>
+          <div>
+            <h2>Vale de personal localizado</h2>
+            <p>Verifica los datos y pulsa ${esc(accion)} para registrar el movimiento.</p>
+          </div>
+        </div>
+        <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${new Date().toLocaleDateString()}</div>
+      </div>
+      <div class="dashboard-toolbar">
+        <span class="pill"><span class="dot ok"></span>QR reconocido</span>
+        <button class="secondary" data-action="scan" data-from="vales_personal">Escanear otro</button>
+        <button class="secondary" data-action="valesPersonal">Volver a vales</button>
+      </div>
+      <div class="rondinero-workspace">
+        ${renderValePersonalCard(v)}
+      </div>
+    </section>
+  `;
 }
 
 async function autorizarValePersonal(id){
@@ -14267,7 +14329,8 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
         elegido = candidatos[idx];
       }
       toast("Gafete reconocido", `Nómina ${nomina}: permiso vigente encontrado.`, "ok", 2200);
-      return renderValePersonalQR(elegido.id);
+      moduleReturnView = "vales_personal";
+      return renderValePersonalOperacion(elegido.id);
     }
 
     async function abrirFichaDesdeQR(id){
@@ -14324,7 +14387,8 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
           return renderModuleHome();
         }
         toast("QR detectado","Vale de personal encontrado.","ok",1800);
-        return renderValePersonalQR(vale.id);
+        moduleReturnView = "vales_personal";
+        return renderValePersonalOperacion(vale.id);
       }
 
       let v = visitas.find(x => String(x.id) === qrText);

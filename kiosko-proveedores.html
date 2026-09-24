@@ -7,7 +7,7 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
-    try{ document.documentElement.dataset.theme = localStorage.getItem("ui_theme") || "dark"; }catch{}
+    try{ const t = localStorage.getItem("ui_theme"); document.documentElement.dataset.theme = t === "dark" ? "dark" : "light"; }catch{ document.documentElement.dataset.theme = "light"; }
   </script>
   <style>
     :root{ --bg:#0b1220; --panel:#111c33; --text:#e5e7eb; --muted:#94a3b8; --brand:#2563eb; --ok:#22c55e; --bad:#ef4444; --border:rgba(255,255,255,.10); --font:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
@@ -186,14 +186,15 @@
       border-color:rgba(255,255,255,.32);
       box-shadow:none;
     }</style>
+  <link rel="stylesheet" href="./kiosko-brand-v171.css">
 </head>
 <body>
   <main>
     <div class="head">
             <div class="kiosk-brand">
-        <div class="kiosk-logo"><img src="icon-192-cobre.png" alt="CA"></div>
+        <div class="kiosk-logo"><img src="icon-app-192.png" alt="Escudo Caborca Access Control"></div>
         <div class="kiosk-copy">
-          <h1>Caborca Access Control</h1>
+          <h1>Caborca <span>Access Control</span></h1>
           <div class="sub">Kiosko de proveedores - registro seguro con QR.</div>
         </div>
       </div>
@@ -274,7 +275,7 @@
         <div class="pass-hero">
           <div>
             <div class="pass-brand">
-              <div class="pass-logo"><img src="icon-192-cobre.png" alt="CA"></div>
+              <div class="pass-logo"><img src="icon-app-192.png" alt="Escudo Caborca Access Control"></div>
               <div><strong>Caborca Access</strong><span>Control - Seguridad - Registro</span></div>
             </div>
             <div class="pass-title">
@@ -325,7 +326,7 @@
       setupKioskoTheme,
       toast,
       crearSolicitudCita
-    } from "./kiosko-common.js";
+    } from "./kiosko-common.js?v171";
 
     setupKioskoTheme();
     fillSelect("persona", PERSONAS);
@@ -707,4 +708,3 @@
   </script>
 </body>
 </html>
-

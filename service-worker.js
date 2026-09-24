@@ -1,4 +1,4 @@
-const CACHE_NAME = "caborca-access-control-v170";
+const CACHE_NAME = "caborca-access-control-v171";
 const NAVIGATION_TIMEOUT_MS = 8000;
 
 // Archivos base que siempre quieres offline
@@ -6,6 +6,7 @@ const STATIC_ASSETS = [
   "./",
   "./index.html",
   "./kiosko-common.js",
+  "./kiosko-brand-v171.css",
   "./kiosko-proveedores.html",
   "./kiosko-visitantes.html",
   "./kiosko-vales.html",

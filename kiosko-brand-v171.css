@@ -1,0 +1,43 @@
+:root{
+  --kiosk-blue:#0868eb;
+  --kiosk-navy:#071a3a;
+  --kiosk-soft:#eef6ff;
+}
+html[data-theme="light"] body{
+  background:linear-gradient(180deg,#eef6ff 0,#f8fbff 260px,#f4f8fd 100%);
+}
+html[data-theme="dark"] body{
+  background:linear-gradient(180deg,#071225 0,#0b1830 280px,#091426 100%);
+}
+body::before{
+  content:"";position:fixed;inset:0 0 auto;height:300px;pointer-events:none;z-index:-1;
+  background:radial-gradient(circle at 85% -15%,rgba(29,128,255,.25),transparent 55%);
+}
+main{max-width:1040px!important;padding:22px 18px 46px!important}
+.head{
+  position:relative;overflow:hidden;margin-bottom:18px!important;padding:18px 20px!important;
+  border:1px solid rgba(37,99,235,.18)!important;border-radius:24px!important;
+  background:linear-gradient(135deg,#fff 0%,#edf6ff 62%,#dceeff 100%)!important;
+  box-shadow:0 18px 45px rgba(30,64,175,.12)!important;color:var(--kiosk-navy)!important;
+}
+.head::after{content:"";position:absolute;right:-45px;bottom:-85px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,.18),transparent 68%);pointer-events:none}
+.kiosk-brand,.head-actions{position:relative;z-index:1}
+.kiosk-logo{width:62px!important;height:62px!important;flex-basis:62px!important;border-radius:19px!important;background:linear-gradient(145deg,#1686ff,#0757cf)!important;padding:7px!important;box-shadow:0 12px 28px rgba(15,105,235,.27)!important}
+.kiosk-logo img{object-fit:contain!important;border-radius:12px}
+.kiosk-copy h1{font-size:clamp(22px,4vw,31px)!important;color:var(--kiosk-navy)!important;letter-spacing:-.55px!important}
+.kiosk-copy h1 span{display:block;color:var(--kiosk-blue);line-height:1.02}
+.head .sub{margin-top:5px!important;color:#52627d!important;font-size:13px!important}
+.head .badge{background:#fff!important;border:1px solid rgba(37,99,235,.20)!important;color:#174c91!important;box-shadow:0 6px 18px rgba(30,64,175,.10)}
+.head .theme-btn{min-height:42px!important;padding:9px 14px!important;border-radius:14px!important;background:#fff!important;border:1px solid rgba(37,99,235,.20)!important;color:#123f7a!important;font-weight:850!important;box-shadow:0 6px 18px rgba(30,64,175,.10)!important}
+.card,.type-card{border-radius:22px!important;border:1px solid var(--border)!important;box-shadow:0 14px 36px rgba(15,23,42,.09)!important}
+label{font-weight:800!important;color:var(--text)}
+input,select,textarea{border-radius:14px!important;min-height:46px!important}
+button:not(.theme-btn):not(.type-card){border-radius:14px!important;background:linear-gradient(135deg,#087af5,#075bd7)!important;box-shadow:0 9px 20px rgba(8,104,235,.22)!important}
+button.secondary{background:color-mix(in srgb,var(--panel) 88%,#dbeafe)!important;color:var(--text)!important;border:1px solid var(--border)!important;box-shadow:none!important}
+.pass-logo,.permit-logo{background:linear-gradient(145deg,#1686ff,#0757cf)!important;padding:5px}
+.pass-logo img,.permit-logo img{object-fit:contain!important;border-radius:8px}
+html[data-theme="dark"] .head{background:linear-gradient(135deg,#111d35 0%,#102c55 60%,#0d4077 100%)!important;border-color:rgba(59,130,246,.30)!important;color:#fff!important}
+html[data-theme="dark"] .kiosk-copy h1{color:#fff!important}
+html[data-theme="dark"] .head .sub{color:#b5c7e5!important}
+html[data-theme="dark"] .head .badge,html[data-theme="dark"] .head .theme-btn{background:rgba(7,20,43,.68)!important;border-color:rgba(147,197,253,.25)!important;color:#eef6ff!important}
+@media(max-width:620px){main{padding:12px 10px 34px!important}.head{padding:15px!important;border-radius:20px!important}.kiosk-logo{width:54px!important;height:54px!important;flex-basis:54px!important}.head-actions{width:100%;justify-content:flex-start!important}.head .theme-btn{order:2}.head .badge{order:1}}

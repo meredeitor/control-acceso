@@ -203,29 +203,26 @@ export function toast(message, type = "info"){
 
 export function setupKioskoTheme(buttonId = "btnTheme"){
   const KEY = "ui_theme";
-  const THEMES = ["dark", "light", "mint", "desert", "copper"];
+  const THEMES = ["light", "dark"];
   const LABELS = {
-    dark: "Tema: Oscuro",
-    light: "Tema: Claro",
-    mint: "Tema: Menta",
-    desert: "Tema: Desierto",
-    copper: "Tema: Cobre"
+    dark: "☾ Tema: Oscuro",
+    light: "☀ Tema: Claro"
   };
   const btn = document.getElementById(buttonId);
   const apply = (mode) => {
-    const nextMode = THEMES.includes(mode) ? mode : "dark";
+    const nextMode = THEMES.includes(mode) ? mode : "light";
     document.documentElement.dataset.theme = nextMode;
     try{ localStorage.setItem(KEY, nextMode); }catch{}
     if(btn) btn.textContent = LABELS[nextMode] || "Tema";
   };
 
-  let saved = "dark";
-  try{ saved = localStorage.getItem(KEY) || "dark"; }catch{}
+  let saved = "light";
+  try{ saved = localStorage.getItem(KEY) || "light"; }catch{}
   apply(saved);
 
   if(btn){
     btn.addEventListener("click", () => {
-      const current = document.documentElement.dataset.theme || "dark";
+      const current = document.documentElement.dataset.theme || "light";
       const idx = Math.max(0, THEMES.indexOf(current));
       const next = THEMES[(idx + 1) % THEMES.length];
       apply(next);

@@ -7,7 +7,7 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
-    try{ document.documentElement.dataset.theme = localStorage.getItem("ui_theme") || "dark"; }catch{}
+    try{ const t = localStorage.getItem("ui_theme"); document.documentElement.dataset.theme = t === "dark" ? "dark" : "light"; }catch{ document.documentElement.dataset.theme = "light"; }
   </script>
   <style>
     :root{ --bg:#0b1220; --panel:#111c33; --text:#e5e7eb; --muted:#94a3b8; --brand:#2563eb; --accent:#7c3aed; --ok:#22c55e; --bad:#ef4444; --border:rgba(255,255,255,.10); --font:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
@@ -193,14 +193,15 @@
       border-color:rgba(255,255,255,.32);
       box-shadow:none;
     }</style>
+  <link rel="stylesheet" href="./kiosko-brand-v171.css">
 </head>
 <body>
   <main>
     <div class="head">
       <div class="kiosk-brand">
-        <div class="kiosk-logo"><img src="icon-192-cobre.png" alt="CA"></div>
+        <div class="kiosk-logo"><img src="icon-app-192.png" alt="Escudo Caborca Access Control"></div>
         <div class="kiosk-copy">
-          <h1>Caborca Access Control</h1>
+          <h1>Caborca <span>Access Control</span></h1>
           <div class="sub" id="kioskSubtitle">Kiosko de vales - solicitudes y seguimiento por QR.</div>
         </div>
       </div>
@@ -257,10 +258,13 @@
           <label>Tiempo autorizado *</label>
           <select id="pTiempoAutorizado" required>
             <option value="">Seleccione...</option>
-            <option>15min</option>
-            <option>30min</option>
-            <option>1hr</option>
-            <option>Sin regreso</option>
+            <option>Salida 15 minutos</option>
+            <option>Salida 30 minutos</option>
+            <option>Salida 1 hora</option>
+            <option>Sin horario estimado de regreso</option>
+            <option>Salida sin regreso</option>
+            <option>Trabajo en horario o días no laborables (Límite de hora: 07:00 a.m. - 7:00 p.m.)</option>
+            <option>Entrada posterior a las 8:15 a.m.</option>
           </select>
         </div>
         <div><label>Fecha *</label><input id="pFecha" type="date" required></div>
@@ -333,7 +337,7 @@
         <div class="permit-hero">
           <div>
             <div class="permit-brand">
-              <div class="permit-logo"><img src="icon-192-cobre.png" alt="CA"></div>
+              <div class="permit-logo"><img src="icon-app-192.png" alt="Escudo Caborca Access Control"></div>
               <div><strong>Caborca Access</strong><span>Control - Seguridad - Registro</span></div>
             </div>
             <div class="permit-title">
@@ -384,7 +388,7 @@
       escapeHtml,
       fetchValeAutorizadores,
       setupKioskoTheme
-    } from "./kiosko-common.js";
+    } from "./kiosko-common.js?v171";
 
     setupKioskoTheme();
     const today = new Date().toISOString().slice(0, 10);
@@ -399,6 +403,8 @@
     const qrBox = document.getElementById("qrcode");
     const autorizadorActivoSelect = document.getElementById("aAutorizador");
     const autorizadorPersonalSelect = document.getElementById("pAutorizador");
+    const tipoPermisoPersonalSelect = document.getElementById("pTipoPermiso");
+    const tiempoPersonalSelect = document.getElementById("pTiempoAutorizado");
     const cards = [...document.querySelectorAll(".type-card")];
     const selector = document.getElementById("selector");
     let currentVale = null;
@@ -407,6 +413,20 @@
     function value(id){
       return document.getElementById(id).value.trim();
     }
+
+    function syncTiempoPersonalPorTipo(){
+      const entrada = tipoPermisoPersonalSelect?.value === "Entrada";
+      if(!tiempoPersonalSelect) return;
+      if(entrada){
+        tiempoPersonalSelect.value = "Entrada posterior a las 8:15 a.m.";
+        tiempoPersonalSelect.disabled = true;
+      }else{
+        tiempoPersonalSelect.disabled = false;
+        if(tiempoPersonalSelect.value === "Entrada posterior a las 8:15 a.m.") tiempoPersonalSelect.value = "";
+      }
+    }
+
+    tipoPermisoPersonalSelect?.addEventListener("change", syncTiempoPersonalPorTipo);
 
     function showType(type){
       cards.forEach(card => card.classList.toggle("active", card.dataset.type === type));
@@ -686,6 +706,7 @@
         });
         renderSolicitud("VALE_PERSONAL", vale);
         formPersonal.reset();
+        syncTiempoPersonalPorTipo();
         document.getElementById("pFecha").value = today;
         toast("Solicitud enviada. QR generado.", "ok");
       }catch(err){
