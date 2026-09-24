@@ -4,9 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Caborca Access Control</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/png" href="icon-shield-master.png" />
-  <link rel="apple-touch-icon" href="icon-shield-master.png" />
+  <link rel="manifest" href="manifest.json?v=168" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-app-192.png?v=168" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180.png?v=168" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Caborca Access" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="theme-color" content="#0f172a" />
 
   <!-- Cargar librerías pesadas sin bloquear render -->
@@ -3170,7 +3173,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v167</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v168</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3195,7 +3198,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v167";
+  const APP_VERSION = "v168";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5204,6 +5207,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v168</b><span>Iconos de instalación específicos para iPhone y Android, con fondo sólido, tamaños correctos y referencias versionadas para evitar que Safari genere un icono con inicial.</span></div>
           <div class="help-release"><b>v167</b><span>Los tableros de Vales de personal y Vales de activos muestran dos columnas en tablets, conservando una columna en celulares pequeños.</span></div>
           <div class="help-release"><b>v166</b><span>El dashboard conserva su vista al buscar, actualizar o terminar la sincronización inicial, evitando regresos inesperados al menú principal.</span></div>
           <div class="help-release"><b>v165</b><span>Compatibilidad reforzada con Safari en iPhone: carga con tiempo máximo de espera, respaldo local más rápido e instalación de la PWA resistente a fallos de librerías externas.</span></div>

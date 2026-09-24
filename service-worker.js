@@ -1,4 +1,4 @@
-const CACHE_NAME = "caborca-access-control-v167";
+const CACHE_NAME = "caborca-access-control-v168";
 const NAVIGATION_TIMEOUT_MS = 8000;
 
 // Archivos base que siempre quieres offline
@@ -14,7 +14,10 @@ const STATIC_ASSETS = [
   "./manifest.json",
   "./icon-192-cobre.png",
   "./icon-512-cobre.png",
-  "./icon-shield-master.png"
+  "./icon-shield-master.png",
+  "./apple-touch-icon-180.png",
+  "./icon-app-192.png",
+  "./icon-app-512.png"
 ];
 
 function fetchWithTimeout(request, timeoutMs = NAVIGATION_TIMEOUT_MS) {
