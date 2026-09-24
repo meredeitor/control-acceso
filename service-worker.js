@@ -1,4 +1,5 @@
-const CACHE_NAME = "caborca-access-control-v164";
+const CACHE_NAME = "caborca-access-control-v165";
+const NAVIGATION_TIMEOUT_MS = 8000;
 
 // Archivos base que siempre quieres offline
 const STATIC_ASSETS = [
@@ -13,19 +14,33 @@ const STATIC_ASSETS = [
   "./manifest.json",
   "./icon-192-cobre.png",
   "./icon-512-cobre.png",
-  "./icon-shield-master.png",
-  "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js",
-  "https://unpkg.com/html5-qrcode",
-  "https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js",
-  "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+  "./icon-shield-master.png"
 ];
+
+function fetchWithTimeout(request, timeoutMs = NAVIGATION_TIMEOUT_MS) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("network-timeout")), timeoutMs);
+    fetch(request).then(
+      (response) => {
+        clearTimeout(timer);
+        resolve(response);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
 
 // 🚀 INSTALL
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.allSettled(
+        STATIC_ASSETS.map((asset) => cache.add(asset))
+      )
+    )
   );
   self.skipWaiting();
 });
@@ -57,10 +72,11 @@ self.addEventListener("fetch", (event) => {
   }
 
   // 🔥 HTML → network first
-  if (req.mode === "navigate" || req.url.endsWith(".js")) {
+  if (req.mode === "navigate") {
     event.respondWith(
-      fetch(req)
+      fetchWithTimeout(req)
         .then((res) => {
+          if (!res || !res.ok) throw new Error("navigation-response-not-ok");
           return caches.open(CACHE_NAME).then((cache) => {
             cache.put(req, res.clone());
             return res;
@@ -71,6 +87,23 @@ self.addEventListener("fetch", (event) => {
             cached || caches.match("./index.html")
           )
         )
+    );
+    return;
+  }
+
+  // Scripts locales: red primero con respaldo en cache. Las librerias CDN
+  // mantienen su propio cache HTTP y no deben impedir instalar la PWA.
+  if (new URL(req.url).origin === self.location.origin && new URL(req.url).pathname.endsWith(".js")) {
+    event.respondWith(
+      fetchWithTimeout(req)
+        .then((res) => {
+          if (!res || !res.ok) throw new Error("script-response-not-ok");
+          return caches.open(CACHE_NAME).then((cache) => {
+            cache.put(req, res.clone());
+            return res;
+          });
+        })
+        .catch(() => caches.match(req, { ignoreSearch:true }))
     );
     return;
   }
