@@ -101,7 +101,7 @@
     @media (max-width:1100px){ .grid.vales-grid{ grid-template-columns: repeat(2, minmax(220px, 1fr)); } }
     @media (max-width:720px){ .grid.cols-5{ grid-template-columns: repeat(2, 1fr); } }
     @media (max-width:720px){ .grid.cols-4{ grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width:720px){ .grid.vales-grid{ grid-template-columns: 1fr; } }
+    @media (max-width:720px){ .grid.vales-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width:500px){ .grid.cols-5{ grid-template-columns: 1fr; } }
     @media (max-width:500px){ .grid.cols-4{ grid-template-columns: 1fr; } }
 
@@ -2654,7 +2654,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
       }
 
       .grid.vales-grid{
-        grid-template-columns:1fr !important;
+        grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
       }
 
       .sidebar{
@@ -2796,6 +2796,9 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
       .grid.cols-5,
       .grid.cols-4,
       .history-grid{
+        grid-template-columns:1fr !important;
+      }
+      .grid.vales-grid{
         grid-template-columns:1fr !important;
       }
     }
@@ -3167,7 +3170,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v166</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v167</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3192,7 +3195,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v166";
+  const APP_VERSION = "v167";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5201,6 +5204,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v167</b><span>Los tableros de Vales de personal y Vales de activos muestran dos columnas en tablets, conservando una columna en celulares pequeños.</span></div>
           <div class="help-release"><b>v166</b><span>El dashboard conserva su vista al buscar, actualizar o terminar la sincronización inicial, evitando regresos inesperados al menú principal.</span></div>
           <div class="help-release"><b>v165</b><span>Compatibilidad reforzada con Safari en iPhone: carga con tiempo máximo de espera, respaldo local más rápido e instalación de la PWA resistente a fallos de librerías externas.</span></div>
           <div class="help-release"><b>v164</b><span>Nueva interfaz adaptable con menú principal por módulos y roles, identidad visual renovada, temas claro y oscuro, acceso y recuperación de contraseña modernizados, y arranque de Rondinero con respuesta inmediata y mensajes claros de validación y sincronización.</span></div>
