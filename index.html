@@ -3214,7 +3214,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v175</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v176</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3239,7 +3239,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v175";
+  const APP_VERSION = "v176";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3397,6 +3397,7 @@ document.getElementById("appVersion").textContent = APP_VERSION;
     GUARDIA: "guardia",
     CALIDAD: "calidad",
     CONTRALORIA: "contraloria",
+    SERVICIO_MEDICO: "servicio_medico",
     PROVEEDOR: "proveedor",
   };
   const ALL_ROLES = Object.values(ROLES);
@@ -3410,7 +3411,7 @@ document.getElementById("appVersion").textContent = APP_VERSION;
     "editar_cita","cancelar_cita",
     "ver_vales_activos","crear_vale_activo","autorizar_vale_activo",
     "registrar_salida_activo","registrar_regreso_activo",
-    "ver_vales_personal","crear_vale_personal","autorizar_vale_personal",
+    "ver_vales_personal","crear_vale_personal","autorizar_vale_personal","ver_permisos_imss","crear_permiso_imss",
     "registrar_salida_personal","registrar_regreso_personal",
     "ver_bitacora_guardia","crear_bitacora_guardia",
     "rondinero_ver","rondinero_ejecutar","rondinero_configurar","rondinero_reportes",
@@ -3534,6 +3535,12 @@ const PERMISOS = {
     "rondinero_reportes"
   ],
 
+  [ROLES.SERVICIO_MEDICO]: [
+    "ver_vales_personal",
+    "ver_permisos_imss",
+    "crear_permiso_imss"
+  ],
+
   [ROLES.JEFE]: [
     "crear_cita_visitante",
     "ver_vales_activos",
@@ -3590,6 +3597,8 @@ const PERM_LABELS = {
   ver_vales_personal: "Ver vales personal",
   crear_vale_personal: "Crear vale personal",
   autorizar_vale_personal: "Autorizar vale personal",
+  ver_permisos_imss: "Ver permisos IMSS",
+  crear_permiso_imss: "Crear permisos IMSS",
   registrar_salida_personal: "Registrar salida personal",
   registrar_regreso_personal: "Registrar regreso personal",
   ver_bitacora_guardia: "Ver bit\u00e1cora guardia",
@@ -3610,7 +3619,7 @@ const PERM_GROUPS = [
   { title:"Calidad y documentos", perms:["ver_documentos","dictaminar","despachar"] },
   { title:"Limpieza", perms:["limpiar_finalizados","eliminar"] },
   { title:"Vales de activos", perms:["ver_vales_activos","crear_vale_activo","autorizar_vale_activo","registrar_salida_activo","registrar_regreso_activo"] },
-  { title:"Vales de personal", perms:["ver_vales_personal","crear_vale_personal","autorizar_vale_personal","registrar_salida_personal","registrar_regreso_personal"] },
+  { title:"Vales de personal", perms:["ver_vales_personal","crear_vale_personal","autorizar_vale_personal","registrar_salida_personal","registrar_regreso_personal","ver_permisos_imss","crear_permiso_imss"] },
   { title:"Guardia y Rondinero", perms:["ver_bitacora_guardia","crear_bitacora_guardia","rondinero_ver","rondinero_ejecutar","rondinero_configurar","rondinero_reportes"] },
   { title:"Administraci\u00f3n", perms:["admin_roles","admin_proveedores","ver_sesiones_activas"] }
 ];
@@ -3624,6 +3633,7 @@ function normalizePermList(perms, role=""){
 
 function roleLabel(role){
   if(role === ROLES.JEFE_TI) return "Jefe de TI";
+  if(role === ROLES.SERVICIO_MEDICO) return "Servicio M\u00e9dico";
   return String(role || "").replace(/_/g, " ").toUpperCase();
 }
 
@@ -3820,6 +3830,61 @@ async function saveRolePermsConfig(role, perms){
     let visitas = loadVisitasLocal();
     let valesActivos = loadValesActivosLocal();
     let valesPersonal = loadValesPersonalLocal();
+    let registroManualPersonalHasta = Number(sessionStorage.getItem("registro_manual_personal_hasta") || 0);
+    let registroManualPersonalMotivo = sessionStorage.getItem("registro_manual_personal_motivo") || "";
+    let registroManualPersonalTimer = null;
+
+    function registroManualPersonalActivo(){
+      if(Date.now() < registroManualPersonalHasta) return true;
+      registroManualPersonalHasta = 0;
+      registroManualPersonalMotivo = "";
+      sessionStorage.removeItem("registro_manual_personal_hasta");
+      sessionStorage.removeItem("registro_manual_personal_motivo");
+      return false;
+    }
+
+    function cerrarRegistroManualPersonal(){
+      if(registroManualPersonalTimer) clearTimeout(registroManualPersonalTimer);
+      registroManualPersonalTimer = null;
+      registroManualPersonalHasta = 0;
+      registroManualPersonalMotivo = "";
+      sessionStorage.removeItem("registro_manual_personal_hasta");
+      sessionStorage.removeItem("registro_manual_personal_motivo");
+    }
+
+    function programarCierreRegistroManualPersonal(){
+      if(registroManualPersonalTimer) clearTimeout(registroManualPersonalTimer);
+      const restante = registroManualPersonalHasta - Date.now();
+      if(restante <= 0) return cerrarRegistroManualPersonal();
+      registroManualPersonalTimer = setTimeout(async () => {
+        cerrarRegistroManualPersonal();
+        if(currentView === "vales_personal"){
+          toast("Registro manual oculto","Terminó el periodo de habilitación de 5 minutos.","ok",3000);
+          await renderValesPersonal();
+        }
+      }, restante + 100);
+    }
+
+    async function toggleRegistroManualPersonal(){
+      if(registroManualPersonalActivo()){
+        cerrarRegistroManualPersonal();
+        toast("Registro manual oculto","Los movimientos vuelven a requerir lectura de QR.","ok",2600);
+        return renderValesPersonal();
+      }
+      if(!(await requireFreshUserPin("habilitar temporalmente el registro manual"))) return;
+      const motivo = prompt("Motivo obligatorio para habilitar el registro manual:")?.trim() || "";
+      if(motivo.length < 5){
+        toast("Motivo requerido","Escribe un motivo de al menos 5 caracteres.","warn",3600);
+        return;
+      }
+      registroManualPersonalHasta = Date.now() + (5 * 60 * 1000);
+      registroManualPersonalMotivo = motivo;
+      sessionStorage.setItem("registro_manual_personal_hasta", String(registroManualPersonalHasta));
+      sessionStorage.setItem("registro_manual_personal_motivo", motivo);
+      programarCierreRegistroManualPersonal();
+      toast("Registro manual habilitado","Los botones estarán disponibles durante 5 minutos o hasta realizar un movimiento.","warn",4200);
+      await renderValesPersonal();
+    }
     let bitacoraGuardia = loadBitacoraLocal();
     let rondineroPuntos = loadRondineroPuntosLocal();
     let rondineroRutas = loadRondineroRutasLocal();
@@ -5248,6 +5313,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v176</b><span>Nuevo rol Servicio Médico y Permiso IMSS con salida programada: el QR se habilita 5 minutos antes, vence 30 minutos después y registra intentos fuera de horario, salida real y guardia responsable.</span></div>
           <div class="help-release"><b>v175</b><span>La autorización de vales de personal se confirma directamente en Firebase y el escáner reintenta automáticamente la consulta, diferenciando un QR inválido de un problema de conexión o sincronización.</span></div>
           <div class="help-release"><b>v174</b><span>Los dashboards de Vales de personal y Vales de activos incorporan un botón Actualizar que consulta nuevamente Firebase sin abandonar el módulo.</span></div>
           <div class="help-release"><b>v173</b><span>Los vales de personal permiten abrir WhatsApp con un mensaje sencillo dirigido al autorizador, los datos del vale y un enlace directo al módulo para revisarlo.</span></div>
@@ -5302,7 +5368,7 @@ function helpGuideHtml(){
       <details open><summary>Inicio y navegación</summary><div class="help-guide-content"><p>Abre las secciones desde el menú lateral. Las opciones visibles dependen de tu rol. Usa Inicio para volver al tablero principal de tu perfil y Sincronizar cuando necesites actualizar la información de la nube. En el rol <b>Jefe</b>, la pantalla principal es <b>Vales de Personal</b> y el menú se presenta de forma compacta en el orden Vales, Configuración y Ayuda.</p><p>Si olvidaste tu contraseña, escribe tu correo en la pantalla de acceso y pulsa <b>¿Olvidaste tu contraseña?</b>. Firebase enviará un enlace para crear una nueva; revisa también Spam o Correo no deseado.</p><p>En celulares y tablets, el botón compacto <b>Tema</b> permanece en el encabezado para cambiar rápidamente a un diseño claro cuando haya mucha luz.</p></div></details>
       <details><summary>Visitantes</summary><div class="help-guide-content"><ol><li>Programa la visita o autoriza una solicitud pendiente.</li><li>Al escanear el QR se registra la llegada y comienza el tiempo de espera.</li><li>Usa <b>Dar acceso</b> para registrar gafete y entrada.</li><li>Al salir, registra la salida para finalizar y obtener los tiempos de espera, permanencia y total.</li></ol></div></details>
       <details><summary>Proveedores</summary><div class="help-guide-content"><ol><li>Crea la cita con proveedor, empresa, área y documentación.</li><li>Si un proveedor recién registrado no aparece en la búsqueda, pulsa <b>Cargar proveedores</b> para actualizar el catálogo desde Firebase sin salir del formulario.</li><li>El guardia escanea el QR y registra la entrada.</li><li>Calidad puede dictaminar la entrega cuando corresponda.</li><li>La salida finaliza el registro y desactiva el QR.</li></ol></div></details>
-      <details><summary>Vales de personal</summary><div class="help-guide-content">Genera el vale con número de nómina y datos del permiso. Puede utilizarse el QR del vale o escanear el QR del gafete. El flujo continúa con autorización, salida y regreso del colaborador. Para el rol <b>Jefe</b>, este dashboard se abre automáticamente al iniciar sesión y al pulsar Inicio; solo se muestran los vales donde su UID o correo coincide con el autorizador asignado y dentro de Configuración únicamente aparece <b>Mi PIN</b>.</div></details>
+      <details><summary>Vales de personal</summary><div class="help-guide-content">Genera el vale con número de nómina y datos del permiso. Puede utilizarse el QR del vale o escanear el QR del gafete. El flujo continúa con autorización, salida y regreso del colaborador. Para el rol <b>Jefe</b>, solo se muestran los vales donde su UID o correo coincide con el autorizador asignado. El rol <b>Servicio Médico</b> puede emitir exclusivamente Permisos IMSS con hora programada; el QR funciona desde 5 minutos antes y hasta 30 minutos después, y el regreso se registra el mismo día.</div></details>
       <details><summary>Vales de activos</summary><div class="help-guide-content">Registra el activo, responsable, motivo y vigencia. El rol autorizado revisa el vale; Guardia registra la salida y posteriormente el regreso del activo.</div></details>
       <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>En la pestaña <b>Rutas</b>, usa <b>Editar y ordenar</b>. El editor visual permite agregar o quitar puntos y cambiar la secuencia con los botones <b>Subir</b> y <b>Bajar</b>. La lista de arriba hacia abajo será el orden exacto del recorrido.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>Al reportar una novedad selecciona el punto relacionado; el último punto escaneado aparece preseleccionado. También puede tomar una fotografía opcional, comprimida como JPEG de máximo 640 px y 180 KB sin Firebase Storage.</li><li>En el detalle, cada novedad y su fotografía se muestran dentro de la misma tarjeta del punto para revisarlas de un vistazo.</li><li>El cumplimiento se calcula dividiendo los puntos visitados entre los puntos esperados. Un rondín incompleto conserva su avance real en lugar de mostrar automáticamente 0%.</li><li>Desde <b>Detalle del recorrido</b>, pulsa <b>Generar PDF</b> para descargar el reporte completo paginado con datos del rondín, todos los puntos, evidencia GPS, novedades y fotografías.</li><li>El historial registra hora, distancia al punto, precisión GPS y la fotografía de la novedad como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
       <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. Las exportaciones a Excel o PDF dependen de los permisos asignados.</div></details>
@@ -5337,6 +5403,7 @@ function canConfigurePin(){
   return !!currentUser && (
     currentUser.role === ROLES.ADMIN ||
     currentUser.role === ROLES.JEFE ||
+    currentUser.role === ROLES.GUARDIA ||
     canAuthorizeAnyValeRole(currentUser.role) ||
     hasPerm("autorizar_vale_activo") ||
     hasPerm("autorizar_vale_personal")
@@ -5772,6 +5839,26 @@ async function requireUserPin(actionLabel = "esta acción"){
   const pinHash = await hashPin(pin);
   if(pinHash === savedHash){
     sessionStorage.setItem(PIN_SESSION_KEY, String(now));
+    toast("PIN validado", "Acción autorizada.", "ok", 1800);
+    return true;
+  }
+  toast("PIN incorrecto", "Acción cancelada.", "bad", 3000);
+  return false;
+}
+async function requireFreshUserPin(actionLabel = "esta acción"){
+  if(!currentUser?.uid){
+    toast("Acceso denegado", "Inicia sesión para realizar esta acción.", "bad", 3200);
+    return false;
+  }
+  const savedHash = await getCurrentAdminPinHash();
+  if(!savedHash){
+    toast("PIN requerido", "Configura tu PIN en Configuración > Mi PIN.", "warn", 4200);
+    await renderMiPin();
+    return false;
+  }
+  const pin = prompt(`🔐 Ingresa tu PIN para ${actionLabel}:`);
+  if(!pin) return false;
+  if(await hashPin(pin) === savedHash){
     toast("PIN validado", "Acción autorizada.", "ok", 1800);
     return true;
   }
@@ -8874,6 +8961,52 @@ function isValePersonalEntrada(v={}){
   return String(v.tipoPermiso || "").toLowerCase() === "entrada";
 }
 
+function isPermisoImss(v={}){
+  return v.esPermisoImss === true || String(v.tipoPermiso || "").trim().toLowerCase() === "permiso imss";
+}
+
+function getPermisoImssWindow(v={}){
+  const salidaTs = Number(v.salidaProgramadaTs || 0);
+  return {
+    salidaTs,
+    inicioTs: Number(v.imssVentanaInicioTs || (salidaTs ? salidaTs - 5 * 60000 : 0)),
+    finTs: Number(v.imssVentanaFinTs || (salidaTs ? salidaTs + 30 * 60000 : 0))
+  };
+}
+
+function getPermisoImssQrState(v={}, now=Date.now()){
+  if(!isPermisoImss(v)) return "normal";
+  if(v.status === ValeStatus.FUERA) return String(v.fecha || "") === todayISO() ? "regreso" : "vencido";
+  if(v.status !== ValeStatus.GENERADO || v.qrActivo === false) return "cerrado";
+  const { inicioTs, finTs } = getPermisoImssWindow(v);
+  if(!inicioTs || !finTs) return "invalido";
+  if(now < inicioTs) return "anticipado";
+  if(now > finTs) return "vencido";
+  return "habilitado";
+}
+
+function formatHoraTs(ts){
+  const n = Number(ts || 0);
+  return n ? new Date(n).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}) : "-";
+}
+
+async function registrarIntentoPermisoImss(v, tipo){
+  const now = Date.now();
+  if(!Array.isArray(v.imssIntentos)) v.imssIntentos = [];
+  v.imssIntentos.push({
+    ts: now,
+    tipo,
+    guardiaUid: currentUser?.uid || "",
+    guardiaEmail: currentUser?.email || "",
+    guardiaNombre: currentUser?.nombre || ""
+  });
+  v.updatedTs = now;
+  await saveValesPersonal();
+  if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
+    try{ await cloudUpsertValePersonal(v); }catch(e){ console.warn("No se pudo auditar el intento IMSS:", e); }
+  }
+}
+
 function getEntrada815BaseTs(v={}){
   const fecha = v.fecha || new Date().toISOString().slice(0,10);
   const ts = new Date(`${String(fecha).slice(0,10)}T08:15:00`).getTime();
@@ -8890,6 +9023,7 @@ function calcEntrada815Min(v={}){
 async function renderValesPersonal(){
   if(!requirePerm("ver_vales_personal","Tu rol no puede ver vales de personal.")) return;
   currentView = "vales_personal";
+  if(registroManualPersonalActivo()) programarCierreRegistroManualPersonal();
   rememberModuleReturn(currentView);
   await syncValesPersonal(true);
   await marcarValesPersonalExcedidos();
@@ -8898,6 +9032,7 @@ async function renderValesPersonal(){
   const today = new Date();
   const list = valesPersonal
     .filter(v => {
+      if(currentUser?.role === ROLES.SERVICIO_MEDICO) return isPermisoImss(v);
       if(currentUser?.role !== ROLES.JEFE) return true;
       const currentUid = String(currentUser?.uid || "");
       const currentEmail = String(currentUser?.email || "").trim().toLowerCase();
@@ -8943,7 +9078,7 @@ async function renderValesPersonal(){
           <div class="provider-dashboard-hero-icon" aria-hidden="true">👤</div>
           <div>
             <h2>Vales de salida de personal</h2>
-            <p>${currentUser?.role === ROLES.JEFE ? "Mostrando únicamente los vales donde estás asignado como autorizador." : "Control de permisos del día en curso, salida, regreso y tiempo autorizado."}</p>
+            <p>${currentUser?.role === ROLES.JEFE ? "Mostrando únicamente los vales donde estás asignado como autorizador." : currentUser?.role === ROLES.SERVICIO_MEDICO ? "Permisos IMSS emitidos por Servicio Médico y controlados por horario." : "Control de permisos del día en curso, salida, regreso y tiempo autorizado."}</p>
           </div>
         </div>
         <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${new Date().toLocaleDateString()}</div>
@@ -8951,7 +9086,8 @@ async function renderValesPersonal(){
       <div class="dashboard-toolbar vale-dashboard-head">
         <span class="pill">Total: <b style="color:var(--text);margin-left:6px;">${list.length}</b></span>
         <button class="secondary" data-action="refreshVales" data-tipo="personal">Actualizar</button>
-        ${hasPerm("crear_vale_personal") ? `<button data-action="openValePersonalModal">Nuevo vale</button>` : ""}
+        ${(hasPerm("registrar_salida_personal") || hasPerm("registrar_regreso_personal")) ? `<button class="${registroManualPersonalActivo() ? "danger" : "secondary"}" data-action="toggleRegistroManualPersonal">${registroManualPersonalActivo() ? "Ocultar registro manual" : "Habilitar registro manual"}</button>` : ""}
+        ${(hasPerm("crear_vale_personal") || hasPerm("crear_permiso_imss")) ? `<button data-action="openValePersonalModal">${hasPerm("crear_permiso_imss") && !hasPerm("crear_vale_personal") ? "Nuevo permiso IMSS" : "Nuevo vale"}</button>` : ""}
         ${hasPerm("escanear_qr") ? `<button class="secondary" data-action="scan" data-from="vales_personal">Escanear QR</button>` : ""}
       </div>
 
@@ -8969,6 +9105,11 @@ function renderValePersonalCard(v){
   const entradaMin = calcEntrada815Min(v);
   const esEntrada = isValePersonalEntrada(v);
   const excedido = isValePersonalExcedido(v);
+  const esImss = isPermisoImss(v);
+  const imssEstado = getPermisoImssQrState(v);
+  const imssWindow = getPermisoImssWindow(v);
+  const movimientoDesdeQr = currentView === "vale_personal_operacion";
+  const mostrarRegistroManual = movimientoDesdeQr || registroManualPersonalActivo();
   const requiereReautorizacion = isValePersonalReautorizacionPendiente(v);
   const tiempoTxt = usadoMin !== null ? formatMinutes(usadoMin) : "-";
   const autorizadoMin = parseTiempoAutorizadoMin(v.tiempoAutorizado);
@@ -8984,6 +9125,7 @@ function renderValePersonalCard(v){
         ${requiereReautorizacion ? `<span class="pill"><span class="dot bad"></span>Requiere autorización del jefe</span>` : ""}
         <span class="pill"><span class="dot ${valeStatusDot(v.status)}"></span>${esc(valeStatusLabel(v.status))}</span>
         <span class="pill"><span class="dot info"></span>${esc(v.tipoPermiso || "Permiso")}</span>
+        ${esImss ? `<span class="pill"><span class="dot ${imssEstado === "habilitado" || imssEstado === "regreso" ? "ok" : imssEstado === "anticipado" ? "warn" : "bad"}"></span>Salida programada: ${esc(formatHoraTs(imssWindow.salidaTs))} · ${imssEstado === "anticipado" ? "Aún no habilitado" : imssEstado === "habilitado" ? "QR habilitado" : imssEstado === "regreso" ? "Esperando regreso" : "Ventana vencida"}</span>` : ""}
         <span class="pill"><span class="dot warn"></span>Autorizado: ${limiteTxt}</span>
         ${autorizador ? `<span class="pill"><span class="dot warn"></span>Autoriza: ${esc(autorizador)}</span>` : ""}
         ${esEntrada
@@ -8995,11 +9137,11 @@ function renderValePersonalCard(v){
       <div class="row vale-actions">
         ${v.qrActivo ? `<button class="secondary" data-action="verValePersonalQR" data-id="${esc(v.id)}" data-no-sb="true">QR</button>` : `<span class="pill"><span class="dot bad"></span>QR desactivado</span>`}
         ${(v.status === ValeStatus.PENDIENTE || requiereReautorizacion) && canCurrentUserAuthorizeValePersonal(v) ? `<button class="ok" data-action="autorizarValePersonal" data-id="${esc(v.id)}" data-no-sb="true">${requiereReautorizacion ? "Reautorizar" : "Autorizar"}</button>` : ""}
-        ${v.status === ValeStatus.GENERADO && v.autorizadoTs && hasPerm("registrar_salida_personal") ? (esEntrada
+        ${mostrarRegistroManual && v.status === ValeStatus.GENERADO && v.autorizadoTs && hasPerm("registrar_salida_personal") ? (esEntrada
           ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar ingreso</button>`
           : `<button class="danger" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.FUERA}" data-no-sb="true">Marcar salida</button>`) : ""}
-        ${v.status === ValeStatus.FUERA && hasPerm("registrar_regreso_personal") ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar regreso</button>` : ""}
-        ${v.status !== ValeStatus.REGRESO_CANCELADO && hasPerm("crear_vale_personal") ? `<button class="secondary" data-action="cancelarValePersonal" data-id="${esc(v.id)}" data-no-sb="true">Cancelar</button>` : ""}
+        ${mostrarRegistroManual && v.status === ValeStatus.FUERA && hasPerm("registrar_regreso_personal") ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar regreso</button>` : ""}
+        ${v.status !== ValeStatus.REGRESO_CANCELADO && (hasPerm("crear_vale_personal") || (isPermisoImss(v) && hasPerm("crear_permiso_imss"))) ? `<button class="secondary" data-action="cancelarValePersonal" data-id="${esc(v.id)}" data-no-sb="true">Cancelar</button>` : ""}
       </div>
     </div>
   `;
@@ -10772,13 +10914,14 @@ async function cerrarRondinero(){
 }
 
 function renderValePersonalModal(){
+  const soloImss = hasPerm("crear_permiso_imss") && !hasPerm("crear_vale_personal");
   return `
     <div class="modal-overlay vale-modal" id="valePersonalModal" style="display:none;">
       <div class="modal">
         <div class="modal-head">
           <div>
-            <h3 style="margin:0;">Nuevo vale de personal</h3>
-            <small>Permiso de entrada/salida y tiempo autorizado.</small>
+            <h3 style="margin:0;">${soloImss ? "Nuevo permiso IMSS" : "Nuevo vale de personal"}</h3>
+            <small>${soloImss ? "Servicio Médico define la fecha y hora exacta de salida." : "Permiso de entrada/salida y tiempo autorizado."}</small>
           </div>
           <div class="modal-actions">
             <button class="secondary" data-action="closeValePersonalModal">Cerrar</button>
@@ -10816,9 +10959,7 @@ function renderValePersonalModal(){
             <div>
               <label>Tipo permiso *</label>
               <select id="vpTipoPermiso">
-                <option value="">— Selecciona —</option>
-                <option>Salida</option>
-                <option>Entrada</option>
+                ${soloImss ? `<option selected>Permiso IMSS</option>` : `<option value="">— Selecciona —</option><option>Salida</option><option>Entrada</option>`}
               </select>
             </div>
             <div>
@@ -10838,7 +10979,12 @@ function renderValePersonalModal(){
               <label>Fecha</label>
               <input id="vpFecha" type="date" value="${new Date().toISOString().slice(0,10)}">
             </div>
-            <div>
+            ${soloImss ? `<div>
+              <label>Hora programada de salida *</label>
+              <input id="vpHoraSalidaImss" type="time" required>
+              <small>El QR funcionará desde 5 minutos antes y hasta 30 minutos después.</small>
+            </div>` : ""}
+            <div style="${soloImss ? "display:none;" : ""}">
               <label>Autoriza *</label>
               <select id="vpAutorizador">
                 ${renderValePersonalAutorizadorOptions()}
@@ -10880,12 +11026,14 @@ function syncValePersonalTiempoPorTipo(){
   const tiempo = document.getElementById("vpTiempoAutorizado");
   if(!tipo || !tiempo) return;
   const entrada = tipo.value === "Entrada";
+  const imss = tipo.value === "Permiso IMSS";
   if(entrada){
     tiempo.value = "Entrada posterior a las 8:15 a.m.";
     tiempo.disabled = true;
   }else{
     tiempo.disabled = false;
     if(tiempo.value === "Entrada posterior a las 8:15 a.m.") tiempo.value = "";
+    if(imss && !tiempo.value) tiempo.value = "Salida 30 minutos";
   }
 }
 
@@ -10902,23 +11050,35 @@ function createValePersonalFromModal(){
   const tiempoAutorizado = document.getElementById("vpTiempoAutorizado")?.value || "";
   const fecha = document.getElementById("vpFecha")?.value || new Date().toISOString().slice(0,10);
   const observaciones = document.getElementById("vpObservaciones")?.value.trim() || "";
+  const esPermisoImss = tipoPermiso === "Permiso IMSS";
+  const horaSalidaImss = document.getElementById("vpHoraSalidaImss")?.value || "";
   const autorizadorSelect = document.getElementById("vpAutorizador");
   const autorizadorOption = autorizadorSelect?.selectedOptions?.[0] || null;
-  const autorizadorUid = autorizadorSelect?.value || "";
-  const autorizadorEmail = autorizadorOption?.dataset?.email || "";
-  const autorizadorNombre = autorizadorOption?.dataset?.nombre || "";
-  const autorizadorRole = autorizadorOption?.dataset?.role || "";
+  const autorizadorUid = esPermisoImss ? (currentUser?.uid || "") : (autorizadorSelect?.value || "");
+  const autorizadorEmail = esPermisoImss ? (currentUser?.email || "") : (autorizadorOption?.dataset?.email || "");
+  const autorizadorNombre = esPermisoImss ? (currentUser?.nombre || currentUser?.email || "Servicio Médico") : (autorizadorOption?.dataset?.nombre || "");
+  const autorizadorRole = esPermisoImss ? (currentUser?.role || "") : (autorizadorOption?.dataset?.role || "");
   const autorizadorTelefono = autorizadorOption?.dataset?.telefono || "";
 
-  if(!nombreColaborador || !nomina || !departamento || !tipoPermiso || !tiempoAutorizado || !autorizadorUid){
+  if(esPermisoImss && (currentUser?.role !== ROLES.SERVICIO_MEDICO || !hasPerm("crear_permiso_imss"))){
+    toast("No permitido","Solo el rol Servicio Médico puede emitir permisos IMSS.","warn");
+    return null;
+  }
+  if(!nombreColaborador || !nomina || !departamento || !tipoPermiso || !tiempoAutorizado || !autorizadorUid || (esPermisoImss && !horaSalidaImss)){
     toast("Campos obligatorios","Nombre, nómina, departamento, tipo permiso, tiempo autorizado y autorizador.","warn");
+    return null;
+  }
+
+  const salidaProgramadaTs = esPermisoImss ? new Date(`${fecha}T${horaSalidaImss}:00`).getTime() : 0;
+  if(esPermisoImss && !Number.isFinite(salidaProgramadaTs)){
+    toast("Horario inválido","Selecciona una fecha y hora de salida válidas.","warn");
     return null;
   }
 
   const id = Date.now().toString();
   return {
     id,
-    folio: `VP-${new Date().getFullYear()}-${String(valesPersonal.length + 1).padStart(4,"0")}`,
+    folio: `${esPermisoImss ? "IMSS" : "VP"}-${new Date().getFullYear()}-${String(valesPersonal.length + 1).padStart(4,"0")}`,
     fecha,
     nombreColaborador,
     nomina,
@@ -10931,8 +11091,17 @@ function createValePersonalFromModal(){
     autorizadorNombre,
     autorizadorRole,
     autorizadorTelefono,
-    status: ValeStatus.PENDIENTE,
+    esPermisoImss,
+    salidaProgramadaTs: esPermisoImss ? salidaProgramadaTs : null,
+    imssVentanaInicioTs: esPermisoImss ? salidaProgramadaTs - 5 * 60000 : null,
+    imssVentanaFinTs: esPermisoImss ? salidaProgramadaTs + 30 * 60000 : null,
+    status: esPermisoImss ? ValeStatus.GENERADO : ValeStatus.PENDIENTE,
     qrActivo: true,
+    autorizadoTs: esPermisoImss ? Date.now() : null,
+    autorizadoPor: esPermisoImss ? (currentUser?.email || "") : "",
+    autorizadoPorUid: esPermisoImss ? (currentUser?.uid || "") : "",
+    autorizadoPorNombre: esPermisoImss ? (currentUser?.nombre || "Servicio Médico") : "",
+    autorizadoPorRol: esPermisoImss ? ROLES.SERVICIO_MEDICO : "",
     createdByUid: currentUser?.uid || "",
     createdByEmail: currentUser?.email || "",
     createdTs: Date.now(),
@@ -10941,7 +11110,7 @@ function createValePersonalFromModal(){
 }
 
 async function guardarValePersonal(){
-  if(!requirePerm("crear_vale_personal","Tu rol no puede crear vales de personal.")) return;
+  if(!hasPerm("crear_vale_personal") && !hasPerm("crear_permiso_imss")) return toast("No permitido","Tu rol no puede crear este permiso.","warn");
   const v = createValePersonalFromModal();
   if(!v) return;
   valesPersonal.unshift(v);
@@ -10949,7 +11118,7 @@ async function guardarValePersonal(){
   if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
     try{ await cloudUpsertValePersonal(v); }catch(e){ console.warn(e); }
   }
-  toast("Vale generado","Vale de personal guardado y QR generado.","ok",2400);
+  toast(isPermisoImss(v) ? "Permiso IMSS generado" : "Vale generado", isPermisoImss(v) ? "El QR respetará el horario programado." : "Vale de personal guardado y QR generado.","ok",2400);
   closeValePersonalModal();
   renderValePersonalQR(v.id);
 }
@@ -10962,13 +11131,44 @@ async function updateValePersonalStatus(id, status){
   if(status === ValeStatus.FUERA && !hasPerm("registrar_salida_personal")) return;
   if(status === ValeStatus.REGRESO_CANCELADO && !hasPerm("registrar_regreso_personal") && !(isValePersonalEntrada(v) && hasPerm("registrar_salida_personal"))) return;
 
+  const movimientoDesdeQr = currentView === "vale_personal_operacion";
+  if(!movimientoDesdeQr && !registroManualPersonalActivo()){
+    toast("Escaneo requerido","Escanea el QR del vale o habilita temporalmente el registro manual.","warn",4200);
+    return;
+  }
+
   const now = Date.now();
+  if(isPermisoImss(v) && status === ValeStatus.FUERA){
+    const estadoImss = getPermisoImssQrState(v, now);
+    if(estadoImss === "anticipado"){
+      await registrarIntentoPermisoImss(v, "anticipado");
+      const { inicioTs } = getPermisoImssWindow(v);
+      toast("Permiso aún no habilitado", `La salida puede registrarse a partir de las ${formatHoraTs(inicioTs)}.`, "warn", 5200);
+      return;
+    }
+    if(estadoImss !== "habilitado"){
+      await registrarIntentoPermisoImss(v, estadoImss === "vencido" ? "vencido" : "invalido");
+      toast("Permiso IMSS no vigente", "La ventana de salida terminó. Servicio Médico debe generar un permiso nuevo.", "bad", 5200);
+      return;
+    }
+  }
+  if(isPermisoImss(v) && status === ValeStatus.REGRESO_CANCELADO && String(v.fecha || "") !== todayISO()){
+    toast("Permiso vencido", "El regreso de este permiso IMSS solo puede registrarse el mismo día.", "bad", 4800);
+    return;
+  }
   v.status = status;
   v.updatedTs = now;
   if(status === ValeStatus.FUERA){
     v.salidaTs = now;
     v.ultimoTiempoAutorizadoTs = now;
     v.reautorizacionPendiente = false;
+    if(isPermisoImss(v)){
+      v.imssSalidaRealTs = now;
+      v.imssSalidaDiferenciaMin = Math.round((now - getPermisoImssWindow(v).salidaTs) / 60000);
+      v.imssSalidaGuardiaUid = currentUser?.uid || "";
+      v.imssSalidaGuardiaEmail = currentUser?.email || "";
+      v.imssSalidaGuardiaNombre = currentUser?.nombre || "";
+    }
   }
   if(status === ValeStatus.REGRESO_CANCELADO){
     if(isValePersonalEntrada(v)){
@@ -10986,15 +11186,30 @@ async function updateValePersonalStatus(id, status){
     v.qrDesactivadoMotivo = "REGRESO_CANCELADO";
   }
 
+  v.ultimoRegistroOrigen = movimientoDesdeQr ? "qr" : "manual";
+  if(!movimientoDesdeQr){
+    if(!Array.isArray(v.historialRegistroManual)) v.historialRegistroManual = [];
+    v.historialRegistroManual.push({
+      ts: now,
+      motivo: registroManualPersonalMotivo,
+      uid: currentUser?.uid || "",
+      email: currentUser?.email || "",
+      nombre: currentUser?.nombre || "",
+      role: currentUser?.role || "",
+      status
+    });
+  }
+
   await saveValesPersonal();
   if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
     try{ await cloudUpsertValePersonal(v); }catch(e){ console.warn(e); }
   }
   toast("Vale actualizado", isValePersonalEntrada(v) && status === ValeStatus.REGRESO_CANCELADO ? "Ingreso registrado y vale finalizado." : valeStatusLabel(status), "ok", 2200);
+  if(!movimientoDesdeQr) cerrarRegistroManualPersonal();
   await renderValesPersonal();
 }
 
-function renderValePersonalOperacion(id){
+async function renderValePersonalOperacion(id){
   if(!requirePerm("ver_vales_personal","Tu rol no puede ver vales de personal.")) return;
   currentView = "vale_personal_operacion";
   moduleReturnView = "vales_personal";
@@ -11002,6 +11217,20 @@ function renderValePersonalOperacion(id){
   if(!v){
     toast("No encontrado","No se encontró el vale de personal.","warn",3200);
     return renderValesPersonal();
+  }
+  if(isPermisoImss(v) && v.status === ValeStatus.GENERADO){
+    const estadoImss = getPermisoImssQrState(v);
+    if(estadoImss === "anticipado"){
+      const { inicioTs, salidaTs } = getPermisoImssWindow(v);
+      await registrarIntentoPermisoImss(v, "anticipado");
+      toast("Permiso aún no habilitado", `Salida programada ${formatHoraTs(salidaTs)}. El QR se habilita a las ${formatHoraTs(inicioTs)}.`, "warn", 5600);
+      return await renderValesPersonal();
+    }
+    if(estadoImss !== "habilitado"){
+      await registrarIntentoPermisoImss(v, estadoImss === "vencido" ? "vencido" : "invalido");
+      toast("Permiso IMSS no vigente", "La ventana permitida para registrar la salida ya terminó.", "bad", 5200);
+      return await renderValesPersonal();
+    }
   }
   const esEntrada = isValePersonalEntrada(v);
   const accion = v.status === ValeStatus.GENERADO
@@ -11089,7 +11318,7 @@ async function autorizarValePersonal(id){
 }
 
 async function cancelarValePersonal(id){
-  if(!hasPerm("crear_vale_personal") && !hasPerm("autorizar_vale_personal")) return;
+  if(!hasPerm("crear_vale_personal") && !hasPerm("autorizar_vale_personal") && !hasPerm("crear_permiso_imss")) return;
   if(!confirm("¿Cancelar este vale de personal?")) return;
   const v = valesPersonal.find(x => String(x.id) === String(id));
   if(!v) return;
@@ -11132,7 +11361,7 @@ function renderValePersonalQR(id){
   ].join("\n");
 
   appEl.innerHTML = renderValePermisoPass({
-    tipo:"Entrada / Salida",
+    tipo:isPermisoImss(v) ? "Permiso IMSS" : "Entrada / Salida",
     payload,
     folio,
     nombre:v.nombreColaborador || "",
@@ -11142,9 +11371,11 @@ function renderValePersonalQR(id){
     depto:v.departamento || "",
     tipoPermiso:v.tipoPermiso || "",
     fecha:valePassDate(v.fecha),
-    fechaSub:v.tiempoAutorizado || "",
+    fechaSub:isPermisoImss(v) ? `${v.tiempoAutorizado || ""} · Salida ${formatHoraTs(v.salidaProgramadaTs)}` : (v.tiempoAutorizado || ""),
     autoriza:v.autorizadorNombre || v.autorizadorEmail || "",
-    instrucciones: esEntrada
+    instrucciones: isPermisoImss(v)
+      ? `Muestra este QR en caseta. La salida se habilita 5 minutos antes y vence 30 minutos después de las ${formatHoraTs(v.salidaProgramadaTs)}.`
+      : esEntrada
       ? "Muestra este codigo QR en el acceso. Este permiso es personal e intransferible."
       : "Muestra este codigo QR en caseta. Este permiso es personal e intransferible.",
     volverAction:"valesPersonal"
@@ -15807,6 +16038,7 @@ function renderProveedores(lista){
         case "autorizarVale": await autorizarValeActivo(id); break;
         case "cancelarVale": await cancelarValeActivo(id); break;
         case "valesPersonal": await renderValesPersonal(); break;
+        case "toggleRegistroManualPersonal": await toggleRegistroManualPersonal(); break;
         case "bitacoraGuardia": await renderBitacoraGuardia(); break;
         case "guardarBitacora": await guardarBitacora(); break;
         case "bitacoraScanGuardia": renderRondineroGuardiaScanner("bitacora"); break;

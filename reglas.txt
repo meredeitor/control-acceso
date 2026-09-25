@@ -34,6 +34,7 @@ service cloud.firestore {
     function isContraloria() { return hasRole("contraloria"); }
     function isProveedor() { return hasRole("proveedor"); }
     function isAnfitrion() { return hasRole("anfitrion"); }
+    function isServicioMedico() { return hasRole("servicio_medico"); }
 
     function isKioskoAnon() {
       return isAuth()
@@ -88,7 +89,7 @@ service cloud.firestore {
           isAdmin()
           && request.resource.data.role is string
         ) || (
-          isJefe()
+          (isJefe() || isGuardia())
           && uid == myUid()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             "pinHash",
@@ -348,6 +349,7 @@ service cloud.firestore {
           || isContraloria()
           || isAnfitrion()
           || isJefe()
+          || isServicioMedico()
           || canAuthorizeValePersonal()
         );
 
@@ -364,6 +366,14 @@ service cloud.firestore {
             && request.resource.data.autorizadorUid is string
             && request.resource.data.autorizadorUid != ""
           )
+          || (
+            isServicioMedico()
+            && request.resource.data.createdByUid == myUid()
+            && request.resource.data.esPermisoImss == true
+            && request.resource.data.tipoPermiso == "Permiso IMSS"
+            && request.resource.data.status == "generado"
+            && request.resource.data.salidaProgramadaTs is int
+          )
         );
 
       allow update: if isAuth()
@@ -371,6 +381,13 @@ service cloud.firestore {
           isAdmin()
           || canAuthorizeValePersonal()
           || isGuardia()
+          || (
+            isServicioMedico()
+            && resource.data.createdByUid == myUid()
+            && resource.data.esPermisoImss == true
+            && request.resource.data.esPermisoImss == true
+            && request.resource.data.createdByUid == resource.data.createdByUid
+          )
           || (
             canManageVales()
             && resource.data.createdByUid == myUid()
