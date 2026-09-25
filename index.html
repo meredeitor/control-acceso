@@ -2928,6 +2928,37 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     [data-theme="dark"] .provider-dashboard-date{border-color:rgba(147,197,253,.25);background:rgba(7,21,47,.55);color:#e8f2ff}
     @media(max-width:900px){.provider-dashboard-hero{padding:18px}.provider-dashboard-modern .grid.cols-5{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
     @media(max-width:520px){.provider-dashboard-hero{align-items:flex-start;flex-direction:column}.provider-dashboard-hero-icon{width:54px;height:54px;flex-basis:54px;border-radius:17px;font-size:26px}.provider-dashboard-date{align-self:flex-start}.provider-dashboard-modern .grid.cols-5{grid-template-columns:1fr!important}}
+
+    /* Administracion de usuarios y permisos: adaptacion para telefono */
+    .roles-screen,.roles-screen *,.users-screen,.users-screen *{box-sizing:border-box}
+    .roles-screen{min-width:0;max-width:100%;overflow:hidden}
+    .roles-screen-head,.role-perm-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+    .roles-screen-actions,.role-perm-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .roles-screen-layout{display:grid;grid-template-columns:minmax(190px,260px) minmax(0,1fr);gap:14px;align-items:start;min-width:0}
+    .roles-screen-layout>.col,.role-perm-panel{min-width:0}
+    .role-selector-list{display:grid;gap:8px;min-width:0}
+    .role-selector-list button{min-width:0;width:100%}
+    .role-selector-list button span:first-child{min-width:0;overflow-wrap:anywhere;text-align:left}
+    .role-perm-checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;min-width:0}
+    .role-perm-checks>.card{min-width:0}
+    .role-perm-checks label{min-width:0;width:100%}
+    .role-perm-checks label>span{min-width:0;overflow-wrap:anywhere;word-break:break-word}
+    .users-screen{min-width:0;max-width:100%;overflow:hidden}
+    .users-table-scroll{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    @media(max-width:680px){
+      .roles-screen,.users-screen{padding:12px}
+      .roles-screen-head,.role-perm-head,.users-screen>.row:first-child{flex-direction:column;align-items:stretch!important}
+      .roles-screen-actions,.role-perm-actions,.users-screen>.row:first-child>.row{width:100%}
+      .roles-screen-actions button,.role-perm-actions button,.users-screen>.row:first-child>.row button{flex:1 1 130px;width:auto}
+      .roles-screen-layout{grid-template-columns:minmax(0,1fr)!important}
+      .role-selector-list{display:flex;overflow-x:auto;padding:0 0 8px;scroll-snap-type:x proximity}
+      .role-selector-list button{flex:0 0 min(78vw,250px);scroll-snap-align:start}
+      .role-perm-checks{grid-template-columns:minmax(0,1fr)!important}
+      .role-perm-checks>.card{padding:12px}
+      .role-perm-checks .pill{align-items:flex-start}
+      .users-screen #uSearch{max-width:none!important;width:100%}
+      .users-table-scroll .table{min-width:850px}
+    }
     </style>
 </head>
 
@@ -3214,7 +3245,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v176</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v177</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3239,7 +3270,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v176";
+  const APP_VERSION = "v177";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5313,6 +5344,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v177</b><span>La administración de Roles, permisos y usuarios se adapta correctamente a teléfonos, con controles reorganizados, permisos en una columna y desplazamiento contenido.</span></div>
           <div class="help-release"><b>v176</b><span>Nuevo rol Servicio Médico y Permiso IMSS con salida programada: el QR se habilita 5 minutos antes, vence 30 minutos después y registra intentos fuera de horario, salida real y guardia responsable.</span></div>
           <div class="help-release"><b>v175</b><span>La autorización de vales de personal se confirma directamente en Firebase y el escáner reintenta automáticamente la consulta, diferenciando un QR inválido de un problema de conexión o sincronización.</span></div>
           <div class="help-release"><b>v174</b><span>Los dashboards de Vales de personal y Vales de activos incorporan un botón Actualizar que consulta nuevamente Firebase sin abandonar el módulo.</span></div>
@@ -12835,13 +12867,13 @@ async function renderRolePermissions(role=_selectedRolePermRole){
   const base = new Set(normalizePermList(PERMISOS[selected] || [], selected));
 
   appEl.innerHTML = `
-    <div class="card">
-      <div class="row" style="justify-content:space-between;align-items:flex-start;">
+    <div class="card roles-screen">
+      <div class="roles-screen-head">
         <div>
           <h2 style="margin:0 0 4px;">Roles</h2>
           <div style="color:var(--muted);font-size:12px;">Selecciona un rol y marca los permisos que debe tener. Los cambios aplican a todos los usuarios con ese rol.</div>
         </div>
-        <div class="row" style="gap:8px;">
+        <div class="roles-screen-actions">
           <button class="secondary" data-action="adminRoles">Usuarios</button>
           <button class="secondary" data-action="home">Volver</button>
         </div>
@@ -12849,10 +12881,10 @@ async function renderRolePermissions(role=_selectedRolePermRole){
 
       <div class="divider"></div>
 
-      <div class="grid" style="grid-template-columns:minmax(190px,260px) minmax(0,1fr);gap:14px;align-items:start;">
+      <div class="roles-screen-layout">
         <div class="col">
           <h3 style="margin:0 0 10px;">Roles</h3>
-          <div style="display:grid;gap:8px;">
+          <div class="role-selector-list">
             ${ALL_ROLES.map(r => `
               <button class="secondary" data-action="rolePermSelect" data-role="${esc(r)}" aria-current="${r === selected ? 'page' : 'false'}" style="justify-content:space-between;">
                 <span>${esc(roleLabel(r))}</span>
@@ -12862,13 +12894,13 @@ async function renderRolePermissions(role=_selectedRolePermRole){
           </div>
         </div>
 
-        <div class="col">
-          <div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px;">
+        <div class="col role-perm-panel">
+          <div class="role-perm-head">
             <div>
               <h3 style="margin:0 0 4px;">${esc(roleLabel(selected))}</h3>
               <div style="color:var(--muted);font-size:12px;">Activos: <b style="color:var(--text);">${active.size}</b> de ${ALL_PERMS.length}. Base del c\u00f3digo: ${base.size}.</div>
             </div>
-            <div class="row" style="gap:8px;">
+            <div class="role-perm-actions">
               <button class="secondary" data-action="rolePermReset" data-role="${esc(selected)}">Restaurar base</button>
               <button data-action="rolePermSave" data-role="${esc(selected)}">Guardar cambios</button>
             </div>
@@ -12876,7 +12908,7 @@ async function renderRolePermissions(role=_selectedRolePermRole){
 
           <div class="divider"></div>
 
-          <div id="rolePermChecks" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
+          <div id="rolePermChecks" class="role-perm-checks">
             ${PERM_GROUPS.map(group => `
               <div class="card" style="margin:0;">
                 <h3 style="margin:0 0 8px;font-size:16px;">${esc(group.title)}</h3>
@@ -12942,7 +12974,7 @@ async function saveRolePermissionsFromScreenWithPerms(role, perms){
       currentView = "admin_roles";
 
       appEl.innerHTML = `
-        <div class="card">
+        <div class="card users-screen">
           <div class="row" style="justify-content:space-between;">
             <div>
               <h2 style="margin:0 0 4px;">Usuarios</h2>
@@ -12972,7 +13004,7 @@ async function saveRolePermissionsFromScreenWithPerms(role, perms){
 
           <div style="height:10px;"></div>
 
-          <div id="adminUsersWrap" style="overflow:auto;"></div>
+          <div id="adminUsersWrap" class="users-table-scroll"></div>
         </div>
         ${renderUserModal()}
         ${renderBulkUsersModal()}
