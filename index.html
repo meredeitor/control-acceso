@@ -3214,7 +3214,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v173</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v174</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3239,7 +3239,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v173";
+  const APP_VERSION = "v174";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5248,6 +5248,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v174</b><span>Los dashboards de Vales de personal y Vales de activos incorporan un botón Actualizar que consulta nuevamente Firebase sin abandonar el módulo.</span></div>
           <div class="help-release"><b>v173</b><span>Los vales de personal permiten abrir WhatsApp con un mensaje sencillo dirigido al autorizador, los datos del vale y un enlace directo al módulo para revisarlo.</span></div>
           <div class="help-release"><b>v172</b><span>El botón Cerrar sesión de la pantalla Solicitud pendiente ejecuta correctamente el cierre de la cuenta y regresa al acceso.</span></div>
           <div class="help-release"><b>v171</b><span>Flujo operativo corregido al escanear vales de personal, opciones completas de tiempo autorizado con entrada posterior a las 8:15 a.m. y nueva identidad visual unificada para los kioscos.</span></div>
@@ -8288,6 +8289,7 @@ async function renderValesActivos(){
       </div>
       <div class="dashboard-toolbar vale-dashboard-head">
         <span class="pill">Total: <b style="color:var(--text);margin-left:6px;">${list.length}</b></span>
+        <button class="secondary" data-action="refreshVales" data-tipo="activos">Actualizar</button>
         ${hasPerm("crear_vale_activo") ? `<button data-action="openValeModal">Nuevo vale</button>` : ""}
         ${hasPerm("escanear_qr") ? `<button class="secondary" data-action="scan" data-from="vales_activos">Escanear QR</button>` : ""}
       </div>
@@ -8927,6 +8929,7 @@ async function renderValesPersonal(){
       </div>
       <div class="dashboard-toolbar vale-dashboard-head">
         <span class="pill">Total: <b style="color:var(--text);margin-left:6px;">${list.length}</b></span>
+        <button class="secondary" data-action="refreshVales" data-tipo="personal">Actualizar</button>
         ${hasPerm("crear_vale_personal") ? `<button data-action="openValePersonalModal">Nuevo vale</button>` : ""}
         ${hasPerm("escanear_qr") ? `<button class="secondary" data-action="scan" data-from="vales_personal">Escanear QR</button>` : ""}
       </div>
@@ -15746,6 +15749,14 @@ function renderProveedores(lista){
         case "historial": await renderHistorial(); break;
         case "histLoad": await loadHistDay(); break;
         case "valesActivos": await renderValesActivos(); break;
+        case "refreshVales": {
+          el.disabled = true;
+          el.textContent = "Actualizando...";
+          if(el.dataset.tipo === "personal") await renderValesPersonal();
+          else await renderValesActivos();
+          toast("Dashboard actualizado","Los datos de vales se actualizaron sin salir del módulo.","ok",2200);
+          break;
+        }
         case "openValeModal": await openValeModal(); break;
         case "closeValeModal": closeValeModal(); break;
         case "guardarValeActivo": await guardarValeActivo(); break;
