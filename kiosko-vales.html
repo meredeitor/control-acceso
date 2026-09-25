@@ -58,7 +58,7 @@
     .qr-card{ margin-top:14px; text-align:center; }
     #qrcode{ display:inline-block; background:white; padding:10px; border-radius:14px; }
     .folio{ color:var(--muted); font-size:12px; margin-top:10px; overflow-wrap:anywhere; }
-    .pass-actions{ width:min(100%,580px); margin:0 auto 12px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+    .pass-actions{ width:min(100%,760px); margin:0 auto 12px; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
     .pass-actions .theme-btn{ width:100%; min-height:44px; }
     .permit-pass{ width:min(100%,580px); margin:0 auto; overflow:hidden; border-radius:24px; background:#f8fafc; color:#0f172a; border:1px solid rgba(15,23,42,.12); box-shadow:0 24px 54px rgba(2,6,23,.24); text-align:left; }
     .permit-hero{ position:relative; display:grid; grid-template-columns:1fr auto; gap:16px; min-height:220px; padding:30px 32px 56px; color:#fff; background:linear-gradient(135deg, rgba(3,18,37,.98), rgba(8,40,75,.96) 58%, rgba(34,197,94,.75)); }
@@ -331,6 +331,7 @@
       <div class="pass-actions">
         <button id="btnCompartirQR" type="button">Compartir QR</button>
         <button id="btnGuardarQR" class="theme-btn" type="button">Guardar QR</button>
+        <button id="btnWhatsApp" class="theme-btn" type="button" style="display:none;">Enviar por WhatsApp</button>
         <button id="btnOtro" class="theme-btn" type="button">Crear otro vale</button>
       </div>
       <div class="permit-pass" id="permisoPass">
@@ -454,6 +455,7 @@
             data-email="${escapeHtml(u.email)}"
             data-nombre="${escapeHtml(u.nombre)}"
             data-role="${escapeHtml(u.role)}"
+            data-telefono="${escapeHtml(u.telefono || "")}"
           >${escapeHtml(u.nombre)}</option>
         `).join("");
         selectEl.dataset.loaded = "true";
@@ -532,6 +534,12 @@
         ? "Muestra este codigo QR en el acceso. Este permiso es personal e intransferible."
         : "Presenta este vale en el acceso al salir. El activo debe coincidir con la descripcion. Este vale es personal e intransferible.");
       setText("passFolio", folio);
+      const btnWhatsApp = document.getElementById("btnWhatsApp");
+      if(btnWhatsApp){
+        btnWhatsApp.style.display = esPersonal ? "" : "none";
+        btnWhatsApp.disabled = esPersonal && !vale.autorizadorTelefono;
+        btnWhatsApp.title = btnWhatsApp.disabled ? "El autorizador no tiene teléfono registrado" : "";
+      }
       selector.style.display = "none";
       formActivo.classList.remove("show");
       formPersonal.classList.remove("show");
@@ -606,6 +614,34 @@
       }
     }
 
+    function normalizarTelefonoWhatsApp(value=""){
+      let digits = String(value || "").replace(/\D/g, "");
+      if(digits.length === 13 && digits.startsWith("521")) digits = `52${digits.slice(3)}`;
+      if(digits.length === 10) digits = `52${digits}`;
+      return digits;
+    }
+
+    function enviarPorWhatsApp(){
+      if(!currentVale || currentPrefix !== "VALE_PERSONAL") return;
+      const telefono = normalizarTelefonoWhatsApp(currentVale.autorizadorTelefono);
+      if(!telefono){
+        toast("Registra el teléfono del autorizador en Usuarios para enviarle el vale.", "bad");
+        return;
+      }
+      const enlace = "https://meredeitor.github.io/control-acceso/?abrir=vales_personal";
+      const mensaje = [
+        `Hola ${currentVale.autorizadorNombre || ""}, tienes un vale pendiente de autorización.`,
+        `Folio: ${currentVale.folio || currentVale.id}`,
+        `Colaborador: ${currentVale.nombreColaborador || ""}`,
+        `Tipo: ${currentVale.tipoPermiso || ""}`,
+        `Tiempo autorizado: ${currentVale.tiempoAutorizado || ""}`,
+        `Departamento: ${currentVale.departamento || ""}`,
+        "",
+        `Abrir Caborca Access Control: ${enlace}`
+      ].join("\n");
+      window.open(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, "_blank", "noopener,noreferrer");
+    }
+
     cards.forEach(card => card.addEventListener("click", () => {
       if(!fixedKioskType) showType(card.dataset.type);
     }));
@@ -633,6 +669,7 @@
     });
     document.getElementById("btnGuardarQR").addEventListener("click", guardarQR);
     document.getElementById("btnCompartirQR").addEventListener("click", compartirQR);
+    document.getElementById("btnWhatsApp").addEventListener("click", enviarPorWhatsApp);
 
     formActivo.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -702,6 +739,7 @@
           autorizadorEmail: autorizadorOption?.dataset?.email || "",
           autorizadorNombre: autorizadorOption?.dataset?.nombre || "",
           autorizadorRole: autorizadorOption?.dataset?.role || "",
+          autorizadorTelefono: autorizadorOption?.dataset?.telefono || "",
           createdBySource: "kiosko_vales_personal"
         });
         renderSolicitud("VALE_PERSONAL", vale);

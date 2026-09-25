@@ -312,7 +312,8 @@ export async function fetchValeAutorizadores(tipo = "personal"){
       uid: u.uid,
       nombre: u.nombre || u.email || "Usuario",
       email: u.email || "",
-      role: u.role || ""
+      role: u.role || "",
+      telefono: u.telefono || ""
     });
   });
   return arr.sort((a,b) => String(a.nombre).localeCompare(String(b.nombre), "es"));
