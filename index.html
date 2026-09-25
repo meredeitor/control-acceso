@@ -3214,7 +3214,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v174</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v175</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3239,7 +3239,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v174";
+  const APP_VERSION = "v175";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5248,6 +5248,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v175</b><span>La autorización de vales de personal se confirma directamente en Firebase y el escáner reintenta automáticamente la consulta, diferenciando un QR inválido de un problema de conexión o sincronización.</span></div>
           <div class="help-release"><b>v174</b><span>Los dashboards de Vales de personal y Vales de activos incorporan un botón Actualizar que consulta nuevamente Firebase sin abandonar el módulo.</span></div>
           <div class="help-release"><b>v173</b><span>Los vales de personal permiten abrir WhatsApp con un mensaje sencillo dirigido al autorizador, los datos del vale y un enlace directo al módulo para revisarlo.</span></div>
           <div class="help-release"><b>v172</b><span>El botón Cerrar sesión de la pantalla Solicitud pendiente ejecuta correctamente el cierre de la cuenta y regresa al acceso.</span></div>
@@ -6078,6 +6079,26 @@ function fmt(ts){
     async function cloudFetchValePersonalById(id){
       const snap = await getDoc(doc(db, COL_VALES_PERSONAL, String(id)));
       return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+    }
+
+    async function cloudFetchValePersonalByIdReliable(id, attempts = 3){
+      const ref = doc(db, COL_VALES_PERSONAL, String(id));
+      let confirmedRead = false;
+      let lastError = null;
+      for(let attempt = 1; attempt <= attempts; attempt++){
+        try{
+          const snap = await getDocFromServer(ref);
+          confirmedRead = true;
+          if(snap.exists()) return { vale:{ id:snap.id, ...snap.data() }, confirmedRead:true, error:null };
+        }catch(error){
+          lastError = error;
+          console.warn(`Consulta de vale personal ${attempt}/${attempts}:`, error);
+        }
+        if(attempt < attempts){
+          await new Promise(resolve => setTimeout(resolve, 650));
+        }
+      }
+      return { vale:null, confirmedRead, error:lastError };
     }
 
     async function cloudFetchValesPersonalByNomina(nomina){
@@ -11025,7 +11046,12 @@ async function autorizarValePersonal(id){
     );
     return;
   }
+  if(!navigator.onLine){
+    toast("Sin conexión","No se puede autorizar hasta confirmar el cambio en Firebase.","warn",4200);
+    return;
+  }
   if(!(await requireUserPin("autorizar este vale de personal"))) return;
+  const previousVale = { ...v };
   const now = Date.now();
   const esReautorizacion = isValePersonalReautorizacionPendiente(v);
   if(esReautorizacion){
@@ -11047,10 +11073,17 @@ async function autorizarValePersonal(id){
     v.autorizadoPorRol = currentUser?.role || "";
   }
   v.updatedTs = Date.now();
-  await saveValesPersonal();
-  if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
-    try{ await cloudUpsertValePersonal(v); }catch(e){ console.warn(e); }
+  try{
+    await cloudUpsertValePersonal(v);
+  }catch(e){
+    console.warn("No se pudo confirmar la autorización en Firebase:", e);
+    Object.assign(v, previousVale);
+    await saveValesPersonal();
+    toast("No se autorizó","Firebase no confirmó el cambio. Revisa la conexión y vuelve a intentarlo.","bad",5200);
+    await renderValesPersonal();
+    return;
   }
+  await saveValesPersonal();
   toast("Autorizado", esReautorizacion ? "Tiempo reautorizado por el jefe." : "El vale de personal quedó autorizado.", "ok",2400);
   await renderValesPersonal();
 }
@@ -14414,19 +14447,28 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
         const valeId = qrText.split(":").slice(1).join(":").trim();
         let vale = valesPersonal.find(x => String(x.id) === valeId);
         if(navigator.onLine){
-          try{
-            const cloudVale = await cloudFetchValePersonalById(valeId);
-            if(cloudVale){
-              vale = cloudVale;
-              valesPersonal = mergeById(valesPersonal, [cloudVale]);
+          toast("Sincronizando vale","Consultando Firebase antes de validar el QR...","info",2400);
+          const lookup = await cloudFetchValePersonalByIdReliable(valeId, 3);
+          if(lookup.vale){
+              vale = lookup.vale;
+              valesPersonal = mergeById(valesPersonal, [lookup.vale]);
               saveValesPersonalLocal();
-            }
-          }catch(e){
-            console.warn("No se pudo buscar vale de personal en nube:", e);
+          }else if(!lookup.confirmedRead){
+            toast("No se pudo consultar Firebase","El QR no fue rechazado. Revisa la conexión e intenta nuevamente.","warn",5200);
+            moduleReturnView = "vales_personal";
+            return renderModuleHome();
+          }else{
+            vale = null;
           }
         }
+        if(!navigator.onLine && (!vale || !vale.qrActivo)){
+          toast("Sin conexión","No hay datos locales suficientes para validar este QR. Conéctate e intenta nuevamente.","warn",5200);
+          moduleReturnView = "vales_personal";
+          return renderModuleHome();
+        }
         if(!vale || !vale.qrActivo){
-          toast("QR inválido","Vale de personal no encontrado o desactivado.","bad",3600);
+          const pendiente = vale && vale.status === ValeStatus.PENDIENTE;
+          toast(pendiente ? "Pendiente de autorización" : "QR inválido", pendiente ? "Firebase indica que este vale todavía no ha sido autorizado." : "Vale de personal no encontrado o desactivado.", pendiente ? "warn" : "bad",4200);
           moduleReturnView = "vales_personal";
           return renderModuleHome();
         }
