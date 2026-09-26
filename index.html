@@ -2945,6 +2945,20 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     .role-perm-checks label>span{min-width:0;overflow-wrap:anywhere;word-break:break-word}
     .users-screen{min-width:0;max-width:100%;overflow:hidden}
     .users-table-scroll{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .vale-history-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+    .vale-history-card{min-width:0;padding:16px;border:1px solid var(--border);border-radius:18px;background:var(--panel);box-shadow:0 10px 26px rgba(15,23,42,.07)}
+    .vale-history-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+    .vale-history-card-head>div{min-width:0}
+    .vale-history-card-head h3{margin:0;color:var(--text);font-size:17px;overflow-wrap:anywhere}
+    .vale-history-card-head small{display:block;margin-top:4px;color:var(--muted);overflow-wrap:anywhere}
+    .vale-timeline{position:relative;display:grid;gap:0;margin-top:14px;padding-left:24px}
+    .vale-timeline::before{content:"";position:absolute;left:7px;top:7px;bottom:7px;width:2px;background:color-mix(in srgb,var(--border) 65%,#3b82f6)}
+    .vale-timeline-item{position:relative;padding:0 0 14px 5px;min-width:0}
+    .vale-timeline-item:last-child{padding-bottom:0}
+    .vale-timeline-item::before{content:"";position:absolute;left:-22px;top:5px;width:10px;height:10px;border:3px solid var(--panel);border-radius:50%;background:#3b82f6;box-shadow:0 0 0 1px rgba(59,130,246,.3)}
+    .vale-timeline-item.is-ok::before{background:#16a34a}.vale-timeline-item.is-warn::before{background:#f59e0b}.vale-timeline-item.is-bad::before{background:#dc2626}
+    .vale-timeline-title{color:var(--text);font-size:13px;font-weight:900}
+    .vale-timeline-meta{margin-top:2px;color:var(--muted);font-size:11px;line-height:1.4;overflow-wrap:anywhere}
     @media(max-width:680px){
       .roles-screen,.users-screen{padding:12px}
       .roles-screen-head,.role-perm-head,.users-screen>.row:first-child{flex-direction:column;align-items:stretch!important}
@@ -2958,6 +2972,9 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
       .role-perm-checks .pill{align-items:flex-start}
       .users-screen #uSearch{max-width:none!important;width:100%}
       .users-table-scroll .table{min-width:850px}
+      .vale-history-grid{grid-template-columns:minmax(0,1fr)}
+      .vale-history-card{padding:13px}
+      .vale-history-card-head{flex-direction:column}
     }
     </style>
 </head>
@@ -3098,6 +3115,10 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
       <div class="sb-btn" data-sb="vales_activos">
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v18H6z"/><path d="M14 3v5h5"/><path d="M8 13h8"/><path d="M8 17h6"/></svg></span>
         <span class="sb-txt">Vales activos</span>
+      </div>
+      <div class="sb-btn" data-sb="historial_vales_personal">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8v5l3 2"/><path d="M3.5 9A9 9 0 1 1 3 15"/><path d="M3 4v5h5"/></svg></span>
+        <span class="sb-txt">Historial</span>
       </div>
     </div>
 
@@ -3245,7 +3266,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v177</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v178</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3270,7 +3291,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v177";
+  const APP_VERSION = "v178";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3442,7 +3463,7 @@ document.getElementById("appVersion").textContent = APP_VERSION;
     "editar_cita","cancelar_cita",
     "ver_vales_activos","crear_vale_activo","autorizar_vale_activo",
     "registrar_salida_activo","registrar_regreso_activo",
-    "ver_vales_personal","crear_vale_personal","autorizar_vale_personal","ver_permisos_imss","crear_permiso_imss",
+    "ver_vales_personal","crear_vale_personal","autorizar_vale_personal","ver_permisos_imss","crear_permiso_imss","ver_historial_vales_personal",
     "registrar_salida_personal","registrar_regreso_personal",
     "ver_bitacora_guardia","crear_bitacora_guardia",
     "rondinero_ver","rondinero_ejecutar","rondinero_configurar","rondinero_reportes",
@@ -3455,6 +3476,7 @@ const PERMISOS = {
   [ROLES.COORDINADOR]: ALL_PERMS.filter(p =>
     p !== "autorizar_vale_activo" &&
     p !== "autorizar_vale_personal" &&
+    p !== "ver_historial_vales_personal" &&
     p !== "ver_reporte_cambios"
   ),
 
@@ -3473,6 +3495,7 @@ const PERMISOS = {
     "ver_vales_personal",
     "registrar_salida_personal",
     "registrar_regreso_personal",
+    "ver_historial_vales_personal",
     "ver_bitacora_guardia",
     "crear_bitacora_guardia",
     "rondinero_ver",
@@ -3595,7 +3618,7 @@ let rolePermOverrides = {};
 let rolePermsLoaded = false;
 let _selectedRolePermRole = ROLES.ADMIN;
 const ROLE_PERMS_DOC_ID = "role_permissions";
-const ROLE_PERMS_SCHEMA_VERSION = 2;
+const ROLE_PERMS_SCHEMA_VERSION = 3;
 
 const PERM_LABELS = {
   ver_dashboard: "Ver dashboard",
@@ -3630,6 +3653,7 @@ const PERM_LABELS = {
   autorizar_vale_personal: "Autorizar vale personal",
   ver_permisos_imss: "Ver permisos IMSS",
   crear_permiso_imss: "Crear permisos IMSS",
+  ver_historial_vales_personal: "Ver historial de vales de personal",
   registrar_salida_personal: "Registrar salida personal",
   registrar_regreso_personal: "Registrar regreso personal",
   ver_bitacora_guardia: "Ver bit\u00e1cora guardia",
@@ -3650,7 +3674,7 @@ const PERM_GROUPS = [
   { title:"Calidad y documentos", perms:["ver_documentos","dictaminar","despachar"] },
   { title:"Limpieza", perms:["limpiar_finalizados","eliminar"] },
   { title:"Vales de activos", perms:["ver_vales_activos","crear_vale_activo","autorizar_vale_activo","registrar_salida_activo","registrar_regreso_activo"] },
-  { title:"Vales de personal", perms:["ver_vales_personal","crear_vale_personal","autorizar_vale_personal","registrar_salida_personal","registrar_regreso_personal","ver_permisos_imss","crear_permiso_imss"] },
+  { title:"Vales de personal", perms:["ver_vales_personal","crear_vale_personal","autorizar_vale_personal","registrar_salida_personal","registrar_regreso_personal","ver_permisos_imss","crear_permiso_imss","ver_historial_vales_personal"] },
   { title:"Guardia y Rondinero", perms:["ver_bitacora_guardia","crear_bitacora_guardia","rondinero_ver","rondinero_ejecutar","rondinero_configurar","rondinero_reportes"] },
   { title:"Administraci\u00f3n", perms:["admin_roles","admin_proveedores","ver_sesiones_activas"] }
 ];
@@ -3828,6 +3852,9 @@ async function loadRolePermsConfig(force=false){
         if(isLegacyConfig && [ROLES.ADMIN, ROLES.CONTRALORIA].includes(role) && !migrated.includes("ver_reporte_cambios")){
           migrated.push("ver_reporte_cambios");
         }
+        if(isLegacyConfig && [ROLES.ADMIN, ROLES.GUARDIA].includes(role) && !migrated.includes("ver_historial_vales_personal")){
+          migrated.push("ver_historial_vales_personal");
+        }
         next[role] = migrated;
       }
     });
@@ -3861,6 +3888,7 @@ async function saveRolePermsConfig(role, perms){
     let visitas = loadVisitasLocal();
     let valesActivos = loadValesActivosLocal();
     let valesPersonal = loadValesPersonalLocal();
+    let historialValesPersonalCache = [];
     let registroManualPersonalHasta = Number(sessionStorage.getItem("registro_manual_personal_hasta") || 0);
     let registroManualPersonalMotivo = sessionStorage.getItem("registro_manual_personal_motivo") || "";
     let registroManualPersonalTimer = null;
@@ -4401,6 +4429,8 @@ function rememberModuleReturn(view = currentView){
     moduleReturnView = "vales_activos";
   }else if(view === "vales_personal" || view === "vale_personal_qr" || view === "vale_personal_operacion"){
     moduleReturnView = "vales_personal";
+  }else if(view === "historial_vales_personal"){
+    moduleReturnView = "historial_vales_personal";
   }else if(view === "bitacora_guardia"){
     moduleReturnView = "bitacora_guardia";
   }else if(view === "rondinero" || view === "rondinero_detalle" || view === "rondinero_qr"){
@@ -4422,7 +4452,7 @@ function renderModuleHome(){
   if(qSearch){qSearch.value="";qSearch.style.display="none";}
 
   const firstName = esc(String(currentUser?.nombre || currentUser?.name || "").trim().split(/\s+/)[0] || "");
-  const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"👤",vales_activos:"📦",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",help_guide:"?",help_about:"ⓘ"};
+  const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"👤",vales_activos:"📦",historial_vales_personal:"🕘",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",help_guide:"?",help_about:"ⓘ"};
   const link = (key,label,show=true,description="") => show ? `<button class="access-menu-link" data-sb="${key}"><span class="access-kiosk-icon" aria-hidden="true">${menuIcons[key] || "•"}</span><span class="access-kiosk-label">${label}</span>${description ? `<span class="access-kiosk-description">${description}</span>` : ""}</button>` : "";
   const group = (title,description,icon,iconClass,items) => {
     const links = items.filter(Boolean).join("");
@@ -4434,7 +4464,7 @@ function renderModuleHome(){
     group("Visitantes","Registro y seguimiento","👥","visitor",[
       link("dashboard_visitantes","Dashboard",hasPerm("ver_dashboard")),link("nuevo_visitante","Nueva cita",canCreateVisitanteCita()),link("citas_visitantes","Consultar citas",hasPerm("ver_citas_compras"))]),
     group("Vales","Salidas de personal y activos","🎟","vales",[
-      link("vales_personal","Vales de personal",hasPerm("ver_vales_personal")),link("vales_activos","Vales de activos",hasPerm("ver_vales_activos"))]),
+      link("vales_personal","Vales de personal",hasPerm("ver_vales_personal")),link("vales_activos","Vales de activos",hasPerm("ver_vales_activos")),link("historial_vales_personal","Historial",hasPerm("ver_historial_vales_personal") && [ROLES.ADMIN,ROLES.GUARDIA].includes(currentUser?.role),"Recorrido completo de vales de personal")]),
     group("Guardia y Rondinero","Operación de seguridad","🛡","rounds",[
       link("scan","Escáner de accesos",hasPerm("escanear_qr"),"Proveedores, visitantes y vales"),link("bitacora_guardia","Bitácora",hasPerm("ver_bitacora_guardia")),link("rondinero","Rondinero",hasPerm("rondinero_ver"))]),
     group("Reportes","Consultas y exportaciones","📊","provider",[
@@ -5344,6 +5374,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v178</b><span>Nuevo Historial de vales de personal, exclusivo para Guardia y Administrador, con filtros, recorrido cronológico completo, responsables de cada registro y cálculo de minutos excedentes.</span></div>
           <div class="help-release"><b>v177</b><span>La administración de Roles, permisos y usuarios se adapta correctamente a teléfonos, con controles reorganizados, permisos en una columna y desplazamiento contenido.</span></div>
           <div class="help-release"><b>v176</b><span>Nuevo rol Servicio Médico y Permiso IMSS con salida programada: el QR se habilita 5 minutos antes, vence 30 minutos después y registra intentos fuera de horario, salida real y guardia responsable.</span></div>
           <div class="help-release"><b>v175</b><span>La autorización de vales de personal se confirma directamente en Firebase y el escáner reintenta automáticamente la consulta, diferenciando un QR inválido de un problema de conexión o sincronización.</span></div>
@@ -5400,7 +5431,7 @@ function helpGuideHtml(){
       <details open><summary>Inicio y navegación</summary><div class="help-guide-content"><p>Abre las secciones desde el menú lateral. Las opciones visibles dependen de tu rol. Usa Inicio para volver al tablero principal de tu perfil y Sincronizar cuando necesites actualizar la información de la nube. En el rol <b>Jefe</b>, la pantalla principal es <b>Vales de Personal</b> y el menú se presenta de forma compacta en el orden Vales, Configuración y Ayuda.</p><p>Si olvidaste tu contraseña, escribe tu correo en la pantalla de acceso y pulsa <b>¿Olvidaste tu contraseña?</b>. Firebase enviará un enlace para crear una nueva; revisa también Spam o Correo no deseado.</p><p>En celulares y tablets, el botón compacto <b>Tema</b> permanece en el encabezado para cambiar rápidamente a un diseño claro cuando haya mucha luz.</p></div></details>
       <details><summary>Visitantes</summary><div class="help-guide-content"><ol><li>Programa la visita o autoriza una solicitud pendiente.</li><li>Al escanear el QR se registra la llegada y comienza el tiempo de espera.</li><li>Usa <b>Dar acceso</b> para registrar gafete y entrada.</li><li>Al salir, registra la salida para finalizar y obtener los tiempos de espera, permanencia y total.</li></ol></div></details>
       <details><summary>Proveedores</summary><div class="help-guide-content"><ol><li>Crea la cita con proveedor, empresa, área y documentación.</li><li>Si un proveedor recién registrado no aparece en la búsqueda, pulsa <b>Cargar proveedores</b> para actualizar el catálogo desde Firebase sin salir del formulario.</li><li>El guardia escanea el QR y registra la entrada.</li><li>Calidad puede dictaminar la entrega cuando corresponda.</li><li>La salida finaliza el registro y desactiva el QR.</li></ol></div></details>
-      <details><summary>Vales de personal</summary><div class="help-guide-content">Genera el vale con número de nómina y datos del permiso. Puede utilizarse el QR del vale o escanear el QR del gafete. El flujo continúa con autorización, salida y regreso del colaborador. Para el rol <b>Jefe</b>, solo se muestran los vales donde su UID o correo coincide con el autorizador asignado. El rol <b>Servicio Médico</b> puede emitir exclusivamente Permisos IMSS con hora programada; el QR funciona desde 5 minutos antes y hasta 30 minutos después, y el regreso se registra el mismo día.</div></details>
+      <details><summary>Vales de personal</summary><div class="help-guide-content">Genera el vale con número de nómina y datos del permiso. Puede utilizarse el QR del vale o escanear el QR del gafete. El flujo continúa con autorización, salida y regreso del colaborador. Para el rol <b>Jefe</b>, solo se muestran los vales donde su UID o correo coincide con el autorizador asignado. El rol <b>Servicio Médico</b> puede emitir exclusivamente Permisos IMSS con hora programada; el QR funciona desde 5 minutos antes y hasta 30 minutos después, y el regreso se registra el mismo día. Guardia y Administrador disponen de <b>Vales → Historial</b>, donde se presenta el recorrido completo, responsables, tiempo real y minutos excedentes.</div></details>
       <details><summary>Vales de activos</summary><div class="help-guide-content">Registra el activo, responsable, motivo y vigencia. El rol autorizado revisa el vale; Guardia registra la salida y posteriormente el regreso del activo.</div></details>
       <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>En la pestaña <b>Rutas</b>, usa <b>Editar y ordenar</b>. El editor visual permite agregar o quitar puntos y cambiar la secuencia con los botones <b>Subir</b> y <b>Bajar</b>. La lista de arriba hacia abajo será el orden exacto del recorrido.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>Al reportar una novedad selecciona el punto relacionado; el último punto escaneado aparece preseleccionado. También puede tomar una fotografía opcional, comprimida como JPEG de máximo 640 px y 180 KB sin Firebase Storage.</li><li>En el detalle, cada novedad y su fotografía se muestran dentro de la misma tarjeta del punto para revisarlas de un vistazo.</li><li>El cumplimiento se calcula dividiendo los puntos visitados entre los puntos esperados. Un rondín incompleto conserva su avance real en lugar de mostrar automáticamente 0%.</li><li>Desde <b>Detalle del recorrido</b>, pulsa <b>Generar PDF</b> para descargar el reporte completo paginado con datos del rondín, todos los puntos, evidencia GPS, novedades y fotografías.</li><li>El historial registra hora, distancia al punto, precisión GPS y la fotografía de la novedad como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
       <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. Las exportaciones a Excel o PDF dependen de los permisos asignados.</div></details>
@@ -5473,6 +5504,7 @@ const reportesBtn = sidebarEl.querySelector('[data-sb="reportes"]');
 const scan  = sidebarEl.querySelector('[data-sb="scan"]');
 const vales = sidebarEl.querySelector('[data-sb="vales_activos"]');
 const valesPersonalBtn = sidebarEl.querySelector('[data-sb="vales_personal"]');
+const historialValesPersonalBtn = sidebarEl.querySelector('[data-sb="historial_vales_personal"]');
 const bitacoraBtn = sidebarEl.querySelector('[data-sb="bitacora_guardia"]');
 const rondineroBtn = sidebarEl.querySelector('[data-sb="rondinero"]');
 const groupProveedores = sidebarEl.querySelector('[data-sb="grupo_proveedores"]');
@@ -5490,6 +5522,7 @@ if(reportesBtn) reportesBtn.style.display = hasPerm('ver_reportes') ? '' : 'none
 if(scan)  scan.style.display  = hasPerm('escanear_qr') ? '' : 'none';
 if(vales) vales.style.display = hasPerm('ver_vales_activos') ? '' : 'none';
 if(valesPersonalBtn) valesPersonalBtn.style.display = hasPerm('ver_vales_personal') ? '' : 'none';
+if(historialValesPersonalBtn) historialValesPersonalBtn.style.display = hasPerm('ver_historial_vales_personal') && [ROLES.ADMIN,ROLES.GUARDIA].includes(currentUser?.role) ? '' : 'none';
 if(bitacoraBtn) bitacoraBtn.style.display = hasPerm('ver_bitacora_guardia') ? '' : 'none';
 if(rondineroBtn) rondineroBtn.style.display = hasPerm('rondinero_ver') ? '' : 'none';
   // ===============================
@@ -5551,7 +5584,7 @@ const hasVisitantesItems =
   hasPerm('ver_dashboard') ||
   canCreateVisitanteCita() ||
   hasPerm('ver_citas_compras');
-const hasValesItems = hasPerm('ver_vales_activos') || hasPerm('ver_vales_personal');
+const hasValesItems = hasPerm('ver_vales_activos') || hasPerm('ver_vales_personal') || (hasPerm('ver_historial_vales_personal') && [ROLES.ADMIN,ROLES.GUARDIA].includes(currentUser?.role));
 const hasGuardiaItems = hasPerm('escanear_qr') || hasPerm('ver_bitacora_guardia') || hasPerm('rondinero_ver');
 const hasReportesItems = hasPerm('ver_historial') || hasPerm('ver_reportes') || hasPerm('ver_reporte_cambios') || hasPerm('exportar_excel');
 
@@ -5672,6 +5705,12 @@ if(!sb) return;
   setActiveSb('vales_personal');
   sbClose();
   await renderValesPersonal();
+  return;
+}
+  if(key === 'historial_vales_personal'){
+  setActiveSb('historial_vales_personal');
+  sbClose();
+  await renderHistorialValesPersonal();
   return;
 }
   if(key === 'bitacora_guardia'){
@@ -6242,6 +6281,14 @@ function fmt(ts){
       const snap = await getDocs(q);
       const arr = [];
       snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+      return arr;
+    }
+
+    async function cloudFetchHistorialValesPersonal(){
+      const q = query(collection(db, COL_VALES_PERSONAL), orderBy("createdTs", "desc"), limit(500));
+      const snap = await getDocs(q);
+      const arr = [];
+      snap.forEach(d => arr.push({ id:d.id, ...d.data() }));
       return arr;
     }
 
@@ -9179,6 +9226,119 @@ function renderValePersonalCard(v){
   `;
 }
 
+function valeHistoryDateTime(ts){
+  const n = Number(ts || 0);
+  return n ? new Date(n).toLocaleString() : "-";
+}
+
+function valeHistoryEvents(v={}){
+  const events = [];
+  const push = (ts, title, detail="", tone="") => {
+    const n = Number(ts || 0);
+    if(n) events.push({ ts:n, title, detail, tone });
+  };
+  push(v.createdTs, "Vale creado", [v.createdByNombre, v.createdByEmail].filter(Boolean).join(" · ") || "Usuario no registrado");
+  if(isPermisoImss(v) && v.salidaProgramadaTs){
+    push(v.salidaProgramadaTs, "Salida IMSS programada", `Ventana: ${formatHoraTs(v.imssVentanaInicioTs)} a ${formatHoraTs(v.imssVentanaFinTs)}`, "warn");
+  }
+  push(v.autorizadoTs, isPermisoImss(v) ? "Permiso emitido por Servicio Médico" : "Vale autorizado", [v.autorizadoPorNombre, v.autorizadoPor].filter(Boolean).join(" · "), "ok");
+  (Array.isArray(v.imssIntentos) ? v.imssIntentos : []).forEach(x => push(x.ts, x.tipo === "anticipado" ? "Intento antes del horario" : "Intento con permiso vencido", [x.guardiaNombre,x.guardiaEmail].filter(Boolean).join(" · "), "bad"));
+  (Array.isArray(v.historialRegistroManual) ? v.historialRegistroManual : []).forEach(x => push(x.ts, "Registro manual habilitado", `${x.nombre || x.email || "Usuario"}${x.motivo ? ` · ${x.motivo}` : ""}`, "warn"));
+  push(v.reautorizacionSolicitadaTs, "Reautorización solicitada", v.reautorizacionMotivo || "Tiempo autorizado excedido", "warn");
+  push(v.reautorizacionAtendidaTs, "Reautorización aprobada", v.reautorizacionAtendidaPorNombre || v.reautorizacionAtendidaPor || "Autorizador", "ok");
+  push(v.salidaTs, "Salida registrada", [v.salidaGuardiaNombre,v.salidaGuardiaEmail,v.imssSalidaGuardiaNombre,v.imssSalidaGuardiaEmail].filter(Boolean).join(" · ") || "Guardia no registrado", "warn");
+  push(v.llegadaTs, "Ingreso registrado", v.regresoGuardiaNombre || v.regresoGuardiaEmail || v.registroIngresoPor || "Guardia no registrado", "ok");
+  push(v.regresoTs, "Regreso registrado", v.regresoGuardiaNombre || v.regresoGuardiaEmail || "Guardia no registrado", "ok");
+  push(v.canceladoTs, "Vale cancelado", v.canceladoPor || "Usuario no registrado", "bad");
+  return events.sort((a,b)=>a.ts-b.ts);
+}
+
+function renderValePersonalHistoryCard(v){
+  const events = valeHistoryEvents(v);
+  const usado = calcValePersonalTiempo(v);
+  const autorizadoMin = parseTiempoAutorizadoMin(v.tiempoAutorizado);
+  const excedenteMin = usado !== null && autorizadoMin !== null ? Math.max(0, usado - autorizadoMin) : 0;
+  const finalizado = v.status === ValeStatus.REGRESO_CANCELADO;
+  return `
+    <article class="vale-history-card">
+      <div class="vale-history-card-head">
+        <div>
+          <h3>${esc(v.nombreColaborador || "Colaborador")}</h3>
+          <small>${esc(v.folio || v.id || "-")} · Nómina ${esc(v.nomina || "-")} · ${esc(v.departamento || "-")}</small>
+        </div>
+        <span class="pill"><span class="dot ${valeStatusDot(v.status)}"></span>${esc(valeStatusLabel(v.status))}</span>
+      </div>
+      <div class="meta" style="margin-top:10px;">
+        <span class="pill">${esc(v.tipoPermiso || "Permiso")}</span>
+        <span class="pill">Autorizado: ${esc(v.tiempoAutorizado || "-")}</span>
+        ${usado !== null ? `<span class="pill">Tiempo real: ${esc(formatMinutes(usado))}</span>` : ""}
+        <span class="pill"><span class="dot ${excedenteMin > 0 ? "bad" : "ok"}"></span>Tiempo excedente: ${esc(String(excedenteMin))} min</span>
+        ${v.ultimoRegistroOrigen ? `<span class="pill">Origen: ${esc(v.ultimoRegistroOrigen === "qr" ? "QR" : "Manual")}</span>` : ""}
+      </div>
+      <div class="vale-timeline">
+        ${events.length ? events.map(ev => `
+          <div class="vale-timeline-item ${ev.tone ? `is-${ev.tone}` : ""}">
+            <div class="vale-timeline-title">${esc(ev.title)}</div>
+            <div class="vale-timeline-meta">${esc(valeHistoryDateTime(ev.ts))}${ev.detail ? ` · ${esc(ev.detail)}` : ""}</div>
+          </div>
+        `).join("") : `<div class="vale-timeline-meta">Sin eventos registrados.</div>`}
+      </div>
+      ${v.observaciones ? `<div class="pill" style="display:block;margin-top:12px;white-space:normal;"><b>Observaciones:</b> ${esc(v.observaciones)}</div>` : ""}
+      ${finalizado ? `<div style="margin-top:10px;color:var(--ok);font-size:12px;font-weight:900;">Recorrido finalizado</div>` : ""}
+    </article>
+  `;
+}
+
+async function renderHistorialValesPersonal(refresh=true){
+  if(![ROLES.ADMIN, ROLES.GUARDIA].includes(currentUser?.role) || !hasPerm("ver_historial_vales_personal")){
+    return toast("Acceso restringido", "El historial de vales solo está disponible para Guardia y Administrador.", "warn", 4200);
+  }
+  currentView = "historial_vales_personal";
+  moduleReturnView = "historial_vales_personal";
+  if(refresh && navigator.onLine){
+    try{
+      historialValesPersonalCache = await cloudFetchHistorialValesPersonal();
+      valesPersonal = mergeById(valesPersonal, historialValesPersonalCache);
+      saveValesPersonalLocal();
+    }catch(e){
+      console.warn("No se pudo cargar el historial de vales:", e);
+      toast("Historial", "Se muestran los datos disponibles en este dispositivo.", "warn", 3200);
+    }
+  }
+  if(!historialValesPersonalCache.length) historialValesPersonalCache = [...valesPersonal];
+  const previous = {
+    buscar: document.getElementById("vhBuscar")?.value || "",
+    desde: document.getElementById("vhDesde")?.value || "",
+    hasta: document.getElementById("vhHasta")?.value || "",
+    estado: document.getElementById("vhEstado")?.value || ""
+  };
+  const term = previous.buscar.trim().toLowerCase();
+  const desdeTs = previous.desde ? new Date(`${previous.desde}T00:00:00`).getTime() : 0;
+  const hastaTs = previous.hasta ? new Date(`${previous.hasta}T23:59:59`).getTime() : Number.MAX_SAFE_INTEGER;
+  const list = historialValesPersonalCache.filter(v => {
+    const ts = Number(v.createdTs || getValeDisplayTs(v) || 0);
+    const text = [v.folio,v.nombreColaborador,v.nomina,v.departamento,v.tipoPermiso,v.autorizadorNombre,v.createdByEmail].join(" ").toLowerCase();
+    return (!term || text.includes(term)) && ts >= desdeTs && ts <= hastaTs && (!previous.estado || v.status === previous.estado);
+  }).sort((a,b)=>Number(b.createdTs||0)-Number(a.createdTs||0));
+  appEl.innerHTML = `
+    <section class="provider-dashboard-modern">
+      <div class="provider-dashboard-hero">
+        <div class="provider-dashboard-hero-copy"><div class="provider-dashboard-hero-icon" aria-hidden="true">🕘</div><div><h2>Historial de vales</h2><p>Recorrido completo de los vales de personal, desde su creación hasta el regreso.</p></div></div>
+        <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${list.length} registros</div>
+      </div>
+      <div class="dashboard-toolbar" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;">
+        <input id="vhBuscar" value="${esc(previous.buscar)}" placeholder="Nombre, nómina, folio...">
+        <input id="vhDesde" type="date" value="${esc(previous.desde)}" aria-label="Desde">
+        <input id="vhHasta" type="date" value="${esc(previous.hasta)}" aria-label="Hasta">
+        <select id="vhEstado"><option value="">Todos los estados</option>${Object.values(ValeStatus).map(s=>`<option value="${esc(s)}" ${previous.estado===s?"selected":""}>${esc(valeStatusLabel(s))}</option>`).join("")}</select>
+        <button data-action="filtrarHistorialValesPersonal">Aplicar filtros</button>
+        <button class="secondary" data-action="refrescarHistorialValesPersonal">Actualizar</button>
+      </div>
+      <div class="vale-history-grid">${list.length ? list.map(renderValePersonalHistoryCard).join("") : `<div class="card" style="color:var(--muted);">No hay vales que coincidan con los filtros.</div>`}</div>
+    </section>
+  `;
+}
+
 async function renderBitacoraGuardia(fecha = todayISO()){
   if(!requirePerm("ver_bitacora_guardia","Solo ADMIN y GUARDIA pueden ver la bitácora.")) return;
   currentView = "bitacora_guardia";
@@ -11136,6 +11296,7 @@ function createValePersonalFromModal(){
     autorizadoPorRol: esPermisoImss ? ROLES.SERVICIO_MEDICO : "",
     createdByUid: currentUser?.uid || "",
     createdByEmail: currentUser?.email || "",
+    createdByNombre: currentUser?.nombre || "",
     createdTs: Date.now(),
     updatedTs: Date.now()
   };
@@ -11192,6 +11353,9 @@ async function updateValePersonalStatus(id, status){
   v.updatedTs = now;
   if(status === ValeStatus.FUERA){
     v.salidaTs = now;
+    v.salidaGuardiaUid = currentUser?.uid || "";
+    v.salidaGuardiaEmail = currentUser?.email || "";
+    v.salidaGuardiaNombre = currentUser?.nombre || "";
     v.ultimoTiempoAutorizadoTs = now;
     v.reautorizacionPendiente = false;
     if(isPermisoImss(v)){
@@ -11203,6 +11367,9 @@ async function updateValePersonalStatus(id, status){
     }
   }
   if(status === ValeStatus.REGRESO_CANCELADO){
+    v.regresoGuardiaUid = currentUser?.uid || "";
+    v.regresoGuardiaEmail = currentUser?.email || "";
+    v.regresoGuardiaNombre = currentUser?.nombre || "";
     if(isValePersonalEntrada(v)){
       v.llegadaTs = now;
       v.entradaBaseTs = getEntrada815BaseTs(v);
@@ -16070,6 +16237,8 @@ function renderProveedores(lista){
         case "autorizarVale": await autorizarValeActivo(id); break;
         case "cancelarVale": await cancelarValeActivo(id); break;
         case "valesPersonal": await renderValesPersonal(); break;
+        case "filtrarHistorialValesPersonal": await renderHistorialValesPersonal(false); break;
+        case "refrescarHistorialValesPersonal": await renderHistorialValesPersonal(true); break;
         case "toggleRegistroManualPersonal": await toggleRegistroManualPersonal(); break;
         case "bitacoraGuardia": await renderBitacoraGuardia(); break;
         case "guardarBitacora": await guardarBitacora(); break;
