@@ -3270,7 +3270,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v181</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v182</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3295,7 +3295,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v181";
+  const APP_VERSION = "v182";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3353,6 +3353,9 @@ document.getElementById("appVersion").textContent = APP_VERSION;
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     sendPasswordResetEmail,
+    EmailAuthProvider,
+    reauthenticateWithCredential,
+    updatePassword,
     onAuthStateChanged,
     signOut,
     deleteUser as deleteAuthUser
@@ -4464,7 +4467,7 @@ function renderModuleHome(){
   if(qSearch){qSearch.value="";qSearch.style.display="none";}
 
   const firstName = esc(String(currentUser?.nombre || currentUser?.name || "").trim().split(/\s+/)[0] || "");
-  const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"👤",vales_activos:"📦",historial_vales_personal:"🕘",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_nominas:"🧾",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",help_guide:"?",help_about:"ⓘ"};
+  const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"👤",vales_activos:"📦",historial_vales_personal:"🕘",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_nominas:"🧾",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_cuenta:"🔒",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",help_guide:"?",help_about:"ⓘ"};
   const link = (key,label,show=true,description="") => show ? `<button class="access-menu-link" data-sb="${key}"><span class="access-kiosk-icon" aria-hidden="true">${menuIcons[key] || "•"}</span><span class="access-kiosk-label">${label}</span>${description ? `<span class="access-kiosk-description">${description}</span>` : ""}</button>` : "";
   const group = (title,description,icon,iconClass,items) => {
     const links = items.filter(Boolean).join("");
@@ -4482,7 +4485,7 @@ function renderModuleHome(){
     group("Reportes","Consultas y exportaciones","📊","provider",[
       link("historial","Historial",hasPerm("ver_historial")),link("reportes","Indicadores",hasPerm("ver_reportes")),link("reporte_nominas","Reporte Nóminas",currentUser?.role === ROLES.ADMIN && hasPerm("ver_reporte_nominas"),"Minutos excedentes por colaborador"),link("reporte_cambios","Cambios",hasPerm("ver_reporte_cambios")),link("export_excel","Exportar Excel",hasPerm("exportar_excel")),link("export_pdf","Exportar PDF",hasPerm("exportar_excel"))]),
     group("Configuración","Usuarios y seguridad","⚙","visitor",[
-      link("mi_pin","Mi PIN",canConfigurePin()),link("roles","Usuarios",hasPerm("admin_roles")),link("role_permissions","Roles y permisos",hasPerm("admin_roles")),link("personas_visita","Directorio",currentUser?.role === ROLES.ADMIN),link("proveedores","Catálogo proveedores",currentUser?.role === ROLES.ADMIN),link("sesiones_activas","Sesiones activas",hasPerm("ver_sesiones_activas"))]),
+      link("mi_cuenta","Mi cuenta",true,"Cambiar contraseña y revisar seguridad"),link("mi_pin","Mi PIN",canConfigurePin()),link("roles","Usuarios",hasPerm("admin_roles")),link("role_permissions","Roles y permisos",hasPerm("admin_roles")),link("personas_visita","Directorio",currentUser?.role === ROLES.ADMIN),link("proveedores","Catálogo proveedores",currentUser?.role === ROLES.ADMIN),link("sesiones_activas","Sesiones activas",hasPerm("ver_sesiones_activas"))]),
     group("Ayuda","Información y asistencia","?","vales",[link("help_guide","Guía rápida"),link("help_about","Acerca de")])
   ].filter(Boolean).join("");
   appEl.innerHTML = `
@@ -5386,6 +5389,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v182</b><span>Nueva sección Mi cuenta para que cada usuario cambie su propia contraseña confirmando la contraseña actual, con requisitos de seguridad y sin depender del correo de recuperación.</span></div>
           <div class="help-release"><b>v181</b><span>El Jefe de Compras sólo consulta los vales de personal asignados para su autorización y los vales de activos creados por su cuenta.</span></div>
           <div class="help-release"><b>v180</b><span>El rol Jefe de Compras puede crear y modificar su propio PIN desde Configuración → Mi PIN, con validación completa en Firebase.</span></div>
           <div class="help-release"><b>v179</b><span>Nuevo Reporte para Nóminas, exclusivo para Administrador, con filtros por periodo y colaborador, acumulado de minutos excedentes, detalle de permisos finalizados y exportación a Excel.</span></div>
@@ -5450,7 +5454,7 @@ function helpGuideHtml(){
       <details><summary>Vales de activos</summary><div class="help-guide-content">Registra el activo, responsable, motivo y vigencia. El rol autorizado revisa el vale; Guardia registra la salida y posteriormente el regreso del activo.</div></details>
       <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>En la pestaña <b>Rutas</b>, usa <b>Editar y ordenar</b>. El editor visual permite agregar o quitar puntos y cambiar la secuencia con los botones <b>Subir</b> y <b>Bajar</b>. La lista de arriba hacia abajo será el orden exacto del recorrido.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>Al reportar una novedad selecciona el punto relacionado; el último punto escaneado aparece preseleccionado. También puede tomar una fotografía opcional, comprimida como JPEG de máximo 640 px y 180 KB sin Firebase Storage.</li><li>En el detalle, cada novedad y su fotografía se muestran dentro de la misma tarjeta del punto para revisarlas de un vistazo.</li><li>El cumplimiento se calcula dividiendo los puntos visitados entre los puntos esperados. Un rondín incompleto conserva su avance real en lugar de mostrar automáticamente 0%.</li><li>Desde <b>Detalle del recorrido</b>, pulsa <b>Generar PDF</b> para descargar el reporte completo paginado con datos del rondín, todos los puntos, evidencia GPS, novedades y fotografías.</li><li>El historial registra hora, distancia al punto, precisión GPS y la fotografía de la novedad como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
       <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. El <b>Reporte para Nóminas</b>, visible únicamente para Administrador, concentra los permisos de personal finalizados, minutos autorizados, tiempo real y minutos excedentes por colaborador, con detalle y exportación a Excel. El reporte no calcula importes ni aplica descuentos automáticamente.</div></details>
-      <details><summary>Usuarios, roles y permisos</summary><div class="help-guide-content"><p>El administrador aprueba usuarios, asigna roles y configura permisos. Los cambios en Roles afectan qué módulos y acciones puede utilizar cada perfil.</p><p>Para dar de alta varias cuentas, entra a <b>Configuración → Usuarios</b> y pulsa <b>Agregar usuarios</b>. Pega una fila por persona con el formato <b>Nombre; Correo; Contraseña temporal; Rol; Área; Empresa; Teléfono</b>. También puedes copiar filas desde Excel; las columnas separadas por tabulaciones se reconocen automáticamente.</p><p>Si una cuenta ya existe en Authentication pero no tiene perfil en Firestore, vuelve a incluirla con su contraseña temporal: la aplicación reconstruirá el documento en <b>users</b> y lo verificará directamente en el servidor.</p></div></details>
+      <details><summary>Usuarios, roles y permisos</summary><div class="help-guide-content"><p>El administrador aprueba usuarios, asigna roles y configura permisos. Los cambios en Roles afectan qué módulos y acciones puede utilizar cada perfil.</p><p>Cada usuario puede entrar a <b>Configuración → Mi cuenta</b> para cambiar su propia contraseña. Debe confirmar la contraseña actual y crear una nueva de al menos 10 caracteres con mayúscula, minúscula, número y símbolo.</p><p>Para dar de alta varias cuentas, entra a <b>Configuración → Usuarios</b> y pulsa <b>Agregar usuarios</b>. Pega una fila por persona con el formato <b>Nombre; Correo; Contraseña temporal; Rol; Área; Empresa; Teléfono</b>. También puedes copiar filas desde Excel; las columnas separadas por tabulaciones se reconocen automáticamente.</p><p>Si una cuenta ya existe en Authentication pero no tiene perfil en Firestore, vuelve a incluirla con su contraseña temporal: la aplicación reconstruirá el documento en <b>users</b> y lo verificará directamente en el servidor.</p></div></details>
       <details><summary>PIN de autorización</summary><div class="help-guide-content"><p>Administrador, Jefe, Jefe de Compras, Guardia y los perfiles autorizadores habilitados pueden crear o modificar su propio PIN desde <b>Configuración → Mi PIN</b>. El PIN es personal y se utiliza para confirmar acciones sensibles.</p></div></details>
       <details><summary>Problemas frecuentes</summary><div class="help-guide-content"><ul><li>Si no aparece un cambio, actualiza la página para cargar la versión más reciente.</li><li>Si una operación indica falta de permisos, consulta al administrador.</li><li>Si no hay Internet, evita cerrar la sesión hasta recuperar la conexión y sincronizar.</li><li>Verifica que la cámara y la ubicación precisa tengan permiso antes de escanear códigos QR.</li><li>Si Rondinero indica <b>GPS impreciso</b>, colócate en un área abierta, activa la ubicación precisa y vuelve a intentar.</li><li>Si indica <b>Punto sin GPS</b>, un administrador debe acudir al punto y configurarlo desde Rondinero.</li></ul></div></details>
     </div>`;
@@ -5785,6 +5789,12 @@ if(!sb) return;
     setActiveSb('config');
     sbClose();
     await renderMiPin();
+    return;
+  }
+  if(key === 'mi_cuenta'){
+    setActiveSb('config');
+    sbClose();
+    renderMiCuenta();
     return;
   }
 if(key === "proveedores"){
@@ -13148,6 +13158,58 @@ async function importarPersonasVisitaActuales(){
       `;
     }
 
+    function renderMiCuenta(){
+      currentView = "mi_cuenta";
+      const changedTs = Number(currentUser?.passwordChangedTs || 0);
+      appEl.innerHTML = `
+        <div class="card" style="max-width:620px;margin-inline:auto;">
+          <div class="row" style="justify-content:space-between;align-items:flex-start;">
+            <div><h2 style="margin:0 0 4px;">Mi cuenta</h2><div style="color:var(--muted);font-size:13px;">${esc(currentUser?.email || "")}</div></div>
+            <button class="secondary" data-action="home">Volver</button>
+          </div>
+          <div class="divider"></div>
+          <div class="pill" style="display:flex;white-space:normal;margin-bottom:14px;"><span class="dot ok"></span>${changedTs ? `Último cambio: ${esc(new Date(changedTs).toLocaleDateString())}` : "Puedes actualizar tu contraseña cuando lo necesites."}</div>
+          <label>Contraseña actual</label><input id="passwordActual" type="password" autocomplete="current-password" placeholder="Escribe tu contraseña actual">
+          <label>Nueva contraseña</label><input id="passwordNueva" type="password" autocomplete="new-password" placeholder="Mínimo 10 caracteres">
+          <label>Confirmar nueva contraseña</label><input id="passwordConfirmar" type="password" autocomplete="new-password" placeholder="Repite la nueva contraseña">
+          <div class="muted" style="font-size:12px;margin-top:8px;">Debe incluir mayúscula, minúscula, número y símbolo. No reutilices la contraseña actual.</div>
+          <div id="passwordStatus" role="status" aria-live="polite" style="min-height:24px;margin-top:10px;font-size:13px;font-weight:750;color:var(--muted);"></div>
+          <div class="divider"></div>
+          <div class="row"><button id="btnCambiarPassword" class="ok" data-action="cambiarPassword">Cambiar contraseña</button></div>
+        </div>`;
+    }
+
+    async function cambiarPassword(){
+      const actual = document.getElementById("passwordActual")?.value || "";
+      const nueva = document.getElementById("passwordNueva")?.value || "";
+      const confirmar = document.getElementById("passwordConfirmar")?.value || "";
+      const statusEl = document.getElementById("passwordStatus");
+      const button = document.getElementById("btnCambiarPassword");
+      const fail = message => { if(statusEl){ statusEl.style.color="var(--bad)"; statusEl.textContent=message; } toast("Contraseña no actualizada",message,"warn",4200); };
+      if(!actual) return fail("Escribe tu contraseña actual.");
+      if(nueva === actual) return fail("La nueva contraseña debe ser diferente a la actual.");
+      if(nueva.length < 10 || !/[A-Z]/.test(nueva) || !/[a-z]/.test(nueva) || !/\d/.test(nueva) || !/[^A-Za-z0-9]/.test(nueva)) return fail("Usa al menos 10 caracteres con mayúscula, minúscula, número y símbolo.");
+      if(nueva !== confirmar) return fail("La confirmación no coincide con la nueva contraseña.");
+      if(!auth.currentUser?.email) return fail("La sesión no tiene un correo válido. Vuelve a iniciar sesión.");
+      button.disabled=true; button.textContent="Actualizando…";
+      if(statusEl){statusEl.style.color="var(--muted)";statusEl.textContent="Verificando la contraseña actual…";}
+      try{
+        await reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(auth.currentUser.email, actual));
+        await updatePassword(auth.currentUser, nueva);
+        const changedTs = Date.now();
+        await updateDoc(doc(db, COL_USERS, currentUser.uid), {passwordChangedTs:changedTs,passwordChangedAt:serverTimestamp(),passwordChangeRequired:false});
+        currentUser.passwordChangedTs = changedTs;
+        currentUser.passwordChangeRequired = false;
+        localStorage.setItem(LS_USER, JSON.stringify(currentUser));
+        toast("Contraseña actualizada","Tu nueva contraseña quedó guardada correctamente.","ok",5000);
+        renderModuleHome();
+      }catch(error){
+        const code=String(error?.code||"");
+        const message=code.includes("invalid-credential") || code.includes("wrong-password") ? "La contraseña actual no es correcta." : code.includes("weak-password") ? "Firebase rechazó la nueva contraseña por ser débil." : code.includes("too-many-requests") ? "Demasiados intentos. Espera unos minutos y vuelve a intentarlo." : "No se pudo actualizar la contraseña. Revisa la conexión e intenta nuevamente.";
+        fail(message);
+      }finally{const currentBtn=document.getElementById("btnCambiarPassword");if(currentBtn){currentBtn.disabled=false;currentBtn.textContent="Cambiar contraseña";}}
+    }
+
     async function guardarMiPin(){
       if(!canConfigurePin()){
         toast("Acceso denegado", "Tu rol no puede configurar PIN.", "bad", 3200);
@@ -16493,6 +16555,7 @@ function renderProveedores(lista){
         case "nuevoVisitante": await goNuevaCita("visitante"); break;
 
         case "guardarProveedor": await guardarProveedor(); break;
+        case "cambiarPassword": await cambiarPassword(); break;
         case "guardarMiPin": await guardarMiPin(); break;
         case "adminRoles": await renderAdminRoles(); break;
         case "rolePermissions": await renderRolePermissions(); break;
@@ -16798,7 +16861,12 @@ window.addEventListener("offline",updateNet);
         email: prof.email,
         user: prof.email,
         role: prof.role,
-        nombre: prof.nombre || prof.email
+        nombre: prof.nombre || prof.email,
+        createdTs: prof.createdTs || 0,
+        solicitadoTs: prof.solicitadoTs || 0,
+        passwordChangedTs: prof.passwordChangedTs || 0,
+        passwordChangeRequired: prof.passwordChangeRequired === true,
+        migradoDesde: prof.migradoDesde || ""
       };
       
       localStorage.setItem(LS_USER, JSON.stringify(currentUser));

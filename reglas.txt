@@ -106,6 +106,16 @@ service cloud.firestore {
           && request.resource.data.pinEnabled == true
           && request.resource.data.pinUpdatedTs is int
           && request.resource.data.pinUpdatedAt is timestamp
+        ) || (
+          uid == myUid()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "passwordChangedTs",
+            "passwordChangedAt",
+            "passwordChangeRequired"
+          ])
+          && request.resource.data.passwordChangedTs is int
+          && request.resource.data.passwordChangedAt is timestamp
+          && request.resource.data.passwordChangeRequired == false
         );
       allow delete: if false;
     }
