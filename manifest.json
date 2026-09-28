@@ -1,7 +1,7 @@
-﻿{
+{
   "name": "Caborca Access Control",
   "short_name": "Caborca Access",
-  "version": "178",
+  "version": "179",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -23,4 +23,3 @@
     }
   ]
 }
-

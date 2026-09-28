@@ -3156,6 +3156,10 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16v-6"/><path d="M12 16v-10"/><path d="M17 16v-4"/></svg></span>
         <span class="sb-txt">Reportes</span>
       </div>
+      <div class="sb-btn" data-sb="reporte_nominas">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h4"/><path d="M16 15v4"/><path d="M14 17h4"/></svg></span>
+        <span class="sb-txt">Reporte Nóminas</span>
+      </div>
       <div class="sb-btn" data-sb="reporte_cambios">
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 7h10"/><path d="M7 11h10"/><path d="M7 15h6"/></svg></span>
         <span class="sb-txt">Cambios en Citas</span>
@@ -3266,7 +3270,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v178</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v179</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3291,7 +3295,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v178";
+  const APP_VERSION = "v179";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3467,7 +3471,7 @@ document.getElementById("appVersion").textContent = APP_VERSION;
     "registrar_salida_personal","registrar_regreso_personal",
     "ver_bitacora_guardia","crear_bitacora_guardia",
     "rondinero_ver","rondinero_ejecutar","rondinero_configurar","rondinero_reportes",
-    "ver_sesiones_activas","ver_reportes","ver_reporte_cambios"
+    "ver_sesiones_activas","ver_reportes","ver_reporte_cambios","ver_reporte_nominas"
   ];
 
  
@@ -3477,6 +3481,7 @@ const PERMISOS = {
     p !== "autorizar_vale_activo" &&
     p !== "autorizar_vale_personal" &&
     p !== "ver_historial_vales_personal" &&
+    p !== "ver_reporte_nominas" &&
     p !== "ver_reporte_cambios"
   ),
 
@@ -3618,7 +3623,7 @@ let rolePermOverrides = {};
 let rolePermsLoaded = false;
 let _selectedRolePermRole = ROLES.ADMIN;
 const ROLE_PERMS_DOC_ID = "role_permissions";
-const ROLE_PERMS_SCHEMA_VERSION = 3;
+const ROLE_PERMS_SCHEMA_VERSION = 4;
 
 const PERM_LABELS = {
   ver_dashboard: "Ver dashboard",
@@ -3664,12 +3669,13 @@ const PERM_LABELS = {
   rondinero_reportes: "Reportes Rondinero",
   ver_sesiones_activas: "Ver usuarios logeados",
   ver_reportes: "Ver reportes generales",
-  ver_reporte_cambios: "Ver cambios en citas"
+  ver_reporte_cambios: "Ver cambios en citas",
+  ver_reporte_nominas: "Ver reporte para Nóminas"
 };
 
 const PERM_GROUPS = [
   { title:"Dashboard y consultas", perms:["ver_dashboard","ver_ficha","ver_qr","buscar_proveedor","ver_citas_compras"] },
-  { title:"Reportes", perms:["ver_historial","ver_reportes","ver_reporte_cambios","exportar_excel"] },
+  { title:"Reportes", perms:["ver_historial","ver_reportes","ver_reporte_cambios","ver_reporte_nominas","exportar_excel"] },
   { title:"Citas y acceso", perms:["crear_cita","crear_cita_visitante","editar_cita","cancelar_cita","escanear_qr","registrar_entrada","registrar_salida","reactivar_qr"] },
   { title:"Calidad y documentos", perms:["ver_documentos","dictaminar","despachar"] },
   { title:"Limpieza", perms:["limpiar_finalizados","eliminar"] },
@@ -3855,6 +3861,9 @@ async function loadRolePermsConfig(force=false){
         if(isLegacyConfig && [ROLES.ADMIN, ROLES.GUARDIA].includes(role) && !migrated.includes("ver_historial_vales_personal")){
           migrated.push("ver_historial_vales_personal");
         }
+        if(isLegacyConfig && role === ROLES.ADMIN && !migrated.includes("ver_reporte_nominas")){
+          migrated.push("ver_reporte_nominas");
+        }
         next[role] = migrated;
       }
     });
@@ -3889,6 +3898,7 @@ async function saveRolePermsConfig(role, perms){
     let valesActivos = loadValesActivosLocal();
     let valesPersonal = loadValesPersonalLocal();
     let historialValesPersonalCache = [];
+    let reporteNominasCache = [];
     let registroManualPersonalHasta = Number(sessionStorage.getItem("registro_manual_personal_hasta") || 0);
     let registroManualPersonalMotivo = sessionStorage.getItem("registro_manual_personal_motivo") || "";
     let registroManualPersonalTimer = null;
@@ -4431,6 +4441,8 @@ function rememberModuleReturn(view = currentView){
     moduleReturnView = "vales_personal";
   }else if(view === "historial_vales_personal"){
     moduleReturnView = "historial_vales_personal";
+  }else if(view === "reporte_nominas"){
+    moduleReturnView = "reporte_nominas";
   }else if(view === "bitacora_guardia"){
     moduleReturnView = "bitacora_guardia";
   }else if(view === "rondinero" || view === "rondinero_detalle" || view === "rondinero_qr"){
@@ -4452,7 +4464,7 @@ function renderModuleHome(){
   if(qSearch){qSearch.value="";qSearch.style.display="none";}
 
   const firstName = esc(String(currentUser?.nombre || currentUser?.name || "").trim().split(/\s+/)[0] || "");
-  const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"👤",vales_activos:"📦",historial_vales_personal:"🕘",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",help_guide:"?",help_about:"ⓘ"};
+  const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"👤",vales_activos:"📦",historial_vales_personal:"🕘",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_nominas:"🧾",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",help_guide:"?",help_about:"ⓘ"};
   const link = (key,label,show=true,description="") => show ? `<button class="access-menu-link" data-sb="${key}"><span class="access-kiosk-icon" aria-hidden="true">${menuIcons[key] || "•"}</span><span class="access-kiosk-label">${label}</span>${description ? `<span class="access-kiosk-description">${description}</span>` : ""}</button>` : "";
   const group = (title,description,icon,iconClass,items) => {
     const links = items.filter(Boolean).join("");
@@ -4468,7 +4480,7 @@ function renderModuleHome(){
     group("Guardia y Rondinero","Operación de seguridad","🛡","rounds",[
       link("scan","Escáner de accesos",hasPerm("escanear_qr"),"Proveedores, visitantes y vales"),link("bitacora_guardia","Bitácora",hasPerm("ver_bitacora_guardia")),link("rondinero","Rondinero",hasPerm("rondinero_ver"))]),
     group("Reportes","Consultas y exportaciones","📊","provider",[
-      link("historial","Historial",hasPerm("ver_historial")),link("reportes","Indicadores",hasPerm("ver_reportes")),link("reporte_cambios","Cambios",hasPerm("ver_reporte_cambios")),link("export_excel","Exportar Excel",hasPerm("exportar_excel")),link("export_pdf","Exportar PDF",hasPerm("exportar_excel"))]),
+      link("historial","Historial",hasPerm("ver_historial")),link("reportes","Indicadores",hasPerm("ver_reportes")),link("reporte_nominas","Reporte Nóminas",currentUser?.role === ROLES.ADMIN && hasPerm("ver_reporte_nominas"),"Minutos excedentes por colaborador"),link("reporte_cambios","Cambios",hasPerm("ver_reporte_cambios")),link("export_excel","Exportar Excel",hasPerm("exportar_excel")),link("export_pdf","Exportar PDF",hasPerm("exportar_excel"))]),
     group("Configuración","Usuarios y seguridad","⚙","visitor",[
       link("mi_pin","Mi PIN",canConfigurePin()),link("roles","Usuarios",hasPerm("admin_roles")),link("role_permissions","Roles y permisos",hasPerm("admin_roles")),link("personas_visita","Directorio",currentUser?.role === ROLES.ADMIN),link("proveedores","Catálogo proveedores",currentUser?.role === ROLES.ADMIN),link("sesiones_activas","Sesiones activas",hasPerm("ver_sesiones_activas"))]),
     group("Ayuda","Información y asistencia","?","vales",[link("help_guide","Guía rápida"),link("help_about","Acerca de")])
@@ -5374,6 +5386,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v179</b><span>Nuevo Reporte para Nóminas, exclusivo para Administrador, con filtros por periodo y colaborador, acumulado de minutos excedentes, detalle de permisos finalizados y exportación a Excel.</span></div>
           <div class="help-release"><b>v178</b><span>Nuevo Historial de vales de personal, exclusivo para Guardia y Administrador, con filtros, recorrido cronológico completo, responsables de cada registro y cálculo de minutos excedentes.</span></div>
           <div class="help-release"><b>v177</b><span>La administración de Roles, permisos y usuarios se adapta correctamente a teléfonos, con controles reorganizados, permisos en una columna y desplazamiento contenido.</span></div>
           <div class="help-release"><b>v176</b><span>Nuevo rol Servicio Médico y Permiso IMSS con salida programada: el QR se habilita 5 minutos antes, vence 30 minutos después y registra intentos fuera de horario, salida real y guardia responsable.</span></div>
@@ -5434,7 +5447,7 @@ function helpGuideHtml(){
       <details><summary>Vales de personal</summary><div class="help-guide-content">Genera el vale con número de nómina y datos del permiso. Puede utilizarse el QR del vale o escanear el QR del gafete. El flujo continúa con autorización, salida y regreso del colaborador. Para el rol <b>Jefe</b>, solo se muestran los vales donde su UID o correo coincide con el autorizador asignado. El rol <b>Servicio Médico</b> puede emitir exclusivamente Permisos IMSS con hora programada; el QR funciona desde 5 minutos antes y hasta 30 minutos después, y el regreso se registra el mismo día. Guardia y Administrador disponen de <b>Vales → Historial</b>, donde se presenta el recorrido completo, responsables, tiempo real y minutos excedentes.</div></details>
       <details><summary>Vales de activos</summary><div class="help-guide-content">Registra el activo, responsable, motivo y vigencia. El rol autorizado revisa el vale; Guardia registra la salida y posteriormente el regreso del activo.</div></details>
       <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>En la pestaña <b>Rutas</b>, usa <b>Editar y ordenar</b>. El editor visual permite agregar o quitar puntos y cambiar la secuencia con los botones <b>Subir</b> y <b>Bajar</b>. La lista de arriba hacia abajo será el orden exacto del recorrido.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>Al reportar una novedad selecciona el punto relacionado; el último punto escaneado aparece preseleccionado. También puede tomar una fotografía opcional, comprimida como JPEG de máximo 640 px y 180 KB sin Firebase Storage.</li><li>En el detalle, cada novedad y su fotografía se muestran dentro de la misma tarjeta del punto para revisarlas de un vistazo.</li><li>El cumplimiento se calcula dividiendo los puntos visitados entre los puntos esperados. Un rondín incompleto conserva su avance real en lugar de mostrar automáticamente 0%.</li><li>Desde <b>Detalle del recorrido</b>, pulsa <b>Generar PDF</b> para descargar el reporte completo paginado con datos del rondín, todos los puntos, evidencia GPS, novedades y fotografías.</li><li>El historial registra hora, distancia al punto, precisión GPS y la fotografía de la novedad como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
-      <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. Las exportaciones a Excel o PDF dependen de los permisos asignados.</div></details>
+      <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. El <b>Reporte para Nóminas</b>, visible únicamente para Administrador, concentra los permisos de personal finalizados, minutos autorizados, tiempo real y minutos excedentes por colaborador, con detalle y exportación a Excel. El reporte no calcula importes ni aplica descuentos automáticamente.</div></details>
       <details><summary>Usuarios, roles y permisos</summary><div class="help-guide-content"><p>El administrador aprueba usuarios, asigna roles y configura permisos. Los cambios en Roles afectan qué módulos y acciones puede utilizar cada perfil.</p><p>Para dar de alta varias cuentas, entra a <b>Configuración → Usuarios</b> y pulsa <b>Agregar usuarios</b>. Pega una fila por persona con el formato <b>Nombre; Correo; Contraseña temporal; Rol; Área; Empresa; Teléfono</b>. También puedes copiar filas desde Excel; las columnas separadas por tabulaciones se reconocen automáticamente.</p><p>Si una cuenta ya existe en Authentication pero no tiene perfil en Firestore, vuelve a incluirla con su contraseña temporal: la aplicación reconstruirá el documento en <b>users</b> y lo verificará directamente en el servidor.</p></div></details>
       <details><summary>Problemas frecuentes</summary><div class="help-guide-content"><ul><li>Si no aparece un cambio, actualiza la página para cargar la versión más reciente.</li><li>Si una operación indica falta de permisos, consulta al administrador.</li><li>Si no hay Internet, evita cerrar la sesión hasta recuperar la conexión y sincronizar.</li><li>Verifica que la cámara y la ubicación precisa tengan permiso antes de escanear códigos QR.</li><li>Si Rondinero indica <b>GPS impreciso</b>, colócate en un área abierta, activa la ubicación precisa y vuelve a intentar.</li><li>Si indica <b>Punto sin GPS</b>, un administrador debe acudir al punto y configurarlo desde Rondinero.</li></ul></div></details>
     </div>`;
@@ -5501,6 +5514,7 @@ const nuevo = sidebarEl.querySelector('[data-sb="nuevo"]');
 const nuevoVisitante = sidebarEl.querySelector('[data-sb="nuevo_visitante"]');
 const hist  = sidebarEl.querySelector('[data-sb="historial"]');
 const reportesBtn = sidebarEl.querySelector('[data-sb="reportes"]');
+const reporteNominasBtn = sidebarEl.querySelector('[data-sb="reporte_nominas"]');
 const scan  = sidebarEl.querySelector('[data-sb="scan"]');
 const vales = sidebarEl.querySelector('[data-sb="vales_activos"]');
 const valesPersonalBtn = sidebarEl.querySelector('[data-sb="vales_personal"]');
@@ -5519,6 +5533,7 @@ if(nuevo) nuevo.style.display = canCreateProveedorCita() && !isVisitanteOnlyRole
 if(nuevoVisitante) nuevoVisitante.style.display = canCreateVisitanteCita() ? '' : 'none';
 if(hist)  hist.style.display  = hasPerm('ver_historial') ? '' : 'none';
 if(reportesBtn) reportesBtn.style.display = hasPerm('ver_reportes') ? '' : 'none';
+if(reporteNominasBtn) reporteNominasBtn.style.display = currentUser?.role === ROLES.ADMIN && hasPerm('ver_reporte_nominas') ? '' : 'none';
 if(scan)  scan.style.display  = hasPerm('escanear_qr') ? '' : 'none';
 if(vales) vales.style.display = hasPerm('ver_vales_activos') ? '' : 'none';
 if(valesPersonalBtn) valesPersonalBtn.style.display = hasPerm('ver_vales_personal') ? '' : 'none';
@@ -5586,7 +5601,7 @@ const hasVisitantesItems =
   hasPerm('ver_citas_compras');
 const hasValesItems = hasPerm('ver_vales_activos') || hasPerm('ver_vales_personal') || (hasPerm('ver_historial_vales_personal') && [ROLES.ADMIN,ROLES.GUARDIA].includes(currentUser?.role));
 const hasGuardiaItems = hasPerm('escanear_qr') || hasPerm('ver_bitacora_guardia') || hasPerm('rondinero_ver');
-const hasReportesItems = hasPerm('ver_historial') || hasPerm('ver_reportes') || hasPerm('ver_reporte_cambios') || hasPerm('exportar_excel');
+const hasReportesItems = hasPerm('ver_historial') || hasPerm('ver_reportes') || hasPerm('ver_reporte_cambios') || (currentUser?.role === ROLES.ADMIN && hasPerm('ver_reporte_nominas')) || hasPerm('exportar_excel');
 
 if(groupProveedores) groupProveedores.style.display = hasProveedoresItems ? '' : 'none';
 if(groupVisitantes) groupVisitantes.style.display = hasVisitantesItems ? '' : 'none';
@@ -5736,6 +5751,12 @@ if(!sb) return;
   setActiveSb('reportes');
   sbClose();
   renderReportes();
+  return;
+  }
+  if(key === 'reporte_nominas'){
+  setActiveSb('reporte_nominas');
+  sbClose();
+  await renderReporteNominas();
   return;
   }
   if(key === 'roles'){
@@ -6287,6 +6308,17 @@ function fmt(ts){
     async function cloudFetchHistorialValesPersonal(){
       const q = query(collection(db, COL_VALES_PERSONAL), orderBy("createdTs", "desc"), limit(500));
       const snap = await getDocs(q);
+      const arr = [];
+      snap.forEach(d => arr.push({ id:d.id, ...d.data() }));
+      return arr;
+    }
+
+    async function cloudFetchReporteNominas(desde, hasta){
+      const constraints = [];
+      if(desde) constraints.push(where("fecha", ">=", desde));
+      if(hasta) constraints.push(where("fecha", "<=", hasta));
+      constraints.push(orderBy("fecha", "desc"), limit(1000));
+      const snap = await getDocs(query(collection(db, COL_VALES_PERSONAL), ...constraints));
       const arr = [];
       snap.forEach(d => arr.push({ id:d.id, ...d.data() }));
       return arr;
@@ -9337,6 +9369,124 @@ async function renderHistorialValesPersonal(refresh=true){
       <div class="vale-history-grid">${list.length ? list.map(renderValePersonalHistoryCard).join("") : `<div class="card" style="color:var(--muted);">No hay vales que coincidan con los filtros.</div>`}</div>
     </section>
   `;
+}
+
+let reporteNominasFiltros = {
+  desde: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0,10),
+  hasta: todayISO(),
+  buscar: "",
+  departamento: ""
+};
+
+function calcValeNominas(v={}){
+  const tiempoRealMin = calcValePersonalTiempo(v);
+  const tiempoAutorizadoMin = parseTiempoAutorizadoMin(v.tiempoAutorizado);
+  const tiempoExcedenteMin = tiempoRealMin !== null && tiempoAutorizadoMin !== null
+    ? Math.max(0, tiempoRealMin - tiempoAutorizadoMin)
+    : 0;
+  return { tiempoRealMin:tiempoRealMin ?? 0, tiempoAutorizadoMin:tiempoAutorizadoMin ?? 0, tiempoExcedenteMin };
+}
+
+async function renderReporteNominas(refresh=true){
+  if(currentUser?.role !== ROLES.ADMIN || !hasPerm("ver_reporte_nominas")){
+    return toast("Acceso restringido", "El Reporte de Nóminas es exclusivo para Administrador.", "warn", 4200);
+  }
+  currentView = "reporte_nominas";
+  moduleReturnView = "reporte_nominas";
+  if(refresh && navigator.onLine){
+    try{
+      reporteNominasCache = await cloudFetchReporteNominas(reporteNominasFiltros.desde, reporteNominasFiltros.hasta);
+      valesPersonal = mergeById(valesPersonal, reporteNominasCache);
+      saveValesPersonalLocal();
+    }catch(e){
+      console.warn("No se pudo cargar el reporte de nóminas:", e);
+      toast("Reporte de Nóminas", "Se muestran los datos disponibles en este dispositivo.", "warn", 3400);
+    }
+  }
+  if(!reporteNominasCache.length) reporteNominasCache = [...valesPersonal];
+  const desdeTs = reporteNominasFiltros.desde ? new Date(`${reporteNominasFiltros.desde}T00:00:00`).getTime() : 0;
+  const hastaTs = reporteNominasFiltros.hasta ? new Date(`${reporteNominasFiltros.hasta}T23:59:59`).getTime() : Number.MAX_SAFE_INTEGER;
+  const buscar = reporteNominasFiltros.buscar.trim().toLowerCase();
+  const departamentos = Array.from(new Set(reporteNominasCache.map(v=>String(v.departamento||"").trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  const detalle = reporteNominasCache.filter(v => {
+    const fechaTs = v.fecha ? new Date(`${v.fecha}T12:00:00`).getTime() : 0;
+    const ts = Number(fechaTs || v.regresoTs || v.llegadaTs || v.createdTs || 0);
+    const terminado = Boolean(v.regresoTs || v.llegadaTs) && !v.canceladoTs;
+    const text = [v.nomina,v.nombreColaborador,v.folio].join(" ").toLowerCase();
+    return terminado && ts >= desdeTs && ts <= hastaTs && (!buscar || text.includes(buscar)) && (!reporteNominasFiltros.departamento || v.departamento === reporteNominasFiltros.departamento);
+  }).map(v => ({ ...v, ...calcValeNominas(v) })).sort((a,b)=>Number(b.regresoTs||b.llegadaTs||0)-Number(a.regresoTs||a.llegadaTs||0));
+
+  const grouped = new Map();
+  detalle.forEach(v => {
+    const key = String(v.nomina || v.nombreColaborador || "SIN-NOMINA").trim().toLowerCase();
+    if(!grouped.has(key)) grouped.set(key, { nomina:v.nomina||"-", nombre:v.nombreColaborador||"-", departamento:v.departamento||"-", permisos:0, tiempoAutorizadoMin:0, tiempoRealMin:0, tiempoExcedenteMin:0 });
+    const row = grouped.get(key);
+    row.permisos += 1;
+    row.tiempoAutorizadoMin += v.tiempoAutorizadoMin;
+    row.tiempoRealMin += v.tiempoRealMin;
+    row.tiempoExcedenteMin += v.tiempoExcedenteMin;
+  });
+  const resumen = Array.from(grouped.values()).sort((a,b)=>b.tiempoExcedenteMin-a.tiempoExcedenteMin || a.nombre.localeCompare(b.nombre));
+  const totalExcedente = resumen.reduce((sum,r)=>sum+r.tiempoExcedenteMin,0);
+  window.__reporteNominas = { resumen, detalle, filtros:{...reporteNominasFiltros} };
+
+  appEl.innerHTML = `
+    <section class="provider-dashboard-modern">
+      <div class="provider-dashboard-hero">
+        <div class="provider-dashboard-hero-copy"><div class="provider-dashboard-hero-icon" aria-hidden="true">🧾</div><div><h2>Reporte para Nóminas</h2><p>Permisos finalizados y minutos excedentes por colaborador. Este reporte no calcula importes monetarios.</p></div></div>
+        <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${esc(String(totalExcedente))} min excedentes</div>
+      </div>
+      <div class="dashboard-toolbar" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;">
+        <input id="rnDesde" type="date" value="${esc(reporteNominasFiltros.desde)}" aria-label="Desde">
+        <input id="rnHasta" type="date" value="${esc(reporteNominasFiltros.hasta)}" aria-label="Hasta">
+        <input id="rnBuscar" value="${esc(reporteNominasFiltros.buscar)}" placeholder="Nómina, nombre o folio">
+        <select id="rnDepartamento"><option value="">Todos los departamentos</option>${departamentos.map(d=>`<option ${reporteNominasFiltros.departamento===d?"selected":""}>${esc(d)}</option>`).join("")}</select>
+        <button data-action="aplicarReporteNominas">Aplicar</button>
+        <button class="secondary" data-action="actualizarReporteNominas">Actualizar</button>
+        <button class="ok" data-action="exportarReporteNominas">Exportar Excel</button>
+      </div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+        <div class="card"><div class="big">${resumen.length}</div><small>Colaboradores</small></div>
+        <div class="card"><div class="big">${detalle.length}</div><small>Permisos finalizados</small></div>
+        <div class="card"><div class="big">${totalExcedente}</div><small>Minutos excedentes</small></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0;">Resumen por colaborador</h3>
+        <div class="users-table-scroll"><table class="table"><thead><tr><th>Nómina</th><th>Colaborador</th><th>Departamento</th><th>Permisos</th><th>Tiempo autorizado</th><th>Tiempo real</th><th>Tiempo excedente</th></tr></thead><tbody>
+          ${resumen.length ? resumen.map(r=>`<tr><td><b>${esc(r.nomina)}</b></td><td>${esc(r.nombre)}</td><td>${esc(r.departamento)}</td><td>${r.permisos}</td><td>${r.tiempoAutorizadoMin} min</td><td>${r.tiempoRealMin} min</td><td><span class="pill"><span class="dot ${r.tiempoExcedenteMin>0?"bad":"ok"}"></span><b>${r.tiempoExcedenteMin} min</b></span></td></tr>`).join("") : `<tr><td colspan="7">Sin permisos finalizados en el periodo.</td></tr>`}
+        </tbody></table></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0;">Detalle de permisos</h3>
+        <div class="users-table-scroll"><table class="table"><thead><tr><th>Fecha</th><th>Nómina</th><th>Colaborador</th><th>Folio</th><th>Tipo</th><th>Salida</th><th>Regreso</th><th>Autorizado</th><th>Real</th><th>Excedente</th><th>Autoriza</th></tr></thead><tbody>
+          ${detalle.length ? detalle.map(v=>`<tr><td>${esc(v.fecha||valeHistoryDateTime(v.createdTs))}</td><td>${esc(v.nomina||"-")}</td><td>${esc(v.nombreColaborador||"-")}</td><td>${esc(v.folio||v.id||"-")}</td><td>${esc(v.tipoPermiso||"-")}</td><td>${esc(valeHistoryDateTime(v.salidaTs))}</td><td>${esc(valeHistoryDateTime(v.regresoTs||v.llegadaTs))}</td><td>${v.tiempoAutorizadoMin} min</td><td>${v.tiempoRealMin} min</td><td><b>${v.tiempoExcedenteMin} min</b></td><td>${esc(v.autorizadoPorNombre||v.autorizadorNombre||v.autorizadoPor||"-")}</td></tr>`).join("") : `<tr><td colspan="11">Sin detalle para mostrar.</td></tr>`}
+        </tbody></table></div>
+      </div>
+    </section>`;
+}
+
+function aplicarReporteNominas(){
+  reporteNominasFiltros = {
+    desde: document.getElementById("rnDesde")?.value || "",
+    hasta: document.getElementById("rnHasta")?.value || "",
+    buscar: document.getElementById("rnBuscar")?.value || "",
+    departamento: document.getElementById("rnDepartamento")?.value || ""
+  };
+  return renderReporteNominas(true);
+}
+
+function exportarReporteNominas(){
+  if(currentUser?.role !== ROLES.ADMIN) return;
+  const rep = window.__reporteNominas || { resumen:[], detalle:[], filtros:{} };
+  if(!rep.detalle.length) return toast("Reporte de Nóminas", "No hay datos para exportar.", "warn", 2800);
+  if(!window.XLSX) return toast("Excel", "La librería de Excel aún no está disponible.", "warn", 2800);
+  const resumenRows = rep.resumen.map(r=>({"No. nómina":r.nomina,"Colaborador":r.nombre,"Departamento":r.departamento,"Permisos":r.permisos,"Minutos autorizados":r.tiempoAutorizadoMin,"Minutos reales":r.tiempoRealMin,"Minutos excedentes":r.tiempoExcedenteMin}));
+  const detalleRows = rep.detalle.map(v=>({"Fecha":v.fecha||"","No. nómina":v.nomina||"","Colaborador":v.nombreColaborador||"","Departamento":v.departamento||"","Folio":v.folio||v.id||"","Tipo":v.tipoPermiso||"","Salida":valeHistoryDateTime(v.salidaTs),"Regreso":valeHistoryDateTime(v.regresoTs||v.llegadaTs),"Tiempo autorizado":v.tiempoAutorizado||"","Minutos autorizados":v.tiempoAutorizadoMin,"Minutos reales":v.tiempoRealMin,"Minutos excedentes":v.tiempoExcedenteMin,"Autorizó":v.autorizadoPorNombre||v.autorizadorNombre||v.autorizadoPor||""}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumenRows), "Resumen");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detalleRows), "Detalle");
+  XLSX.writeFile(wb, `reporte_nominas_${rep.filtros.desde||"inicio"}_${rep.filtros.hasta||"hoy"}.xlsx`);
+  toast("Reporte de Nóminas", "Archivo Excel generado.", "ok", 2400);
 }
 
 async function renderBitacoraGuardia(fecha = todayISO()){
@@ -16239,6 +16389,9 @@ function renderProveedores(lista){
         case "valesPersonal": await renderValesPersonal(); break;
         case "filtrarHistorialValesPersonal": await renderHistorialValesPersonal(false); break;
         case "refrescarHistorialValesPersonal": await renderHistorialValesPersonal(true); break;
+        case "aplicarReporteNominas": await aplicarReporteNominas(); break;
+        case "actualizarReporteNominas": await renderReporteNominas(true); break;
+        case "exportarReporteNominas": exportarReporteNominas(); break;
         case "toggleRegistroManualPersonal": await toggleRegistroManualPersonal(); break;
         case "bitacoraGuardia": await renderBitacoraGuardia(); break;
         case "guardarBitacora": await guardarBitacora(); break;
