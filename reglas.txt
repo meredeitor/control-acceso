@@ -86,6 +86,23 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /app_config/encuesta_visitantes {
+      allow read: if isAuth();
+      allow create: if isAuth()
+        && (isAdmin() || isCoordinador() || isGuardia())
+        && request.resource.data.keys().hasOnly(["totalSalidas", "frecuencia", "actualizadoTs"])
+        && request.resource.data.totalSalidas == 1
+        && request.resource.data.frecuencia == 2
+        && request.resource.data.actualizadoTs is int;
+      allow update: if isAuth()
+        && (isAdmin() || isCoordinador() || isGuardia())
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["totalSalidas", "frecuencia", "actualizadoTs"])
+        && request.resource.data.totalSalidas == resource.data.totalSalidas + 1
+        && request.resource.data.frecuencia == 2
+        && request.resource.data.actualizadoTs is int;
+      allow delete: if false;
+    }
+
     match /users/{uid} {
       allow read: if isAuth();
       allow create: if isAuth() && uid == myUid();

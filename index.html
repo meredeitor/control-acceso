@@ -3270,7 +3270,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v182</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v183</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3295,7 +3295,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v182";
+  const APP_VERSION = "v183";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3368,7 +3368,8 @@ document.getElementById("appVersion").textContent = APP_VERSION;
   query, orderBy, limit, where,
   serverTimestamp,
   getCountFromServer,
-  increment
+  increment,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 
@@ -4467,7 +4468,7 @@ function renderModuleHome(){
   if(qSearch){qSearch.value="";qSearch.style.display="none";}
 
   const firstName = esc(String(currentUser?.nombre || currentUser?.name || "").trim().split(/\s+/)[0] || "");
-  const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"👤",vales_activos:"📦",historial_vales_personal:"🕘",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_nominas:"🧾",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_cuenta:"🔒",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",help_guide:"?",help_about:"ⓘ"};
+  const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"👤",vales_activos:"📦",historial_vales_personal:"🕘",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_encuesta_visitantes:"😊",reporte_nominas:"🧾",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_cuenta:"🔒",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",help_guide:"?",help_about:"ⓘ"};
   const link = (key,label,show=true,description="") => show ? `<button class="access-menu-link" data-sb="${key}"><span class="access-kiosk-icon" aria-hidden="true">${menuIcons[key] || "•"}</span><span class="access-kiosk-label">${label}</span>${description ? `<span class="access-kiosk-description">${description}</span>` : ""}</button>` : "";
   const group = (title,description,icon,iconClass,items) => {
     const links = items.filter(Boolean).join("");
@@ -4483,7 +4484,7 @@ function renderModuleHome(){
     group("Guardia y Rondinero","Operación de seguridad","🛡","rounds",[
       link("scan","Escáner de accesos",hasPerm("escanear_qr"),"Proveedores, visitantes y vales"),link("bitacora_guardia","Bitácora",hasPerm("ver_bitacora_guardia")),link("rondinero","Rondinero",hasPerm("rondinero_ver"))]),
     group("Reportes","Consultas y exportaciones","📊","provider",[
-      link("historial","Historial",hasPerm("ver_historial")),link("reportes","Indicadores",hasPerm("ver_reportes")),link("reporte_nominas","Reporte Nóminas",currentUser?.role === ROLES.ADMIN && hasPerm("ver_reporte_nominas"),"Minutos excedentes por colaborador"),link("reporte_cambios","Cambios",hasPerm("ver_reporte_cambios")),link("export_excel","Exportar Excel",hasPerm("exportar_excel")),link("export_pdf","Exportar PDF",hasPerm("exportar_excel"))]),
+      link("historial","Historial",hasPerm("ver_historial")),link("reportes","Indicadores",hasPerm("ver_reportes")),link("reporte_encuesta_visitantes","Encuesta recepción",currentUser?.role === ROLES.ADMIN,"Satisfacción del servicio de recepción"),link("reporte_nominas","Reporte Nóminas",currentUser?.role === ROLES.ADMIN && hasPerm("ver_reporte_nominas"),"Minutos excedentes por colaborador"),link("reporte_cambios","Cambios",hasPerm("ver_reporte_cambios")),link("export_excel","Exportar Excel",hasPerm("exportar_excel")),link("export_pdf","Exportar PDF",hasPerm("exportar_excel"))]),
     group("Configuración","Usuarios y seguridad","⚙","visitor",[
       link("mi_cuenta","Mi cuenta",true,"Cambiar contraseña y revisar seguridad"),link("mi_pin","Mi PIN",canConfigurePin()),link("roles","Usuarios",hasPerm("admin_roles")),link("role_permissions","Roles y permisos",hasPerm("admin_roles")),link("personas_visita","Directorio",currentUser?.role === ROLES.ADMIN),link("proveedores","Catálogo proveedores",currentUser?.role === ROLES.ADMIN),link("sesiones_activas","Sesiones activas",hasPerm("ver_sesiones_activas"))]),
     group("Ayuda","Información y asistencia","?","vales",[link("help_guide","Guía rápida"),link("help_about","Acerca de")])
@@ -5389,6 +5390,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v183</b><span>Encuesta de satisfacción del servicio de recepción cada segunda salida de visitantes y nuevo reporte administrativo con índice, participación, distribución y detalle por periodo.</span></div>
           <div class="help-release"><b>v182</b><span>Nueva sección Mi cuenta para que cada usuario cambie su propia contraseña confirmando la contraseña actual, con requisitos de seguridad y sin depender del correo de recuperación.</span></div>
           <div class="help-release"><b>v181</b><span>El Jefe de Compras sólo consulta los vales de personal asignados para su autorización y los vales de activos creados por su cuenta.</span></div>
           <div class="help-release"><b>v180</b><span>El rol Jefe de Compras puede crear y modificar su propio PIN desde Configuración → Mi PIN, con validación completa en Firebase.</span></div>
@@ -5453,7 +5455,7 @@ function helpGuideHtml(){
       <details><summary>Vales de personal</summary><div class="help-guide-content">Genera el vale con número de nómina y datos del permiso. Puede utilizarse el QR del vale o escanear el QR del gafete. El flujo continúa con autorización, salida y regreso del colaborador. Para el rol <b>Jefe</b>, solo se muestran los vales donde su UID o correo coincide con el autorizador asignado. El rol <b>Servicio Médico</b> puede emitir exclusivamente Permisos IMSS con hora programada; el QR funciona desde 5 minutos antes y hasta 30 minutos después, y el regreso se registra el mismo día. Guardia y Administrador disponen de <b>Vales → Historial</b>, donde se presenta el recorrido completo, responsables, tiempo real y minutos excedentes.</div></details>
       <details><summary>Vales de activos</summary><div class="help-guide-content">Registra el activo, responsable, motivo y vigencia. El rol autorizado revisa el vale; Guardia registra la salida y posteriormente el regreso del activo.</div></details>
       <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>En la pestaña <b>Rutas</b>, usa <b>Editar y ordenar</b>. El editor visual permite agregar o quitar puntos y cambiar la secuencia con los botones <b>Subir</b> y <b>Bajar</b>. La lista de arriba hacia abajo será el orden exacto del recorrido.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>Al reportar una novedad selecciona el punto relacionado; el último punto escaneado aparece preseleccionado. También puede tomar una fotografía opcional, comprimida como JPEG de máximo 640 px y 180 KB sin Firebase Storage.</li><li>En el detalle, cada novedad y su fotografía se muestran dentro de la misma tarjeta del punto para revisarlas de un vistazo.</li><li>El cumplimiento se calcula dividiendo los puntos visitados entre los puntos esperados. Un rondín incompleto conserva su avance real en lugar de mostrar automáticamente 0%.</li><li>Desde <b>Detalle del recorrido</b>, pulsa <b>Generar PDF</b> para descargar el reporte completo paginado con datos del rondín, todos los puntos, evidencia GPS, novedades y fotografías.</li><li>El historial registra hora, distancia al punto, precisión GPS y la fotografía de la novedad como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
-      <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. El <b>Reporte para Nóminas</b>, visible únicamente para Administrador, concentra los permisos de personal finalizados, minutos autorizados, tiempo real y minutos excedentes por colaborador, con detalle y exportación a Excel. El reporte no calcula importes ni aplica descuentos automáticamente.</div></details>
+      <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. <b>Encuesta recepción</b>, exclusiva para Administrador, muestra las encuestas aplicadas cada segunda salida de visitantes, el índice de servicio, participación, distribución de calificaciones y detalle por periodo. El <b>Reporte para Nóminas</b>, visible únicamente para Administrador, concentra los permisos de personal finalizados, minutos autorizados, tiempo real y minutos excedentes por colaborador, con detalle y exportación a Excel. El reporte no calcula importes ni aplica descuentos automáticamente.</div></details>
       <details><summary>Usuarios, roles y permisos</summary><div class="help-guide-content"><p>El administrador aprueba usuarios, asigna roles y configura permisos. Los cambios en Roles afectan qué módulos y acciones puede utilizar cada perfil.</p><p>Cada usuario puede entrar a <b>Configuración → Mi cuenta</b> para cambiar su propia contraseña. Debe confirmar la contraseña actual y crear una nueva de al menos 10 caracteres con mayúscula, minúscula, número y símbolo.</p><p>Para dar de alta varias cuentas, entra a <b>Configuración → Usuarios</b> y pulsa <b>Agregar usuarios</b>. Pega una fila por persona con el formato <b>Nombre; Correo; Contraseña temporal; Rol; Área; Empresa; Teléfono</b>. También puedes copiar filas desde Excel; las columnas separadas por tabulaciones se reconocen automáticamente.</p><p>Si una cuenta ya existe en Authentication pero no tiene perfil en Firestore, vuelve a incluirla con su contraseña temporal: la aplicación reconstruirá el documento en <b>users</b> y lo verificará directamente en el servidor.</p></div></details>
       <details><summary>PIN de autorización</summary><div class="help-guide-content"><p>Administrador, Jefe, Jefe de Compras, Guardia y los perfiles autorizadores habilitados pueden crear o modificar su propio PIN desde <b>Configuración → Mi PIN</b>. El PIN es personal y se utiliza para confirmar acciones sensibles.</p></div></details>
       <details><summary>Problemas frecuentes</summary><div class="help-guide-content"><ul><li>Si no aparece un cambio, actualiza la página para cargar la versión más reciente.</li><li>Si una operación indica falta de permisos, consulta al administrador.</li><li>Si no hay Internet, evita cerrar la sesión hasta recuperar la conexión y sincronizar.</li><li>Verifica que la cámara y la ubicación precisa tengan permiso antes de escanear códigos QR.</li><li>Si Rondinero indica <b>GPS impreciso</b>, colócate en un área abierta, activa la ubicación precisa y vuelve a intentar.</li><li>Si indica <b>Punto sin GPS</b>, un administrador debe acudir al punto y configurarlo desde Rondinero.</li></ul></div></details>
@@ -5765,6 +5767,12 @@ if(!sb) return;
   setActiveSb('reporte_nominas');
   sbClose();
   await renderReporteNominas();
+  return;
+  }
+  if(key === 'reporte_encuesta_visitantes'){
+  setActiveSb('reportes');
+  sbClose();
+  await renderReporteEncuestaVisitantes();
   return;
   }
   if(key === 'roles'){
@@ -12358,6 +12366,44 @@ function exportEvaluacionProveedoresExcel(){
   XLSX.writeFile(wb, `evaluacion_proveedores_${rep.from || ""}_${rep.to || ""}.xlsx`);
   toast("Excel", "Evaluación de proveedores exportada.", "ok", 2200);
 }
+async function renderReporteEncuestaVisitantes(){
+  if(currentUser?.role !== ROLES.ADMIN){toast("Acceso denegado","Sólo Administrador puede consultar este reporte.","bad",3600);return renderModuleHome();}
+  currentView="reporte_encuesta_visitantes";
+  const today=new Date();
+  const monthStart=new Date(today.getFullYear(),today.getMonth(),1);
+  const dateKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  appEl.innerHTML=`<div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start;"><div><h2 style="margin:0 0 4px;">Encuesta de servicio de recepción</h2><div class="muted">Resultados generados en Control de Accesos; no incluye información histórica de la app anterior.</div></div><button class="secondary" data-action="home">Volver</button></div><div class="divider"></div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));align-items:end;"><div><label>Desde</label><input id="surveyReportFrom" type="date" value="${dateKey(monthStart)}"></div><div><label>Hasta</label><input id="surveyReportTo" type="date" value="${dateKey(today)}"></div><div><button id="surveyReportLoad">Calcular reporte</button></div></div><div class="divider"></div><div id="surveyReportResults" class="muted">Calculando resultados…</div></div>`;
+  document.getElementById("surveyReportLoad").onclick=cargarReporteEncuestaVisitantes;
+  await cargarReporteEncuestaVisitantes();
+}
+
+async function cloudFetchEncuestasVisitantesByRange(fromTs,toTs){
+  const snap=await getDocs(query(collection(db,COL_VISITAS),where("salidaTs",">=",fromTs),where("salidaTs","<=",toTs),orderBy("salidaTs","asc"),limit(1000)));
+  const rows=[];snap.forEach(d=>rows.push({id:d.id,...d.data()}));return rows;
+}
+
+async function cargarReporteEncuestaVisitantes(){
+  const box=document.getElementById("surveyReportResults");if(!box)return;
+  const from=document.getElementById("surveyReportFrom")?.value,to=document.getElementById("surveyReportTo")?.value;
+  if(!from||!to){box.textContent="Selecciona ambas fechas.";return;}
+  box.innerHTML=`<div class="muted">Consultando encuestas…</div>`;
+  try{
+    const fromTs=new Date(from+"T00:00:00").getTime(),toTs=new Date(to+"T23:59:59.999").getTime();
+    let rows=visitas.filter(v=>{const ts=Number(v.salidaTs||v.fechaHoraTs||0);return ts>=fromTs&&ts<=toTs;});
+    if(navigator.onLine){const cloud=await cloudFetchEncuestasVisitantesByRange(fromTs,toTs);visitas=mergeById(visitas,cloud);saveVisitasLocal();rows=cloud;}
+    const offered=rows.filter(v=>isVisitante(v)&&v.encuestaProgramada===true);
+    const answered=offered.filter(v=>Number(v.encuestaCalificacion)>=1&&Number(v.encuestaCalificacion)<=5);
+    const ratings=answered.map(v=>Number(v.encuestaCalificacion));
+    const average=ratings.length?ratings.reduce((a,b)=>a+b,0)/ratings.length:0;
+    const serviceIndex=ratings.length?Math.round(((average-1)/4)*100):0;
+    const participation=offered.length?Math.round((answered.length/offered.length)*100):0;
+    const counts=[1,2,3,4,5].map(n=>ratings.filter(r=>r===n).length);
+    const labels=["Muy malo","Malo","Regular","Bueno","Excelente"],emojis=["😡","🙁","😐","🙂","😄"];
+    const maxCount=Math.max(1,...counts);
+    box.innerHTML=`<div class="reports-kpi-grid"><div class="card report-kpi-card"><h3>Índice de servicio</h3><div style="font-size:30px;font-weight:900;color:${serviceIndex>=90?'var(--ok)':serviceIndex>=75?'var(--warn)':'var(--bad)'};">${serviceIndex}%</div></div><div class="card report-kpi-card"><h3>Contestadas</h3><div style="font-size:30px;font-weight:900;">${answered.length}</div></div><div class="card report-kpi-card"><h3>Presentadas</h3><div style="font-size:30px;font-weight:900;">${offered.length}</div></div><div class="card report-kpi-card"><h3>Participación</h3><div style="font-size:30px;font-weight:900;">${participation}%</div></div></div><div class="divider"></div><div class="card"><h3 style="margin-top:0;">Distribución de calificaciones</h3>${counts.map((count,i)=>`<div style="display:grid;grid-template-columns:minmax(110px,170px) 1fr 40px;gap:10px;align-items:center;margin:10px 0;"><b>${emojis[i]} ${labels[i]}</b><div style="height:18px;background:var(--surface-soft,#edf3fb);border-radius:999px;overflow:hidden;"><div style="height:100%;width:${Math.round(count/maxCount*100)}%;background:${['#dc2626','#ea580c','#d97706','#16a34a','#15803d'][i]};border-radius:999px;"></div></div><b>${count}</b></div>`).join("")}</div><div class="divider"></div><div style="overflow:auto;"><table class="table"><thead><tr><th>Fecha de salida</th><th>Visitante</th><th>Empresa</th><th>Calificación</th><th>Estado</th></tr></thead><tbody>${offered.length?offered.sort((a,b)=>Number(b.salidaTs||0)-Number(a.salidaTs||0)).map(v=>`<tr><td>${esc(fmt(v.salidaTs))}</td><td>${esc(v.nombreVisitante||v.nombre||'-')}</td><td>${esc(v.empresa||'-')}</td><td>${v.encuestaCalificacion?`${emojis[Number(v.encuestaCalificacion)-1]} ${esc(labels[Number(v.encuestaCalificacion)-1])}`:'—'}</td><td>${esc(v.encuestaEstado||'pendiente')}</td></tr>`).join(''):`<tr><td colspan="5">Sin encuestas en el periodo.</td></tr>`}</tbody></table></div>`;
+  }catch(error){console.error(error);box.innerHTML=`<div class="pill bad" style="white-space:normal;">No se pudo calcular el reporte. Revisa conexión, reglas e índices de Firebase.</div>`;}
+}
+
 function renderReportes(){
   if(!hasPerm("ver_reportes")){
     toast("Acceso denegado", "No tienes permiso para ver reportes.", "bad");
@@ -15906,6 +15952,57 @@ async function confirmarEntrada(id) {
   renderModuleHome();
 }
 
+    async function programarEncuestaRecepcion(v){
+      if(!isVisitante(v) || !navigator.onLine) return false;
+      const visitaRef = doc(db, COL_VISITAS, String(v.id));
+      const counterRef = doc(db, "app_config", "encuesta_visitantes");
+      const result = await runTransaction(db, async tx => {
+        const [counterSnap, visitaSnap] = await Promise.all([tx.get(counterRef), tx.get(visitaRef)]);
+        if(!visitaSnap.exists()) throw new Error("La visita no existe en Firebase.");
+        const saved = visitaSnap.data();
+        if(Number(saved.encuestaSecuencia || 0) > 0){
+          return { secuencia:Number(saved.encuestaSecuencia), programada:saved.encuestaProgramada === true };
+        }
+        const secuencia = Number(counterSnap.exists() ? counterSnap.data().totalSalidas || 0 : 0) + 1;
+        const programada = secuencia % 2 === 0;
+        tx.set(counterRef, {totalSalidas:secuencia,frecuencia:2,actualizadoTs:Date.now()}, {merge:true});
+        tx.update(visitaRef, {encuestaProgramada:programada,encuestaSecuencia:secuencia,encuestaEstado:programada ? "pendiente" : "no_aplica",updatedTs:Date.now()});
+        return {secuencia,programada};
+      });
+      v.encuestaProgramada = result.programada;
+      v.encuestaSecuencia = result.secuencia;
+      v.encuestaEstado = result.programada ? "pendiente" : "no_aplica";
+      saveVisitasLocal();
+      return result.programada;
+    }
+
+    function mostrarEncuestaRecepcion(v){
+      return new Promise(resolve => {
+        const labels=["Muy malo","Malo","Regular","Bueno","Excelente"];
+        const emojis=["😡","🙁","😐","🙂","😄"];
+        const screen=document.createElement("div");
+        screen.style.cssText="position:fixed;inset:0;z-index:10000;background:linear-gradient(145deg,#eaf4ff,#cfe6ff);display:grid;place-items:center;padding:18px;";
+        screen.innerHTML=`<div style="width:min(760px,100%);background:white;border:1px solid #bdd4f4;border-radius:26px;padding:clamp(22px,5vw,46px);box-shadow:0 24px 70px #1235;text-align:center;color:#0b2142;"><div style="font-size:44px;margin-bottom:8px;">😊</div><h2 style="font-size:clamp(24px,5vw,38px);margin:0 0 8px;">¿Cómo calificarías el servicio de recepción?</h2><p style="color:#5b6f8d;margin:0 0 24px;">Toca una carita. Tu respuesta es confidencial y toma sólo un segundo.</p><div style="display:grid;grid-template-columns:repeat(5,minmax(92px,1fr));gap:10px;overflow:auto;padding-bottom:4px;">${labels.map((label,i)=>`<button data-survey-rating="${i+1}" style="background:#f2f7ff;color:#0b2142;border:1px solid #cbdcf5;border-radius:18px;padding:16px 8px;min-width:92px;"><span style="display:block;font-size:42px;">${emojis[i]}</span><b>${label}</b></button>`).join("")}</div><button id="skipReceptionSurvey" class="secondary" style="margin-top:20px;">Omitir</button><p style="color:#6b7c96;font-size:13px;margin:16px 0 0;">La pantalla se cerrará en <b id="receptionSurveySeconds">15</b> segundos.</p></div>`;
+        document.body.appendChild(screen);
+        let seconds=15,finished=false;
+        const finish=async rating=>{
+          if(finished)return;finished=true;clearInterval(timer);screen.querySelectorAll("button").forEach(b=>b.disabled=true);
+          const now=Date.now();
+          if(rating){v.encuestaCalificacion=rating;v.encuestaPorcentaje=Math.round(((rating-1)/4)*100);v.encuestaRespondidaTs=now;v.encuestaEstado="respondida";}
+          else{v.encuestaEstado="omitida";v.encuestaOmitidaTs=now;}
+          v.encuestaPresentada=true;v.encuestaPresentadaTs=v.encuestaPresentadaTs||now;v.updatedTs=now;
+          saveVisitasLocal();
+          try{await cloudUpsertVisita(v);}catch(error){console.warn("No se pudo guardar la encuesta",error);}
+          screen.innerHTML=`<div style="background:white;border-radius:24px;padding:42px;text-align:center;color:#0b2142;"><h2>${rating ? "¡Gracias por tu opinión!" : "Gracias por tu visita"}</h2><p>${rating ? "Tu evaluación fue registrada correctamente." : "La encuesta fue omitida."}</p></div>`;
+          setTimeout(()=>{screen.remove();resolve(rating);},1200);
+        };
+        v.encuestaPresentada=true;v.encuestaPresentadaTs=Date.now();v.encuestaEstado="presentada";saveVisitasLocal();cloudUpsertVisita(v).catch(()=>{});
+        screen.querySelectorAll("[data-survey-rating]").forEach(btn=>btn.onclick=()=>finish(Number(btn.dataset.surveyRating)));
+        screen.querySelector("#skipReceptionSurvey").onclick=()=>finish(null);
+        const timer=setInterval(()=>{seconds--;const el=screen.querySelector("#receptionSurveySeconds");if(el)el.textContent=String(seconds);if(seconds<=0)finish(null);},1000);
+      });
+    }
+
     async function confirmarSalida(id){
       const v = visitas.find(x => x.id == id);
       if(!v) return renderModuleHome();
@@ -15919,8 +16016,15 @@ async function confirmarEntrada(id) {
       v.updatedTs = Date.now();
 
       await saveVisitas();
-      if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE) await cloudUpsertVisita(v);
+      let mostrarEncuesta = false;
+      if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE){
+        await cloudUpsertVisita(v);
+        if(isVisitante(v)){
+          try{mostrarEncuesta = await programarEncuestaRecepcion(v);}catch(error){console.warn("No se pudo programar la encuesta",error);}
+        }
+      }
       toast("Salida registrada", v.incidenciasSalida ? "Finalizado con incidencias." : "Finalizado (sin incidencias).", "ok", 2200);
+      if(mostrarEncuesta) await mostrarEncuestaRecepcion(v);
       renderModuleHome();
     }
 
