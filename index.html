@@ -3270,7 +3270,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v180</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v181</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3295,7 +3295,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v180";
+  const APP_VERSION = "v181";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5386,6 +5386,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v181</b><span>El Jefe de Compras sólo consulta los vales de personal asignados para su autorización y los vales de activos creados por su cuenta.</span></div>
           <div class="help-release"><b>v180</b><span>El rol Jefe de Compras puede crear y modificar su propio PIN desde Configuración → Mi PIN, con validación completa en Firebase.</span></div>
           <div class="help-release"><b>v179</b><span>Nuevo Reporte para Nóminas, exclusivo para Administrador, con filtros por periodo y colaborador, acumulado de minutos excedentes, detalle de permisos finalizados y exportación a Excel.</span></div>
           <div class="help-release"><b>v178</b><span>Nuevo Historial de vales de personal, exclusivo para Guardia y Administrador, con filtros, recorrido cronológico completo, responsables de cada registro y cálculo de minutos excedentes.</span></div>
@@ -6107,6 +6108,15 @@ function fmt(ts){
     }
 
     function isValeActivoVisible(v={}){
+      if(currentUser?.role === ROLES.JEFE_COMPRAS){
+        const currentUid = String(currentUser?.uid || "");
+        const currentEmail = String(currentUser?.email || "").trim().toLowerCase();
+        const isOwn = (
+          (v.createdByUid && String(v.createdByUid) === currentUid) ||
+          (v.createdByEmail && String(v.createdByEmail).trim().toLowerCase() === currentEmail)
+        );
+        if(!isOwn) return false;
+      }
       const activeStatuses = [ValeStatus.GENERADO, ValeStatus.PENDIENTE, ValeStatus.FUERA];
       if(activeStatuses.includes(v.status)) return true;
       const ts = getValeDisplayTs(v);
@@ -6183,6 +6193,23 @@ function fmt(ts){
     }
 
     async function cloudFetchValesActivos(){
+      if(currentUser?.role === ROLES.JEFE_COMPRAS){
+        const currentUid = String(currentUser?.uid || "");
+        const currentEmail = String(currentUser?.email || "").trim();
+        const scopedQueries = [];
+        if(currentUid){
+          scopedQueries.push(query(collection(db, COL_VALES_ACTIVOS), where("createdByUid", "==", currentUid), limit(200)));
+        }
+        if(currentEmail){
+          scopedQueries.push(query(collection(db, COL_VALES_ACTIVOS), where("createdByEmail", "==", currentEmail), limit(200)));
+        }
+        if(!scopedQueries.length) return [];
+        const results = await Promise.all(scopedQueries.map(q => getDocs(q)));
+        const scopedMap = new Map();
+        results.forEach(snap => snap.forEach(d => scopedMap.set(d.id, { id:d.id, ...d.data() })));
+        return Array.from(scopedMap.values()).filter(isValeActivoVisible);
+      }
+
       const activeStatuses = [ValeStatus.GENERADO, ValeStatus.PENDIENTE, ValeStatus.FUERA];
       const cutoffTs = daysAgoStartTs(VALES_ACTIVOS_LOOKBACK_DAYS);
       const activeQ = query(
@@ -6296,6 +6323,23 @@ function fmt(ts){
     }
 
     async function cloudFetchValesPersonal(){
+      if(currentUser?.role === ROLES.JEFE_COMPRAS){
+        const currentUid = String(currentUser?.uid || "");
+        const currentEmail = String(currentUser?.email || "").trim().toLowerCase();
+        const scopedQueries = [];
+        if(currentUid){
+          scopedQueries.push(query(collection(db, COL_VALES_PERSONAL), where("autorizadorUid", "==", currentUid), limit(200)));
+        }
+        if(currentEmail){
+          scopedQueries.push(query(collection(db, COL_VALES_PERSONAL), where("autorizadorEmail", "==", currentEmail), limit(200)));
+        }
+        if(!scopedQueries.length) return [];
+        const results = await Promise.all(scopedQueries.map(q => getDocs(q)));
+        const scopedMap = new Map();
+        results.forEach(snap => snap.forEach(d => scopedMap.set(d.id, { id:d.id, ...d.data() })));
+        return Array.from(scopedMap.values()).filter(v => String(v.fecha || "") === todayISO());
+      }
+
       const fecha = todayISO();
       const q = query(
         collection(db, COL_VALES_PERSONAL),
@@ -9147,7 +9191,7 @@ async function renderValesPersonal(){
   const list = valesPersonal
     .filter(v => {
       if(currentUser?.role === ROLES.SERVICIO_MEDICO) return isPermisoImss(v);
-      if(currentUser?.role !== ROLES.JEFE) return true;
+      if(![ROLES.JEFE, ROLES.JEFE_COMPRAS].includes(currentUser?.role)) return true;
       const currentUid = String(currentUser?.uid || "");
       const currentEmail = String(currentUser?.email || "").trim().toLowerCase();
       return (

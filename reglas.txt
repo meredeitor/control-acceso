@@ -19,6 +19,10 @@ service cloud.firestore {
       return userDoc(myUid()).data.role;
     }
 
+    function myEmail() {
+      return userDoc(myUid()).data.email;
+    }
+
     function hasRole(r) {
       return isAuth() && myRole() == r;
     }
@@ -299,13 +303,19 @@ service cloud.firestore {
           isAdmin()
           || isCoordinador()
           || isCompras()
-          || isJefeCompras()
+          || (
+            isJefeCompras()
+            && (
+              resource.data.createdByUid == myUid()
+              || resource.data.createdByEmail == myEmail()
+            )
+          )
           || isJefeTi()
           || isGuardia()
           || isContraloria()
           || isAnfitrion()
           || isJefe()
-          || canAuthorizeValeActivo()
+          || (!isJefeCompras() && canAuthorizeValeActivo())
         );
 
       allow create: if isAuth()
@@ -326,7 +336,7 @@ service cloud.firestore {
       allow update: if isAuth()
         && (
           isAdmin()
-          || canAuthorizeValeActivo()
+          || (!isJefeCompras() && canAuthorizeValeActivo())
           || isGuardia()
           || (
             canManageVales()
@@ -343,14 +353,20 @@ service cloud.firestore {
           isAdmin()
           || isCoordinador()
           || isCompras()
-          || isJefeCompras()
+          || (
+            isJefeCompras()
+            && (
+              resource.data.autorizadorUid == myUid()
+              || resource.data.autorizadorEmail == myEmail()
+            )
+          )
           || isJefeTi()
           || isGuardia()
           || isContraloria()
           || isAnfitrion()
           || isJefe()
           || isServicioMedico()
-          || canAuthorizeValePersonal()
+          || (!isJefeCompras() && canAuthorizeValePersonal())
         );
 
       allow create: if isAuth()
@@ -379,7 +395,14 @@ service cloud.firestore {
       allow update: if isAuth()
         && (
           isAdmin()
-          || canAuthorizeValePersonal()
+          || (!isJefeCompras() && canAuthorizeValePersonal())
+          || (
+            isJefeCompras()
+            && (
+              resource.data.autorizadorUid == myUid()
+              || resource.data.autorizadorEmail == myEmail()
+            )
+          )
           || isGuardia()
           || (
             isServicioMedico()
