@@ -89,7 +89,7 @@ service cloud.firestore {
           isAdmin()
           && request.resource.data.role is string
         ) || (
-          (isJefe() || isGuardia())
+          (isJefe() || isJefeCompras() || isGuardia())
           && uid == myUid()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             "pinHash",
