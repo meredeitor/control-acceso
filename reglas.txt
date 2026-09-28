@@ -39,6 +39,7 @@ service cloud.firestore {
     function isProveedor() { return hasRole("proveedor"); }
     function isAnfitrion() { return hasRole("anfitrion"); }
     function isServicioMedico() { return hasRole("servicio_medico"); }
+    function isRecepcionista() { return hasRole("recepcionista"); }
 
     function isKioskoAnon() {
       return isAuth()
@@ -110,7 +111,7 @@ service cloud.firestore {
           isAdmin()
           && request.resource.data.role is string
         ) || (
-          (isJefe() || isJefeCompras() || isGuardia())
+          (isJefe() || isJefeCompras() || isGuardia() || isRecepcionista())
           && uid == myUid()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             "pinHash",
@@ -250,6 +251,7 @@ service cloud.firestore {
           || isJefe()
           || isJefeTi()
           || isAnfitrion()
+          || isRecepcionista()
           || (isKioskoAnon() && request.query.limit <= 500)
         );
 
@@ -270,6 +272,14 @@ service cloud.firestore {
       allow update: if isAuth() && (
         isAdmin()
         || isCoordinador()
+
+        || (
+          isRecepcionista()
+          && resource.data.status == "pendiente_autorizacion"
+          && request.resource.data.tipoVisita == "visitante"
+          && request.resource.data.status in ["programado", "cancelado"]
+          && request.resource.data.createdByUid == resource.data.createdByUid
+        )
 
         || (
           request.resource.data.createdByUid == resource.data.createdByUid
@@ -307,6 +317,7 @@ service cloud.firestore {
           || isContraloria()
           || isAnfitrion()
           || isJefe()
+          || isRecepcionista()
         );
 
       allow create, update: if isAuth()
@@ -342,6 +353,7 @@ service cloud.firestore {
           || isContraloria()
           || isAnfitrion()
           || isJefe()
+          || isRecepcionista()
           || (!isJefeCompras() && canAuthorizeValeActivo())
         );
 
@@ -393,6 +405,7 @@ service cloud.firestore {
           || isAnfitrion()
           || isJefe()
           || isServicioMedico()
+          || isRecepcionista()
           || (!isJefeCompras() && canAuthorizeValePersonal())
         );
 
@@ -431,6 +444,19 @@ service cloud.firestore {
             )
           )
           || isGuardia()
+          || (
+            isRecepcionista()
+            && resource.data.status == "pendiente_autorizacion"
+            && request.resource.data.status == "generado"
+            && request.resource.data.qrActivo == true
+            && request.resource.data.autorizacionEmergencia == true
+            && request.resource.data.autorizacionEmergenciaMotivo is string
+            && request.resource.data.autorizacionEmergenciaMotivo.size() >= 10
+            && request.resource.data.autorizacionEmergenciaPorUid == myUid()
+            && request.resource.data.autorizadoPorUid == myUid()
+            && request.resource.data.createdByUid == resource.data.createdByUid
+            && request.resource.data.autorizadorUid == resource.data.autorizadorUid
+          )
           || (
             isServicioMedico()
             && resource.data.createdByUid == myUid()

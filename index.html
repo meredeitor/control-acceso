@@ -3270,7 +3270,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v183</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v184</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3295,7 +3295,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v183";
+  const APP_VERSION = "v184";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3458,6 +3458,7 @@ document.getElementById("appVersion").textContent = APP_VERSION;
     CALIDAD: "calidad",
     CONTRALORIA: "contraloria",
     SERVICIO_MEDICO: "servicio_medico",
+    RECEPCIONISTA: "recepcionista",
     PROVEEDOR: "proveedor",
   };
   const ALL_ROLES = Object.values(ROLES);
@@ -3475,7 +3476,7 @@ document.getElementById("appVersion").textContent = APP_VERSION;
     "registrar_salida_personal","registrar_regreso_personal",
     "ver_bitacora_guardia","crear_bitacora_guardia",
     "rondinero_ver","rondinero_ejecutar","rondinero_configurar","rondinero_reportes",
-    "ver_sesiones_activas","ver_reportes","ver_reporte_cambios","ver_reporte_nominas"
+    "ver_sesiones_activas","ver_reportes","ver_reporte_cambios","ver_reporte_nominas","autorizar_vale_personal_emergencia"
   ];
 
  
@@ -3604,6 +3605,16 @@ const PERMISOS = {
     "crear_permiso_imss"
   ],
 
+  [ROLES.RECEPCIONISTA]: [
+    "ver_dashboard",
+    "ver_historial",
+    "ver_ficha",
+    "ver_citas_compras",
+    "ver_vales_activos",
+    "ver_vales_personal",
+    "autorizar_vale_personal_emergencia"
+  ],
+
   [ROLES.JEFE]: [
     "crear_cita_visitante",
     "ver_vales_activos",
@@ -3660,6 +3671,7 @@ const PERM_LABELS = {
   ver_vales_personal: "Ver vales personal",
   crear_vale_personal: "Crear vale personal",
   autorizar_vale_personal: "Autorizar vale personal",
+  autorizar_vale_personal_emergencia: "Autorizar vale personal por emergencia",
   ver_permisos_imss: "Ver permisos IMSS",
   crear_permiso_imss: "Crear permisos IMSS",
   ver_historial_vales_personal: "Ver historial de vales de personal",
@@ -3684,7 +3696,7 @@ const PERM_GROUPS = [
   { title:"Calidad y documentos", perms:["ver_documentos","dictaminar","despachar"] },
   { title:"Limpieza", perms:["limpiar_finalizados","eliminar"] },
   { title:"Vales de activos", perms:["ver_vales_activos","crear_vale_activo","autorizar_vale_activo","registrar_salida_activo","registrar_regreso_activo"] },
-  { title:"Vales de personal", perms:["ver_vales_personal","crear_vale_personal","autorizar_vale_personal","registrar_salida_personal","registrar_regreso_personal","ver_permisos_imss","crear_permiso_imss","ver_historial_vales_personal"] },
+  { title:"Vales de personal", perms:["ver_vales_personal","crear_vale_personal","autorizar_vale_personal","autorizar_vale_personal_emergencia","registrar_salida_personal","registrar_regreso_personal","ver_permisos_imss","crear_permiso_imss","ver_historial_vales_personal"] },
   { title:"Guardia y Rondinero", perms:["ver_bitacora_guardia","crear_bitacora_guardia","rondinero_ver","rondinero_ejecutar","rondinero_configurar","rondinero_reportes"] },
   { title:"Administraci\u00f3n", perms:["admin_roles","admin_proveedores","ver_sesiones_activas"] }
 ];
@@ -3699,6 +3711,7 @@ function normalizePermList(perms, role=""){
 function roleLabel(role){
   if(role === ROLES.JEFE_TI) return "Jefe de TI";
   if(role === ROLES.SERVICIO_MEDICO) return "Servicio M\u00e9dico";
+  if(role === ROLES.RECEPCIONISTA) return "Recepcionista";
   return String(role || "").replace(/_/g, " ").toUpperCase();
 }
 
@@ -4412,7 +4425,7 @@ function canCreateVisitanteCita(){
 }
 
 function isVisitanteOnlyRole(){
-  return [ROLES.ANFITRION, ROLES.JEFE_TI].includes(currentUser?.role);
+  return [ROLES.ANFITRION, ROLES.JEFE_TI, ROLES.RECEPCIONISTA].includes(currentUser?.role);
 }
 
 function canSeeVisita(v={}){
@@ -4484,7 +4497,7 @@ function renderModuleHome(){
     group("Guardia y Rondinero","Operación de seguridad","🛡","rounds",[
       link("scan","Escáner de accesos",hasPerm("escanear_qr"),"Proveedores, visitantes y vales"),link("bitacora_guardia","Bitácora",hasPerm("ver_bitacora_guardia")),link("rondinero","Rondinero",hasPerm("rondinero_ver"))]),
     group("Reportes","Consultas y exportaciones","📊","provider",[
-      link("historial","Historial",hasPerm("ver_historial")),link("reportes","Indicadores",hasPerm("ver_reportes")),link("reporte_encuesta_visitantes","Encuesta recepción",currentUser?.role === ROLES.ADMIN,"Satisfacción del servicio de recepción"),link("reporte_nominas","Reporte Nóminas",currentUser?.role === ROLES.ADMIN && hasPerm("ver_reporte_nominas"),"Minutos excedentes por colaborador"),link("reporte_cambios","Cambios",hasPerm("ver_reporte_cambios")),link("export_excel","Exportar Excel",hasPerm("exportar_excel")),link("export_pdf","Exportar PDF",hasPerm("exportar_excel"))]),
+      link("historial","Historial",hasPerm("ver_historial")),link("reportes","Indicadores",hasPerm("ver_reportes")),link("reporte_encuesta_visitantes","Encuesta recepción",[ROLES.ADMIN,ROLES.RECEPCIONISTA].includes(currentUser?.role),"Satisfacción del servicio de recepción"),link("reporte_nominas","Reporte Nóminas",currentUser?.role === ROLES.ADMIN && hasPerm("ver_reporte_nominas"),"Minutos excedentes por colaborador"),link("reporte_cambios","Cambios",hasPerm("ver_reporte_cambios")),link("export_excel","Exportar Excel",hasPerm("exportar_excel")),link("export_pdf","Exportar PDF",hasPerm("exportar_excel"))]),
     group("Configuración","Usuarios y seguridad","⚙","visitor",[
       link("mi_cuenta","Mi cuenta",true,"Cambiar contraseña y revisar seguridad"),link("mi_pin","Mi PIN",canConfigurePin()),link("roles","Usuarios",hasPerm("admin_roles")),link("role_permissions","Roles y permisos",hasPerm("admin_roles")),link("personas_visita","Directorio",currentUser?.role === ROLES.ADMIN),link("proveedores","Catálogo proveedores",currentUser?.role === ROLES.ADMIN),link("sesiones_activas","Sesiones activas",hasPerm("ver_sesiones_activas"))]),
     group("Ayuda","Información y asistencia","?","vales",[link("help_guide","Guía rápida"),link("help_about","Acerca de")])
@@ -5390,6 +5403,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v184</b><span>Nuevo rol Recepcionista con autorización de visitantes, consulta de encuestas y vales, PIN propio y autorización auditada de vales personales únicamente por emergencia. También se corrigió la encuesta para operar sobre el registro de visitantes.</span></div>
           <div class="help-release"><b>v183</b><span>Encuesta de satisfacción del servicio de recepción cada segunda salida de visitantes y nuevo reporte administrativo con índice, participación, distribución y detalle por periodo.</span></div>
           <div class="help-release"><b>v182</b><span>Nueva sección Mi cuenta para que cada usuario cambie su propia contraseña confirmando la contraseña actual, con requisitos de seguridad y sin depender del correo de recuperación.</span></div>
           <div class="help-release"><b>v181</b><span>El Jefe de Compras sólo consulta los vales de personal asignados para su autorización y los vales de activos creados por su cuenta.</span></div>
@@ -5455,7 +5469,7 @@ function helpGuideHtml(){
       <details><summary>Vales de personal</summary><div class="help-guide-content">Genera el vale con número de nómina y datos del permiso. Puede utilizarse el QR del vale o escanear el QR del gafete. El flujo continúa con autorización, salida y regreso del colaborador. Para el rol <b>Jefe</b>, solo se muestran los vales donde su UID o correo coincide con el autorizador asignado. El rol <b>Servicio Médico</b> puede emitir exclusivamente Permisos IMSS con hora programada; el QR funciona desde 5 minutos antes y hasta 30 minutos después, y el regreso se registra el mismo día. Guardia y Administrador disponen de <b>Vales → Historial</b>, donde se presenta el recorrido completo, responsables, tiempo real y minutos excedentes.</div></details>
       <details><summary>Vales de activos</summary><div class="help-guide-content">Registra el activo, responsable, motivo y vigencia. El rol autorizado revisa el vale; Guardia registra la salida y posteriormente el regreso del activo.</div></details>
       <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>En la pestaña <b>Rutas</b>, usa <b>Editar y ordenar</b>. El editor visual permite agregar o quitar puntos y cambiar la secuencia con los botones <b>Subir</b> y <b>Bajar</b>. La lista de arriba hacia abajo será el orden exacto del recorrido.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>Al reportar una novedad selecciona el punto relacionado; el último punto escaneado aparece preseleccionado. También puede tomar una fotografía opcional, comprimida como JPEG de máximo 640 px y 180 KB sin Firebase Storage.</li><li>En el detalle, cada novedad y su fotografía se muestran dentro de la misma tarjeta del punto para revisarlas de un vistazo.</li><li>El cumplimiento se calcula dividiendo los puntos visitados entre los puntos esperados. Un rondín incompleto conserva su avance real en lugar de mostrar automáticamente 0%.</li><li>Desde <b>Detalle del recorrido</b>, pulsa <b>Generar PDF</b> para descargar el reporte completo paginado con datos del rondín, todos los puntos, evidencia GPS, novedades y fotografías.</li><li>El historial registra hora, distancia al punto, precisión GPS y la fotografía de la novedad como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
-      <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. <b>Encuesta recepción</b>, exclusiva para Administrador, muestra las encuestas aplicadas cada segunda salida de visitantes, el índice de servicio, participación, distribución de calificaciones y detalle por periodo. El <b>Reporte para Nóminas</b>, visible únicamente para Administrador, concentra los permisos de personal finalizados, minutos autorizados, tiempo real y minutos excedentes por colaborador, con detalle y exportación a Excel. El reporte no calcula importes ni aplica descuentos automáticamente.</div></details>
+      <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. <b>Encuesta recepción</b>, disponible para Administrador y Recepcionista, muestra las encuestas aplicadas cada segunda salida de visitantes, el índice de servicio, participación, distribución de calificaciones y detalle por periodo. El <b>Reporte para Nóminas</b>, visible únicamente para Administrador, concentra los permisos de personal finalizados, minutos autorizados, tiempo real y minutos excedentes por colaborador, con detalle y exportación a Excel. El reporte no calcula importes ni aplica descuentos automáticamente.</div></details>
       <details><summary>Usuarios, roles y permisos</summary><div class="help-guide-content"><p>El administrador aprueba usuarios, asigna roles y configura permisos. Los cambios en Roles afectan qué módulos y acciones puede utilizar cada perfil.</p><p>Cada usuario puede entrar a <b>Configuración → Mi cuenta</b> para cambiar su propia contraseña. Debe confirmar la contraseña actual y crear una nueva de al menos 10 caracteres con mayúscula, minúscula, número y símbolo.</p><p>Para dar de alta varias cuentas, entra a <b>Configuración → Usuarios</b> y pulsa <b>Agregar usuarios</b>. Pega una fila por persona con el formato <b>Nombre; Correo; Contraseña temporal; Rol; Área; Empresa; Teléfono</b>. También puedes copiar filas desde Excel; las columnas separadas por tabulaciones se reconocen automáticamente.</p><p>Si una cuenta ya existe en Authentication pero no tiene perfil en Firestore, vuelve a incluirla con su contraseña temporal: la aplicación reconstruirá el documento en <b>users</b> y lo verificará directamente en el servidor.</p></div></details>
       <details><summary>PIN de autorización</summary><div class="help-guide-content"><p>Administrador, Jefe, Jefe de Compras, Guardia y los perfiles autorizadores habilitados pueden crear o modificar su propio PIN desde <b>Configuración → Mi PIN</b>. El PIN es personal y se utiliza para confirmar acciones sensibles.</p></div></details>
       <details><summary>Problemas frecuentes</summary><div class="help-guide-content"><ul><li>Si no aparece un cambio, actualiza la página para cargar la versión más reciente.</li><li>Si una operación indica falta de permisos, consulta al administrador.</li><li>Si no hay Internet, evita cerrar la sesión hasta recuperar la conexión y sincronizar.</li><li>Verifica que la cámara y la ubicación precisa tengan permiso antes de escanear códigos QR.</li><li>Si Rondinero indica <b>GPS impreciso</b>, colócate en un área abierta, activa la ubicación precisa y vuelve a intentar.</li><li>Si indica <b>Punto sin GPS</b>, un administrador debe acudir al punto y configurarlo desde Rondinero.</li></ul></div></details>
@@ -5490,6 +5504,7 @@ function canConfigurePin(){
     currentUser.role === ROLES.JEFE ||
     currentUser.role === ROLES.JEFE_COMPRAS ||
     currentUser.role === ROLES.GUARDIA ||
+    currentUser.role === ROLES.RECEPCIONISTA ||
     canAuthorizeAnyValeRole(currentUser.role) ||
     hasPerm("autorizar_vale_activo") ||
     hasPerm("autorizar_vale_personal")
@@ -7745,15 +7760,16 @@ function renderRegisterForm(){
         return;
       }
       const esSolicitudVisitante = isVisitante(v);
-      const rolPermitido = esSolicitudVisitante ? ROLES.ADMIN : ROLES.COMPRAS;
-      if(currentUser?.role !== rolPermitido){
+      const puedeResolverVisitante = esSolicitudVisitante && [ROLES.ADMIN,ROLES.RECEPCIONISTA].includes(currentUser?.role);
+      const puedeResolverProveedor = !esSolicitudVisitante && currentUser?.role === ROLES.COMPRAS;
+      if(!puedeResolverVisitante && !puedeResolverProveedor){
         toast("Acceso denegado",
-          esSolicitudVisitante ? "Solo ADMIN puede autorizar visitantes." : "Solo COMPRAS puede autorizar proveedores.",
+          esSolicitudVisitante ? "Sólo Administrador o Recepcionista puede autorizar visitantes." : "Sólo Compras puede autorizar proveedores.",
           "bad", 3200);
         return;
       }
       const accion = autorizar ? "autorizar esta solicitud" : "rechazar esta solicitud";
-      const pinValido = esSolicitudVisitante ? await requireAdminPin(accion) : await requireUserPin(accion);
+      const pinValido = esSolicitudVisitante && currentUser?.role === ROLES.ADMIN ? await requireAdminPin(accion) : await requireUserPin(accion);
       if(!pinValido) return;
       if(!autorizar && !confirm(`¿Rechazar la solicitud de "${getNombreAcceso(v)}"?`)) return;
 
@@ -7941,7 +7957,7 @@ ${incLabel ? `
                 ${liveTimePill("Total", v.llegadaTs, v.salidaTs, false)}
               </div>
             ` : ""}
-            ${v.status === Status.PENDIENTE_AUTORIZACION && ((isVisitante(v) && currentUser?.role === ROLES.ADMIN) || (!isVisitante(v) && currentUser?.role === ROLES.COMPRAS)) ? `
+            ${v.status === Status.PENDIENTE_AUTORIZACION && ((isVisitante(v) && [ROLES.ADMIN,ROLES.RECEPCIONISTA].includes(currentUser?.role)) || (!isVisitante(v) && currentUser?.role === ROLES.COMPRAS)) ? `
               <div class="row" style="margin-top:10px;">
                 <button class="ok" data-action="autorizarVisita" data-id="${esc(v.id)}" data-no-sb="true">Autorizar</button>
                 <button class="bad" data-action="rechazarVisita" data-id="${esc(v.id)}" data-no-sb="true">Rechazar</button>
@@ -8600,6 +8616,7 @@ function renderValeActivoCard(v){
         ${v.nombre ? `<span class="pill"><span class="dot brand"></span>${esc(v.nombre)}</span>` : ""}
         ${autorizador ? `<span class="pill"><span class="dot warn"></span>Autoriza: ${esc(autorizador)}</span>` : ""}
         ${autorizadoPor ? `<span class="pill"><span class="dot ok"></span>Autorizado por: ${esc(autorizadoPor)}</span>` : ""}
+        ${v.autorizacionEmergencia ? `<span class="pill" style="border-color:rgba(239,68,68,.6);"><span class="dot bad"></span>Autorización de emergencia: ${esc(v.autorizacionEmergenciaMotivo || "Sin detalle")}</span>` : ""}
         ${v.autorizacionPorRespaldo ? `<span class="pill"><span class="dot info"></span>Autorización respaldo</span>` : ""}
       </div>
       <div class="row vale-actions">
@@ -9313,6 +9330,7 @@ function renderValePersonalCard(v){
       <div class="row vale-actions">
         ${v.qrActivo ? `<button class="secondary" data-action="verValePersonalQR" data-id="${esc(v.id)}" data-no-sb="true">QR</button>` : `<span class="pill"><span class="dot bad"></span>QR desactivado</span>`}
         ${(v.status === ValeStatus.PENDIENTE || requiereReautorizacion) && canCurrentUserAuthorizeValePersonal(v) ? `<button class="ok" data-action="autorizarValePersonal" data-id="${esc(v.id)}" data-no-sb="true">${requiereReautorizacion ? "Reautorizar" : "Autorizar"}</button>` : ""}
+        ${v.status === ValeStatus.PENDIENTE && hasPerm("autorizar_vale_personal_emergencia") && !isValePersonalEntrada(v) && !isPermisoImss(v) ? `<button class="danger" data-action="autorizarValePersonalEmergencia" data-id="${esc(v.id)}" data-no-sb="true">Autorizar por urgencia</button>` : ""}
         ${mostrarRegistroManual && v.status === ValeStatus.GENERADO && v.autorizadoTs && hasPerm("registrar_salida_personal") ? (esEntrada
           ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar ingreso</button>`
           : `<button class="danger" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.FUERA}" data-no-sb="true">Marcar salida</button>`) : ""}
@@ -9338,7 +9356,7 @@ function valeHistoryEvents(v={}){
   if(isPermisoImss(v) && v.salidaProgramadaTs){
     push(v.salidaProgramadaTs, "Salida IMSS programada", `Ventana: ${formatHoraTs(v.imssVentanaInicioTs)} a ${formatHoraTs(v.imssVentanaFinTs)}`, "warn");
   }
-  push(v.autorizadoTs, isPermisoImss(v) ? "Permiso emitido por Servicio Médico" : "Vale autorizado", [v.autorizadoPorNombre, v.autorizadoPor].filter(Boolean).join(" · "), "ok");
+  push(v.autorizadoTs, v.autorizacionEmergencia ? "Vale autorizado por emergencia" : (isPermisoImss(v) ? "Permiso emitido por Servicio Médico" : "Vale autorizado"), v.autorizacionEmergencia ? `${v.autorizacionEmergenciaPorNombre || v.autorizadoPorNombre || v.autorizadoPor || "Recepcionista"} · ${v.autorizacionEmergenciaMotivo || "Sin motivo"}` : [v.autorizadoPorNombre, v.autorizadoPor].filter(Boolean).join(" · "), v.autorizacionEmergencia ? "bad" : "ok");
   (Array.isArray(v.imssIntentos) ? v.imssIntentos : []).forEach(x => push(x.ts, x.tipo === "anticipado" ? "Intento antes del horario" : "Intento con permiso vencido", [x.guardiaNombre,x.guardiaEmail].filter(Boolean).join(" · "), "bad"));
   (Array.isArray(v.historialRegistroManual) ? v.historialRegistroManual : []).forEach(x => push(x.ts, "Registro manual habilitado", `${x.nombre || x.email || "Usuario"}${x.motivo ? ` · ${x.motivo}` : ""}`, "warn"));
   push(v.reautorizacionSolicitadaTs, "Reautorización solicitada", v.reautorizacionMotivo || "Tiempo autorizado excedido", "warn");
@@ -11676,6 +11694,33 @@ async function renderValePersonalOperacion(id){
   `;
 }
 
+function solicitarMotivoEmergencia(v){
+  return new Promise(resolve=>{
+    const back=document.createElement("div");back.className="modal-backdrop";
+    back.innerHTML=`<div class="modal"><h3>Autorización de emergencia</h3><p class="muted">Vale de <b>${esc(v.nombreColaborador||"colaborador")}</b>. Esta acción quedará identificada y auditada.</p><label>Motivo de la urgencia</label><textarea id="emergenciaMotivo" rows="4" maxlength="300" placeholder="Describe por qué no puede esperar al autorizador asignado"></textarea><div style="height:12px"></div><div class="row" style="justify-content:flex-end;"><button class="secondary" id="cancelEmergencia">Cancelar</button><button class="danger" id="confirmEmergencia">Continuar con PIN</button></div></div>`;
+    document.body.appendChild(back);const close=value=>{back.remove();resolve(value);};
+    back.querySelector("#cancelEmergencia").onclick=()=>close(null);
+    back.querySelector("#confirmEmergencia").onclick=()=>{const motivo=back.querySelector("#emergenciaMotivo").value.trim();if(motivo.length<10){toast("Motivo requerido","Describe la urgencia con al menos 10 caracteres.","warn",3200);return;}close(motivo);};
+    back.addEventListener("click",e=>{if(e.target===back)close(null);});setTimeout(()=>back.querySelector("#emergenciaMotivo")?.focus(),0);
+  });
+}
+
+async function autorizarValePersonalEmergencia(id){
+  if(!requirePerm("autorizar_vale_personal_emergencia","Tu rol no puede realizar autorizaciones de emergencia."))return;
+  if(currentUser?.role!==ROLES.RECEPCIONISTA)return toast("Acceso denegado","Esta función está reservada al rol Recepcionista.","bad",3600);
+  const v=valesPersonal.find(x=>String(x.id)===String(id));
+  if(!v||v.status!==ValeStatus.PENDIENTE)return toast("No disponible","El vale ya fue atendido o no existe.","warn",3200);
+  if(isValePersonalEntrada(v)||isPermisoImss(v))return toast("No permitido","La autorización de emergencia sólo aplica a vales ordinarios de salida.","warn",4200);
+  if(!navigator.onLine)return toast("Sin conexión","La autorización de emergencia debe confirmarse directamente en Firebase.","warn",4200);
+  const motivo=await solicitarMotivoEmergencia(v);if(!motivo)return;
+  if(!(await requireUserPin("autorizar este vale por emergencia")))return;
+  const previous={...v},now=Date.now();
+  Object.assign(v,{status:ValeStatus.GENERADO,qrActivo:true,autorizadoTs:now,autorizadoPor:currentUser?.email||"",autorizadoPorUid:currentUser?.uid||"",autorizadoPorNombre:currentUser?.nombre||"",autorizadoPorRol:currentUser?.role||"",autorizacionEmergencia:true,autorizacionEmergenciaMotivo:motivo,autorizacionEmergenciaTs:now,autorizacionEmergenciaPorUid:currentUser?.uid||"",autorizacionEmergenciaPorEmail:currentUser?.email||"",autorizacionEmergenciaPorNombre:currentUser?.nombre||"",updatedTs:now});
+  try{await cloudUpsertValePersonal(v);await saveValesPersonal();toast("Autorización de emergencia","El vale fue autorizado y la justificación quedó registrada.","ok",4200);}
+  catch(error){Object.assign(v,previous);await saveValesPersonal();console.error(error);toast("No se autorizó","Firebase no confirmó la autorización de emergencia.","bad",4800);}
+  await renderValesPersonal();
+}
+
 async function autorizarValePersonal(id){
   if(!requirePerm("autorizar_vale_personal","Tu rol no puede autorizar vales de personal.")) return;
   const v = valesPersonal.find(x => String(x.id) === String(id));
@@ -12367,7 +12412,7 @@ function exportEvaluacionProveedoresExcel(){
   toast("Excel", "Evaluación de proveedores exportada.", "ok", 2200);
 }
 async function renderReporteEncuestaVisitantes(){
-  if(currentUser?.role !== ROLES.ADMIN){toast("Acceso denegado","Sólo Administrador puede consultar este reporte.","bad",3600);return renderModuleHome();}
+  if(![ROLES.ADMIN,ROLES.RECEPCIONISTA].includes(currentUser?.role)){toast("Acceso denegado","Sólo Administrador o Recepcionista puede consultar este reporte.","bad",3600);return renderModuleHome();}
   currentView="reporte_encuesta_visitantes";
   const today=new Date();
   const monthStart=new Date(today.getFullYear(),today.getMonth(),1);
@@ -12378,7 +12423,7 @@ async function renderReporteEncuestaVisitantes(){
 }
 
 async function cloudFetchEncuestasVisitantesByRange(fromTs,toTs){
-  const snap=await getDocs(query(collection(db,COL_VISITAS),where("salidaTs",">=",fromTs),where("salidaTs","<=",toTs),orderBy("salidaTs","asc"),limit(1000)));
+  const snap=await getDocs(query(collection(db,COL_VISITANTES),where("salidaTs",">=",fromTs),where("salidaTs","<=",toTs),orderBy("salidaTs","asc"),limit(1000)));
   const rows=[];snap.forEach(d=>rows.push({id:d.id,...d.data()}));return rows;
 }
 
@@ -15954,7 +15999,7 @@ async function confirmarEntrada(id) {
 
     async function programarEncuestaRecepcion(v){
       if(!isVisitante(v) || !navigator.onLine) return false;
-      const visitaRef = doc(db, COL_VISITAS, String(v.id));
+      const visitaRef = doc(db, COL_VISITANTES, String(v.id));
       const counterRef = doc(db, "app_config", "encuesta_visitantes");
       const result = await runTransaction(db, async tx => {
         const [counterSnap, visitaSnap] = await Promise.all([tx.get(counterRef), tx.get(visitaRef)]);
@@ -16653,6 +16698,7 @@ function renderProveedores(lista){
         case "verValePersonalQR": renderValePersonalQR(id); break;
         case "setValePersonalStatus": await updateValePersonalStatus(id, el.dataset.status); break;
         case "autorizarValePersonal": await autorizarValePersonal(id); break;
+        case "autorizarValePersonalEmergencia": await autorizarValePersonalEmergencia(id); break;
         case "cancelarValePersonal": await cancelarValePersonal(id); break;
 
         case "nuevo": await goNuevaCita("proveedor"); break;
