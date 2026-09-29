@@ -3260,7 +3260,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v185</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v186</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3285,7 +3285,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v185";
+  const APP_VERSION = "v186";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3627,7 +3627,7 @@ let rolePermOverrides = {};
 let rolePermsLoaded = false;
 let _selectedRolePermRole = ROLES.ADMIN;
 const ROLE_PERMS_DOC_ID = "role_permissions";
-const ROLE_PERMS_SCHEMA_VERSION = 4;
+const ROLE_PERMS_SCHEMA_VERSION = 5;
 
 const PERM_LABELS = {
   ver_dashboard: "Ver dashboard",
@@ -3869,6 +3869,9 @@ async function loadRolePermsConfig(force=false){
         }
         if(isLegacyConfig && role === ROLES.ADMIN && !migrated.includes("ver_reporte_nominas")){
           migrated.push("ver_reporte_nominas");
+        }
+        if(isLegacyConfig && role === ROLES.RECEPCIONISTA && !migrated.includes("autorizar_vale_personal_emergencia")){
+          migrated.push("autorizar_vale_personal_emergencia");
         }
         next[role] = migrated;
       }
@@ -5392,6 +5395,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v186</b><span>El rol Recepcionista incorpora automáticamente el permiso de autorización de emergencia en configuraciones de roles existentes, mostrando la acción en vales ordinarios de salida pendientes.</span></div>
           <div class="help-release"><b>v185</b><span>La pantalla de inicio de sesión sustituye la recuperación de contraseña por correo por una indicación clara para contactar al administrador cuando el usuario no pueda entrar.</span></div>
           <div class="help-release"><b>v184</b><span>Nuevo rol Recepcionista con autorización de visitantes, consulta de encuestas y vales, PIN propio y autorización auditada de vales personales únicamente por emergencia. También se corrigió la encuesta para operar sobre el registro de visitantes.</span></div>
           <div class="help-release"><b>v183</b><span>Encuesta de satisfacción del servicio de recepción cada segunda salida de visitantes y nuevo reporte administrativo con índice, participación, distribución y detalle por periodo.</span></div>
