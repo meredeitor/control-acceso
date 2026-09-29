@@ -3299,7 +3299,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v189</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v190</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3324,7 +3324,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v189";
+  const APP_VERSION = "v190";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3492,7 +3492,7 @@ document.getElementById("appVersion").textContent = APP_VERSION;
   const ALL_ROLES = Object.values(ROLES);
 
   const ALL_PERMS = [
-    "ver_dashboard","ver_historial","ver_ficha","crear_cita","crear_cita_visitante","escanear_qr",
+    "ver_dashboard_proveedores","ver_dashboard_visitantes","ver_historial","ver_ficha","crear_cita","crear_cita_visitante","escanear_qr",
     "registrar_entrada","ver_documentos","dictaminar","despachar",
     "registrar_salida","exportar_excel","limpiar_finalizados",
     "reactivar_qr","eliminar","ver_qr","buscar_proveedor",
@@ -3519,7 +3519,8 @@ const PERMISOS = {
   ),
 
   [ROLES.GUARDIA]: [
-    "ver_dashboard",
+    "ver_dashboard_proveedores",
+    "ver_dashboard_visitantes",
     "ver_historial",
     "ver_reportes",
     "ver_ficha",
@@ -3541,7 +3542,8 @@ const PERMISOS = {
   ],
 
   [ROLES.CALIDAD]: [
-    "ver_dashboard",
+    "ver_dashboard_proveedores",
+    "ver_dashboard_visitantes",
     "ver_historial",
     "ver_reportes",
     "ver_ficha",
@@ -3553,7 +3555,7 @@ const PERMISOS = {
   ],
 
 [ROLES.JEFE_TI]: [
-  "ver_dashboard",
+  "ver_dashboard_visitantes",
   "ver_historial",
   "ver_reportes",
   "ver_ficha",
@@ -3568,7 +3570,8 @@ const PERMISOS = {
 ],
 
 [ROLES.JEFE_COMPRAS]: [
-  "ver_dashboard",
+  "ver_dashboard_proveedores",
+  "ver_dashboard_visitantes",
   "ver_historial",
   "ver_reportes",
   "crear_cita",
@@ -3585,7 +3588,8 @@ const PERMISOS = {
 ],
 
   [ROLES.COMPRAS]: [
-    "ver_dashboard",
+    "ver_dashboard_proveedores",
+    "ver_dashboard_visitantes",
     "ver_historial",
     "ver_reportes",
     "ver_ficha",
@@ -3611,7 +3615,8 @@ const PERMISOS = {
   ],
 
   [ROLES.CONTRALORIA]: [
-    "ver_dashboard",
+    "ver_dashboard_proveedores",
+    "ver_dashboard_visitantes",
     "ver_historial",
     "ver_reportes",
     "ver_reporte_cambios",
@@ -3634,7 +3639,7 @@ const PERMISOS = {
   ],
 
   [ROLES.RECEPCIONISTA]: [
-    "ver_dashboard",
+    "ver_dashboard_visitantes",
     "ver_historial",
     "ver_ficha",
     "ver_citas_compras",
@@ -3666,10 +3671,11 @@ let rolePermOverrides = {};
 let rolePermsLoaded = false;
 let _selectedRolePermRole = ROLES.ADMIN;
 const ROLE_PERMS_DOC_ID = "role_permissions";
-const ROLE_PERMS_SCHEMA_VERSION = 5;
+const ROLE_PERMS_SCHEMA_VERSION = 6;
 
 const PERM_LABELS = {
-  ver_dashboard: "Ver dashboard",
+  ver_dashboard_proveedores: "Ver dashboard de proveedores",
+  ver_dashboard_visitantes: "Ver dashboard de visitantes",
   ver_historial: "Ver historial",
   ver_ficha: "Ver ficha",
   crear_cita: "Crear cita proveedor",
@@ -3718,7 +3724,7 @@ const PERM_LABELS = {
 };
 
 const PERM_GROUPS = [
-  { title:"Dashboard y consultas", perms:["ver_dashboard","ver_ficha","ver_qr","buscar_proveedor","ver_citas_compras"] },
+  { title:"Dashboard y consultas", perms:["ver_dashboard_proveedores","ver_dashboard_visitantes","ver_ficha","ver_qr","buscar_proveedor","ver_citas_compras"] },
   { title:"Reportes", perms:["ver_historial","ver_reportes","ver_reporte_cambios","ver_reporte_nominas","exportar_excel"] },
   { title:"Citas y acceso", perms:["crear_cita","crear_cita_visitante","editar_cita","cancelar_cita","escanear_qr","registrar_entrada","registrar_salida","reactivar_qr"] },
   { title:"Calidad y documentos", perms:["ver_documentos","dictaminar","despachar"] },
@@ -3896,8 +3902,13 @@ async function loadRolePermsConfig(force=false){
     const next = {};
     ALL_ROLES.forEach(role => {
       if(Array.isArray(roles[role])){
+        const legacyDashboard = roles[role].includes("ver_dashboard");
         const migrated = normalizePermList(roles[role], role);
-        if(isLegacyConfig && migrated.includes("ver_dashboard") && !migrated.includes("ver_reportes")){
+        if(isLegacyConfig && legacyDashboard){
+          if(!migrated.includes("ver_dashboard_visitantes")) migrated.push("ver_dashboard_visitantes");
+          if(![ROLES.ANFITRION, ROLES.JEFE_TI, ROLES.RECEPCIONISTA].includes(role) && !migrated.includes("ver_dashboard_proveedores")) migrated.push("ver_dashboard_proveedores");
+        }
+        if(isLegacyConfig && legacyDashboard && !migrated.includes("ver_reportes")){
           migrated.push("ver_reportes");
         }
         if(isLegacyConfig && [ROLES.ADMIN, ROLES.CONTRALORIA].includes(role) && !migrated.includes("ver_reporte_cambios")){
@@ -4524,9 +4535,9 @@ function renderModuleHome(){
   };
   const groups = [
     group("Proveedores","Citas y control de accesos","🚚","provider",[
-      link("dashboard_proveedores","Dashboard",hasPerm("ver_dashboard") && !isVisitanteOnlyRole()),link("nuevo","Nueva cita",canCreateProveedorCita() && !isVisitanteOnlyRole()),link("citas_proveedores","Consultar citas",hasPerm("ver_citas_compras") && !isVisitanteOnlyRole())]),
+      link("dashboard_proveedores","Dashboard",hasPerm("ver_dashboard_proveedores")),link("nuevo","Nueva cita",canCreateProveedorCita() && !isVisitanteOnlyRole()),link("citas_proveedores","Consultar citas",hasPerm("ver_citas_compras") && !isVisitanteOnlyRole())]),
     group("Visitantes","Registro y seguimiento","👥","visitor",[
-      link("dashboard_visitantes","Dashboard",hasPerm("ver_dashboard")),link("nuevo_visitante","Nueva cita",canCreateVisitanteCita()),link("citas_visitantes","Consultar citas",hasPerm("ver_citas_compras"))]),
+      link("dashboard_visitantes","Dashboard",hasPerm("ver_dashboard_visitantes")),link("nuevo_visitante","Nueva cita",canCreateVisitanteCita()),link("citas_visitantes","Consultar citas",hasPerm("ver_citas_compras"))]),
     group("Vales","Salidas de personal y activos","🎟","vales",[
       link("vales_personal","Vales de personal",hasPerm("ver_vales_personal")),link("vales_activos","Vales de activos",hasPerm("ver_vales_activos")),link("historial_vales_personal","Historial",hasPerm("ver_historial_vales_personal") && [ROLES.ADMIN,ROLES.GUARDIA].includes(currentUser?.role),"Recorrido completo de vales de personal")]),
     group("Guardia y Rondinero","Operación de seguridad","🛡","rounds",[
@@ -5470,6 +5481,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v190</b><span>Los permisos de Roles separan el acceso a Dashboard de proveedores y Dashboard de visitantes, permitiendo mostrar cualquiera de ellos de forma independiente sin alterar los accesos existentes.</span></div>
           <div class="help-release"><b>v189</b><span>Nuevo módulo administrativo de Mantenimiento de datos con limpieza de visitas finalizadas del día, retención de 30 días y depuración histórica hasta hoy, protegido por permisos, confirmación y PIN.</span></div>
           <div class="help-release"><b>v188</b><span>Rondinero unifica Historial y Cumplimiento por guardia en una vista jerárquica con métricas, recorridos desplegables, búsqueda, filtros por guardia y fecha, y acciones administrativas auditadas para ver, editar o eliminar.</span></div>
           <div class="help-release"><b>v187</b><span>La portada incorpora un fondo temático animado: sol y nubes en modo claro, y luna con estrellas en modo oscuro, adaptable a celulares y tablets.</span></div>
@@ -5542,7 +5554,7 @@ function helpGuideHtml(){
       <details><summary>Vales de activos</summary><div class="help-guide-content">Registra el activo, responsable, motivo y vigencia. El rol autorizado revisa el vale; Guardia registra la salida y posteriormente el regreso del activo.</div></details>
       <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>En la pestaña <b>Rutas</b>, usa <b>Editar y ordenar</b>. El editor visual permite agregar o quitar puntos y cambiar la secuencia con los botones <b>Subir</b> y <b>Bajar</b>. La lista de arriba hacia abajo será el orden exacto del recorrido.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>Al reportar una novedad selecciona el punto relacionado; el último punto escaneado aparece preseleccionado. También puede tomar una fotografía opcional, comprimida como JPEG de máximo 640 px y 180 KB sin Firebase Storage.</li><li>En el detalle, cada novedad y su fotografía se muestran dentro de la misma tarjeta del punto para revisarlas de un vistazo.</li><li>El cumplimiento se calcula dividiendo los puntos visitados entre los puntos esperados. Un rondín incompleto conserva su avance real en lugar de mostrar automáticamente 0%.</li><li>Desde <b>Detalle del recorrido</b>, pulsa <b>Generar PDF</b> para descargar el reporte completo paginado con datos del rondín, todos los puntos, evidencia GPS, novedades y fotografías.</li><li><b>Historial por guardia</b> unifica historial y cumplimiento: busca por texto, filtra por guardia o fechas y despliega cada guardia para consultar sus recorridos. El administrador también puede editar datos administrativos o eliminar un registro finalizado con PIN y auditoría.</li><li>El historial registra hora, distancia al punto, precisión GPS y la fotografía de la novedad como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
       <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. <b>Encuesta recepción</b>, disponible para Administrador y Recepcionista, muestra las encuestas aplicadas cada segunda salida de visitantes, el índice de servicio, participación, distribución de calificaciones y detalle por periodo. El <b>Reporte para Nóminas</b>, visible únicamente para Administrador, concentra los permisos de personal finalizados, minutos autorizados, tiempo real y minutos excedentes por colaborador, con detalle y exportación a Excel. El reporte no calcula importes ni aplica descuentos automáticamente.</div></details>
-      <details><summary>Usuarios, roles y permisos</summary><div class="help-guide-content"><p>El administrador aprueba usuarios, asigna roles y configura permisos. Los cambios en Roles afectan qué módulos y acciones puede utilizar cada perfil.</p><p>Cada usuario puede entrar a <b>Configuración → Mi cuenta</b> para cambiar su propia contraseña. Debe confirmar la contraseña actual y crear una nueva de al menos 10 caracteres con mayúscula, minúscula, número y símbolo.</p><p>Para dar de alta varias cuentas, entra a <b>Configuración → Usuarios</b> y pulsa <b>Agregar usuarios</b>. Pega una fila por persona con el formato <b>Nombre; Correo; Contraseña temporal; Rol; Área; Empresa; Teléfono</b>. También puedes copiar filas desde Excel; las columnas separadas por tabulaciones se reconocen automáticamente.</p><p>Si una cuenta ya existe en Authentication pero no tiene perfil en Firestore, vuelve a incluirla con su contraseña temporal: la aplicación reconstruirá el documento en <b>users</b> y lo verificará directamente en el servidor.</p></div></details>
+      <details><summary>Usuarios, roles y permisos</summary><div class="help-guide-content"><p>El administrador aprueba usuarios, asigna roles y configura permisos. Los cambios en Roles afectan qué módulos y acciones puede utilizar cada perfil. En <b>Dashboard y consultas</b>, los permisos <b>Ver dashboard de proveedores</b> y <b>Ver dashboard de visitantes</b> se asignan por separado.</p><p>Cada usuario puede entrar a <b>Configuración → Mi cuenta</b> para cambiar su propia contraseña. Debe confirmar la contraseña actual y crear una nueva de al menos 10 caracteres con mayúscula, minúscula, número y símbolo.</p><p>Para dar de alta varias cuentas, entra a <b>Configuración → Usuarios</b> y pulsa <b>Agregar usuarios</b>. Pega una fila por persona con el formato <b>Nombre; Correo; Contraseña temporal; Rol; Área; Empresa; Teléfono</b>. También puedes copiar filas desde Excel; las columnas separadas por tabulaciones se reconocen automáticamente.</p><p>Si una cuenta ya existe en Authentication pero no tiene perfil en Firestore, vuelve a incluirla con su contraseña temporal: la aplicación reconstruirá el documento en <b>users</b> y lo verificará directamente en el servidor.</p></div></details>
       <details><summary>Mantenimiento de datos</summary><div class="help-guide-content"><p>Disponible únicamente para el Administrador. Permite eliminar visitas finalizadas del día, aplicar una retención de 30 días o depurar registros históricos hasta hoy. Las acciones sensibles requieren confirmación y PIN administrativo.</p></div></details>
       <details><summary>PIN de autorización</summary><div class="help-guide-content"><p>Administrador, Jefe, Jefe de Compras, Guardia y los perfiles autorizadores habilitados pueden crear o modificar su propio PIN desde <b>Configuración → Mi PIN</b>. El PIN es personal y se utiliza para confirmar acciones sensibles.</p></div></details>
       <details><summary>Problemas frecuentes</summary><div class="help-guide-content"><ul><li>Si no aparece un cambio, actualiza la página para cargar la versión más reciente.</li><li>Si una operación indica falta de permisos, consulta al administrador.</li><li>Si no hay Internet, evita cerrar la sesión hasta recuperar la conexión y sincronizar.</li><li>Verifica que la cámara y la ubicación precisa tengan permiso antes de escanear códigos QR.</li><li>Si Rondinero indica <b>GPS impreciso</b>, colócate en un área abierta, activa la ubicación precisa y vuelve a intentar.</li><li>Si indica <b>Punto sin GPS</b>, un administrador debe acudir al punto y configurarlo desde Rondinero.</li></ul></div></details>
@@ -5625,8 +5637,8 @@ const groupVales = sidebarEl.querySelector('[data-sb="grupo_vales"]');
 const groupGuardia = sidebarEl.querySelector('[data-sb="grupo_guardia"]');
 const groupReportes = sidebarEl.querySelector('[data-sb="grupo_reportes"]');
 
-if(dashProveedores)  dashProveedores.style.display  = hasPerm('ver_dashboard') && !isVisitanteOnlyRole() ? '' : 'none';
-if(dashVisitantes)  dashVisitantes.style.display  = hasPerm('ver_dashboard') ? '' : 'none';
+if(dashProveedores)  dashProveedores.style.display  = hasPerm('ver_dashboard_proveedores') ? '' : 'none';
+if(dashVisitantes)  dashVisitantes.style.display  = hasPerm('ver_dashboard_visitantes') ? '' : 'none';
 if(nuevo) nuevo.style.display = canCreateProveedorCita() && !isVisitanteOnlyRole() ? '' : 'none';
 if(nuevoVisitante) nuevoVisitante.style.display = canCreateVisitanteCita() ? '' : 'none';
 if(hist)  hist.style.display  = hasPerm('ver_historial') ? '' : 'none';
@@ -5696,11 +5708,11 @@ const btnCambios = sidebarEl.querySelector('[data-sb="reporte_cambios"]');
 if(btnCambios) btnCambios.style.display = hasPerm("ver_reporte_cambios") ? "" : "none";
 
 const hasProveedoresItems =
-  (hasPerm('ver_dashboard') && !isVisitanteOnlyRole()) ||
+  hasPerm('ver_dashboard_proveedores') ||
   (canCreateProveedorCita() && !isVisitanteOnlyRole()) ||
   (hasPerm('ver_citas_compras') && !isVisitanteOnlyRole());
 const hasVisitantesItems =
-  hasPerm('ver_dashboard') ||
+  hasPerm('ver_dashboard_visitantes') ||
   canCreateVisitanteCita() ||
   hasPerm('ver_citas_compras');
 const hasValesItems = hasPerm('ver_vales_activos') || hasPerm('ver_vales_personal') || (hasPerm('ver_historial_vales_personal') && [ROLES.ADMIN,ROLES.GUARDIA].includes(currentUser?.role));
@@ -7317,7 +7329,7 @@ function stopAutoSync(){
 function startAutoSync(){
   stopAutoSync();
   if(!currentUser || currentUser.role === ROLES.PENDIENTE) return;
-  if(!hasPerm("ver_dashboard")) return;
+  if(!hasPerm("ver_dashboard_proveedores") && !hasPerm("ver_dashboard_visitantes")) return;
   _autoSyncTimer = setInterval(async ()=>{
     try{
       if(document.visibilityState !== 'visible') return;
@@ -7828,8 +7840,9 @@ function renderRegisterForm(){
     }
 
     function renderDashboardHoy(tipoDashboard = getActiveDashboardTipo()){
-      if(!requirePerm("ver_dashboard","Tu rol no puede ver el dashboard.")) return;
       const dashboardTipo = normalizeDashboardTipo(tipoDashboard);
+      const dashboardPerm = dashboardTipo === "visitantes" ? "ver_dashboard_visitantes" : "ver_dashboard_proveedores";
+      if(!requirePerm(dashboardPerm,"Tu rol no puede ver este dashboard.")) return;
       currentView = dashboardTipo === "visitantes" ? "dashboard_visitantes" : "dashboard_proveedores";
       rememberModuleReturn(currentView);
       try{ setActiveSb(currentView); }catch{}
