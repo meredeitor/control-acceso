@@ -3299,7 +3299,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v188</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v189</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3324,7 +3324,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v188";
+  const APP_VERSION = "v189";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -4516,7 +4516,7 @@ function renderModuleHome(){
   if(qSearch){qSearch.value="";qSearch.style.display="none";}
 
   const firstName = esc(String(currentUser?.nombre || currentUser?.name || "").trim().split(/\s+/)[0] || "");
-  const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"👤",vales_activos:"📦",historial_vales_personal:"🕘",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_encuesta_visitantes:"😊",reporte_nominas:"🧾",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_cuenta:"🔒",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",help_guide:"?",help_about:"ⓘ"};
+  const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"👤",vales_activos:"📦",historial_vales_personal:"🕘",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_encuesta_visitantes:"😊",reporte_nominas:"🧾",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_cuenta:"🔒",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",eliminarfinalizados:"🗑️",depurar_30d:"📆",depurar_base:"⚠️",help_guide:"?",help_about:"ⓘ"};
   const link = (key,label,show=true,description="") => show ? `<button class="access-menu-link" data-sb="${key}"><span class="access-kiosk-icon" aria-hidden="true">${menuIcons[key] || "•"}</span><span class="access-kiosk-label">${label}</span>${description ? `<span class="access-kiosk-description">${description}</span>` : ""}</button>` : "";
   const group = (title,description,icon,iconClass,items) => {
     const links = items.filter(Boolean).join("");
@@ -4535,6 +4535,10 @@ function renderModuleHome(){
       link("historial","Historial",hasPerm("ver_historial")),link("reportes","Indicadores",hasPerm("ver_reportes")),link("reporte_encuesta_visitantes","Encuesta recepción",[ROLES.ADMIN,ROLES.RECEPCIONISTA].includes(currentUser?.role),"Satisfacción del servicio de recepción"),link("reporte_nominas","Reporte Nóminas",currentUser?.role === ROLES.ADMIN && hasPerm("ver_reporte_nominas"),"Minutos excedentes por colaborador"),link("reporte_cambios","Cambios",hasPerm("ver_reporte_cambios")),link("export_excel","Exportar Excel",hasPerm("exportar_excel")),link("export_pdf","Exportar PDF",hasPerm("exportar_excel"))]),
     group("Configuración","Usuarios y seguridad","⚙","visitor",[
       link("mi_cuenta","Mi cuenta",true,"Cambiar contraseña y revisar seguridad"),link("mi_pin","Mi PIN",canConfigurePin()),link("roles","Usuarios",hasPerm("admin_roles")),link("role_permissions","Roles y permisos",hasPerm("admin_roles")),link("personas_visita","Directorio",currentUser?.role === ROLES.ADMIN),link("proveedores","Catálogo proveedores",currentUser?.role === ROLES.ADMIN),link("sesiones_activas","Sesiones activas",hasPerm("ver_sesiones_activas"))]),
+    group("Mantenimiento de datos","Herramientas administrativas de eliminación","⚠","vales",[
+      link("eliminarfinalizados","Finalizados de hoy",currentUser?.role === ROLES.ADMIN && hasPerm("limpiar_finalizados"),"Elimina únicamente visitas finalizadas del día"),
+      link("depurar_30d","Retención de 30 días",currentUser?.role === ROLES.ADMIN && hasPerm("eliminar"),"Elimina registros con más de 30 días"),
+      link("depurar_base","Depuración hasta hoy",currentUser?.role === ROLES.ADMIN && hasPerm("eliminar"),"Elimina registros históricos hasta hoy; conserva futuros")]),
     group("Ayuda","Información y asistencia","?","vales",[link("help_guide","Guía rápida"),link("help_about","Acerca de")])
   ].filter(Boolean).join("");
   appEl.innerHTML = `
@@ -5466,6 +5470,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v189</b><span>Nuevo módulo administrativo de Mantenimiento de datos con limpieza de visitas finalizadas del día, retención de 30 días y depuración histórica hasta hoy, protegido por permisos, confirmación y PIN.</span></div>
           <div class="help-release"><b>v188</b><span>Rondinero unifica Historial y Cumplimiento por guardia en una vista jerárquica con métricas, recorridos desplegables, búsqueda, filtros por guardia y fecha, y acciones administrativas auditadas para ver, editar o eliminar.</span></div>
           <div class="help-release"><b>v187</b><span>La portada incorpora un fondo temático animado: sol y nubes en modo claro, y luna con estrellas en modo oscuro, adaptable a celulares y tablets.</span></div>
           <div class="help-release"><b>v186</b><span>El rol Recepcionista incorpora automáticamente el permiso de autorización de emergencia en configuraciones de roles existentes, mostrando la acción en vales ordinarios de salida pendientes.</span></div>
@@ -5538,6 +5543,7 @@ function helpGuideHtml(){
       <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>En la pestaña <b>Rutas</b>, usa <b>Editar y ordenar</b>. El editor visual permite agregar o quitar puntos y cambiar la secuencia con los botones <b>Subir</b> y <b>Bajar</b>. La lista de arriba hacia abajo será el orden exacto del recorrido.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>Al reportar una novedad selecciona el punto relacionado; el último punto escaneado aparece preseleccionado. También puede tomar una fotografía opcional, comprimida como JPEG de máximo 640 px y 180 KB sin Firebase Storage.</li><li>En el detalle, cada novedad y su fotografía se muestran dentro de la misma tarjeta del punto para revisarlas de un vistazo.</li><li>El cumplimiento se calcula dividiendo los puntos visitados entre los puntos esperados. Un rondín incompleto conserva su avance real en lugar de mostrar automáticamente 0%.</li><li>Desde <b>Detalle del recorrido</b>, pulsa <b>Generar PDF</b> para descargar el reporte completo paginado con datos del rondín, todos los puntos, evidencia GPS, novedades y fotografías.</li><li><b>Historial por guardia</b> unifica historial y cumplimiento: busca por texto, filtra por guardia o fechas y despliega cada guardia para consultar sus recorridos. El administrador también puede editar datos administrativos o eliminar un registro finalizado con PIN y auditoría.</li><li>El historial registra hora, distancia al punto, precisión GPS y la fotografía de la novedad como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
       <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. <b>Encuesta recepción</b>, disponible para Administrador y Recepcionista, muestra las encuestas aplicadas cada segunda salida de visitantes, el índice de servicio, participación, distribución de calificaciones y detalle por periodo. El <b>Reporte para Nóminas</b>, visible únicamente para Administrador, concentra los permisos de personal finalizados, minutos autorizados, tiempo real y minutos excedentes por colaborador, con detalle y exportación a Excel. El reporte no calcula importes ni aplica descuentos automáticamente.</div></details>
       <details><summary>Usuarios, roles y permisos</summary><div class="help-guide-content"><p>El administrador aprueba usuarios, asigna roles y configura permisos. Los cambios en Roles afectan qué módulos y acciones puede utilizar cada perfil.</p><p>Cada usuario puede entrar a <b>Configuración → Mi cuenta</b> para cambiar su propia contraseña. Debe confirmar la contraseña actual y crear una nueva de al menos 10 caracteres con mayúscula, minúscula, número y símbolo.</p><p>Para dar de alta varias cuentas, entra a <b>Configuración → Usuarios</b> y pulsa <b>Agregar usuarios</b>. Pega una fila por persona con el formato <b>Nombre; Correo; Contraseña temporal; Rol; Área; Empresa; Teléfono</b>. También puedes copiar filas desde Excel; las columnas separadas por tabulaciones se reconocen automáticamente.</p><p>Si una cuenta ya existe en Authentication pero no tiene perfil en Firestore, vuelve a incluirla con su contraseña temporal: la aplicación reconstruirá el documento en <b>users</b> y lo verificará directamente en el servidor.</p></div></details>
+      <details><summary>Mantenimiento de datos</summary><div class="help-guide-content"><p>Disponible únicamente para el Administrador. Permite eliminar visitas finalizadas del día, aplicar una retención de 30 días o depurar registros históricos hasta hoy. Las acciones sensibles requieren confirmación y PIN administrativo.</p></div></details>
       <details><summary>PIN de autorización</summary><div class="help-guide-content"><p>Administrador, Jefe, Jefe de Compras, Guardia y los perfiles autorizadores habilitados pueden crear o modificar su propio PIN desde <b>Configuración → Mi PIN</b>. El PIN es personal y se utiliza para confirmar acciones sensibles.</p></div></details>
       <details><summary>Problemas frecuentes</summary><div class="help-guide-content"><ul><li>Si no aparece un cambio, actualiza la página para cargar la versión más reciente.</li><li>Si una operación indica falta de permisos, consulta al administrador.</li><li>Si no hay Internet, evita cerrar la sesión hasta recuperar la conexión y sincronizar.</li><li>Verifica que la cámara y la ubicación precisa tengan permiso antes de escanear códigos QR.</li><li>Si Rondinero indica <b>GPS impreciso</b>, colócate en un área abierta, activa la ubicación precisa y vuelve a intentar.</li><li>Si indica <b>Punto sin GPS</b>, un administrador debe acudir al punto y configurarlo desde Rondinero.</li></ul></div></details>
     </div>`;
@@ -5657,6 +5663,9 @@ if(rondineroBtn) rondineroBtn.style.display = hasPerm('rondinero_ver') ? '' : 'n
   const usuariosBtn = sidebarEl.querySelector('[data-sb="roles"]');
   const personasBtn = sidebarEl.querySelector('[data-sb="personas_visita"]');
   const miPinBtn = sidebarEl.querySelector('[data-sb="mi_pin"]');
+  const eliminarFinalizadosBtn = sidebarEl.querySelector('[data-sb="eliminarfinalizados"]');
+  const depurarBaseBtn = sidebarEl.querySelector('[data-sb="depurar_base"]');
+  const depurar30dBtn = sidebarEl.querySelector('[data-sb="depurar_30d"]');
 
   if(cfgToggle) cfgToggle.style.display = showCfg ? '' : 'none';
   if(sesionesBtn) sesionesBtn.style.display = hasPerm('ver_sesiones_activas') ? '' : 'none';
@@ -5664,6 +5673,9 @@ if(rondineroBtn) rondineroBtn.style.display = hasPerm('rondinero_ver') ? '' : 'n
   if(usuariosBtn) usuariosBtn.style.display = hasPerm('admin_roles') ? '' : 'none';
   if(personasBtn) personasBtn.style.display = currentUser?.role === ROLES.ADMIN ? '' : 'none';
   if(miPinBtn) miPinBtn.style.display = canConfigurePin() ? '' : 'none';
+  if(eliminarFinalizadosBtn) eliminarFinalizadosBtn.style.display = currentUser?.role === ROLES.ADMIN && hasPerm('limpiar_finalizados') ? '' : 'none';
+  if(depurarBaseBtn) depurarBaseBtn.style.display = currentUser?.role === ROLES.ADMIN && hasPerm('eliminar') ? '' : 'none';
+  if(depurar30dBtn) depurar30dBtn.style.display = currentUser?.role === ROLES.ADMIN && hasPerm('eliminar') ? '' : 'none';
 
   // El rol Jefe solo administra su PIN; no debe ver herramientas administrativas.
   if(currentUser?.role === ROLES.JEFE && sbConfigSub){
@@ -7042,7 +7054,7 @@ async function pushRecentToCloud(){
 }
 
 async function depurarBaseHastaHoy() {
-  if (!requirePerm("eliminar", "Solo ADMIN puede depurar la base.")) return;
+  if (currentUser?.role !== ROLES.ADMIN || !requirePerm("eliminar", "Solo ADMIN puede depurar la base.")) return;
   if (!(await requireAdminPin("depurar la base de datos"))) return;
 
   const ok = confirm(
@@ -7165,7 +7177,7 @@ async function depurarBaseHastaHoy() {
 }
 
 async function depurarBaseRetencion30Dias() {
-  if (!requirePerm("eliminar", "Solo ADMIN puede depurar la base.")) return;
+  if (currentUser?.role !== ROLES.ADMIN || !requirePerm("eliminar", "Solo ADMIN puede depurar la base.")) return;
   if (!(await requireAdminPin("depurar registros mayores a 30 días"))) return;
 
   const RETENCION_DIAS = 30;
@@ -16258,7 +16270,7 @@ async function confirmarEntrada(id) {
     }
 
     async function limpiarFinalizadosHoy(){
- if(!requirePerm("limpiar_finalizados","Solo ADMIN puede borrar finalizados.")) return;
+ if(currentUser?.role !== ROLES.ADMIN || !requirePerm("limpiar_finalizados","Solo ADMIN puede borrar finalizados.")) return;
  if(!(await requireAdminPin("limpiar FINALIZADOS del día"))) return;
       const today = new Date();
       const antes = visitas.length;
