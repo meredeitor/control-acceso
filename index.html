@@ -2334,8 +2334,6 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     .access-auth-switch{margin:0;color:var(--muted);font-size:.85rem;}
     .access-auth-switch b{color:#d9f99d;cursor:pointer;font-weight:950;}
     .access-auth-form button{background:linear-gradient(135deg,#0b1220,#0f766e 58%,#84cc16);box-shadow:0 10px 22px rgba(15,118,110,.22);}
-    .access-auth-form #btnResetPassword{background:transparent;color:var(--text);border:1px solid var(--border);box-shadow:none;}
-    .access-auth-form #btnResetPassword:hover{background:rgba(148,163,184,.10);}
     .access-auth-card{position:relative;overflow:hidden;border-radius:28px;background:linear-gradient(155deg,rgba(255,255,255,.12),rgba(59,130,246,.07));border-color:rgba(96,165,250,.22)}
     .access-auth-brand{position:relative;overflow:hidden;align-content:center;background:linear-gradient(155deg,#0868f2 0%,#0757c9 54%,#0b2d67 100%);border-radius:22px}
     .access-auth-brand::before{content:"";position:absolute;width:310px;height:310px;right:-170px;top:-160px;border-radius:50%;background:rgba(255,255,255,.11)}
@@ -2352,7 +2350,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     .access-auth-form .auth-intro{margin:-5px 0 5px;color:var(--muted);font-size:.82rem;line-height:1.45}
     .access-auth-form input{min-height:50px;border-radius:13px;padding:12px 14px;font-size:1rem}
     .access-auth-form #btnLogin,.access-auth-form #btnCreate{min-height:50px;border-radius:14px;background:linear-gradient(145deg,#1687ff,#075ddb);box-shadow:0 12px 24px rgba(8,104,242,.28)}
-    .access-auth-form #btnResetPassword{min-height:46px;border-radius:14px}
+    .auth-admin-help{margin:2px 0 0;padding:12px 14px;border:1px solid rgba(96,165,250,.28);border-radius:14px;background:rgba(59,130,246,.10);color:var(--muted);font-size:.8rem;line-height:1.5;text-align:center}
     .auth-theme-toggle{position:absolute;z-index:3;right:16px;top:16px;width:44px;height:44px;min-height:44px;padding:0;border-radius:14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.32);color:#fff;box-shadow:0 8px 18px rgba(0,0,0,.15);font-size:1.25rem}
     .auth-theme-toggle:hover{background:rgba(255,255,255,.24);transform:translateY(-1px)}
     html[data-theme="light"] .access-auth-card{background:linear-gradient(155deg,#edf6ff,#fff);border-color:rgba(37,99,235,.15);box-shadow:0 28px 70px rgba(15,78,160,.15)}
@@ -2373,20 +2371,12 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     html[data-theme="light"] .access-auth-switch,
     html[data-theme="desert"] .access-auth-switch,
     html[data-theme="mint"] .access-auth-switch,
-    html[data-theme="light"] #resetPasswordStatus,
-    html[data-theme="desert"] #resetPasswordStatus,
-    html[data-theme="mint"] #resetPasswordStatus{color:#475569 !important;}
+    html[data-theme="light"] .auth-admin-help,
+    html[data-theme="desert"] .auth-admin-help,
+    html[data-theme="mint"] .auth-admin-help{color:#334155 !important;background:#eff6ff;border-color:#bfdbfe;}
     html[data-theme="light"] .access-auth-switch b,
     html[data-theme="desert"] .access-auth-switch b,
     html[data-theme="mint"] .access-auth-switch b{color:#166534;}
-    html[data-theme="light"] .access-auth-form #btnResetPassword,
-    html[data-theme="desert"] .access-auth-form #btnResetPassword,
-    html[data-theme="mint"] .access-auth-form #btnResetPassword{
-      color:#0f172a;background:#f8fafc;border-color:#cbd5e1;
-    }
-    html[data-theme="light"] .access-auth-form #btnResetPassword:hover,
-    html[data-theme="desert"] .access-auth-form #btnResetPassword:hover,
-    html[data-theme="mint"] .access-auth-form #btnResetPassword:hover{background:#e2e8f0;}
 
     /* Portada de módulos */
     .access-home{
@@ -3270,7 +3260,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v184</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v185</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3295,7 +3285,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v184";
+  const APP_VERSION = "v185";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3352,7 +3342,6 @@ document.getElementById("appVersion").textContent = APP_VERSION;
     getAuth,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
-    sendPasswordResetEmail,
     EmailAuthProvider,
     reauthenticateWithCredential,
     updatePassword,
@@ -5403,6 +5392,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v185</b><span>La pantalla de inicio de sesión sustituye la recuperación de contraseña por correo por una indicación clara para contactar al administrador cuando el usuario no pueda entrar.</span></div>
           <div class="help-release"><b>v184</b><span>Nuevo rol Recepcionista con autorización de visitantes, consulta de encuestas y vales, PIN propio y autorización auditada de vales personales únicamente por emergencia. También se corrigió la encuesta para operar sobre el registro de visitantes.</span></div>
           <div class="help-release"><b>v183</b><span>Encuesta de satisfacción del servicio de recepción cada segunda salida de visitantes y nuevo reporte administrativo con índice, participación, distribución y detalle por periodo.</span></div>
           <div class="help-release"><b>v182</b><span>Nueva sección Mi cuenta para que cada usuario cambie su propia contraseña confirmando la contraseña actual, con requisitos de seguridad y sin depender del correo de recuperación.</span></div>
@@ -5463,7 +5453,7 @@ function helpAboutHtml(){
 function helpGuideHtml(){
   return `
     <div class="help-guide">
-      <details open><summary>Inicio y navegación</summary><div class="help-guide-content"><p>Abre las secciones desde el menú lateral. Las opciones visibles dependen de tu rol. Usa Inicio para volver al tablero principal de tu perfil y Sincronizar cuando necesites actualizar la información de la nube. En el rol <b>Jefe</b>, la pantalla principal es <b>Vales de Personal</b> y el menú se presenta de forma compacta en el orden Vales, Configuración y Ayuda.</p><p>Si olvidaste tu contraseña, escribe tu correo en la pantalla de acceso y pulsa <b>¿Olvidaste tu contraseña?</b>. Firebase enviará un enlace para crear una nueva; revisa también Spam o Correo no deseado.</p><p>En celulares y tablets, el botón compacto <b>Tema</b> permanece en el encabezado para cambiar rápidamente a un diseño claro cuando haya mucha luz.</p></div></details>
+      <details open><summary>Inicio y navegación</summary><div class="help-guide-content"><p>Abre las secciones desde el menú lateral. Las opciones visibles dependen de tu rol. Usa Inicio para volver al tablero principal de tu perfil y Sincronizar cuando necesites actualizar la información de la nube. En el rol <b>Jefe</b>, la pantalla principal es <b>Vales de Personal</b> y el menú se presenta de forma compacta en el orden Vales, Configuración y Ayuda.</p><p>Si no puedes iniciar sesión o necesitas restablecer tu contraseña, ponte en contacto con el administrador.</p><p>En celulares y tablets, el botón compacto <b>Tema</b> permanece en el encabezado para cambiar rápidamente a un diseño claro cuando haya mucha luz.</p></div></details>
       <details><summary>Visitantes</summary><div class="help-guide-content"><ol><li>Programa la visita o autoriza una solicitud pendiente.</li><li>Al escanear el QR se registra la llegada y comienza el tiempo de espera.</li><li>Usa <b>Dar acceso</b> para registrar gafete y entrada.</li><li>Al salir, registra la salida para finalizar y obtener los tiempos de espera, permanencia y total.</li></ol></div></details>
       <details><summary>Proveedores</summary><div class="help-guide-content"><ol><li>Crea la cita con proveedor, empresa, área y documentación.</li><li>Si un proveedor recién registrado no aparece en la búsqueda, pulsa <b>Cargar proveedores</b> para actualizar el catálogo desde Firebase sin salir del formulario.</li><li>El guardia escanea el QR y registra la entrada.</li><li>Calidad puede dictaminar la entrega cuando corresponda.</li><li>La salida finaliza el registro y desactiva el QR.</li></ol></div></details>
       <details><summary>Vales de personal</summary><div class="help-guide-content">Genera el vale con número de nómina y datos del permiso. Puede utilizarse el QR del vale o escanear el QR del gafete. El flujo continúa con autorización, salida y regreso del colaborador. Para el rol <b>Jefe</b>, solo se muestran los vales donde su UID o correo coincide con el autorizador asignado. El rol <b>Servicio Médico</b> puede emitir exclusivamente Permisos IMSS con hora programada; el QR funciona desde 5 minutos antes y hasta 30 minutos después, y el regreso se registra el mismo día. Guardia y Administrador disponen de <b>Vales → Historial</b>, donde se presenta el recorrido completo, responsables, tiempo real y minutos excedentes.</div></details>
@@ -7453,59 +7443,6 @@ if (btnLogin) {
 
 }
 
-    const btnResetPassword = document.getElementById("btnResetPassword");
-    if(btnResetPassword){
-      btnResetPassword.onclick = async () => {
-        const emailInput = document.getElementById("loginEmail");
-        const email = String(emailInput?.value || "").trim().toLowerCase();
-        const resetStatus = document.getElementById("resetPasswordStatus");
-        if(!/^\S+@\S+\.\S+$/.test(email)){
-          toast("Correo requerido","Escribe primero un correo electrónico válido.","warn",3400);
-          emailInput?.focus();
-          return;
-        }
-        btnResetPassword.disabled = true;
-        if(resetStatus) resetStatus.textContent = "Solicitando enlace de recuperación...";
-        try{
-          await sendPasswordResetEmail(auth, email);
-          const successMessage = `Firebase aceptó el envío a ${email}. Revisa Recibidos, Spam y Correo no deseado; puede tardar unos minutos.`;
-          if(resetStatus) resetStatus.textContent = successMessage;
-          toast("Correo solicitado",successMessage,"ok",7500);
-        }catch(error){
-          console.error("Error solicitando recuperación:", error);
-          const code = String(error?.code || "");
-          if(code.includes("invalid-email")){
-            if(resetStatus) resetStatus.textContent = "El formato del correo no es válido.";
-            toast("Correo inválido","Revisa el correo escrito.","warn",3800);
-          }else if(code.includes("too-many-requests")){
-            if(resetStatus) resetStatus.textContent = "Se alcanzó el límite temporal de solicitudes. Intenta más tarde.";
-            toast("Demasiados intentos","Espera unos minutos antes de volver a solicitar el enlace.","warn",4800);
-          }else if(code.includes("network-request-failed")){
-            if(resetStatus) resetStatus.textContent = "No fue posible contactar a Firebase. Revisa la conexión.";
-            toast("Sin conexión","No se pudo enviar la solicitud.","bad",4200);
-          }else if(code.includes("user-not-found")){
-            const neutralMessage = "Si el correo está registrado, recibirás un enlace para crear una contraseña nueva. Revisa también Spam o Correo no deseado.";
-            if(resetStatus) resetStatus.textContent = neutralMessage;
-            toast("Solicitud procesada",neutralMessage,"info",6500);
-          }else if(code.includes("operation-not-allowed")){
-            const message = "La recuperación por correo no está habilitada en Firebase Authentication. Contacta al administrador.";
-            if(resetStatus) resetStatus.textContent = message;
-            toast("Recuperación no habilitada",message,"bad",6500);
-          }else if(code.includes("unauthorized-domain")){
-            const message = "Este dominio no está autorizado en Firebase. Contacta al administrador.";
-            if(resetStatus) resetStatus.textContent = message;
-            toast("Dominio no autorizado",message,"bad",6500);
-          }else{
-            const message = `Firebase rechazó la solicitud (${code || "error desconocido"}). Contacta al administrador.`;
-            if(resetStatus) resetStatus.textContent = message;
-            toast("No se pudo solicitar el correo",message,"bad",6500);
-          }
-        }finally{
-          btnResetPassword.disabled = false;
-        }
-      };
-    }
-
     // ---- Eventos REGISTRO ----
     const btnCreate = document.getElementById("btnCreate");
     if(btnCreate){
@@ -7584,8 +7521,7 @@ function renderLoginForm(){
         <input id="loginPass" type="password" autocomplete="current-password" />
 
         <button id="btnLogin">Entrar</button>
-        <button class="secondary" id="btnResetPassword" type="button">¿Olvidaste tu contraseña?</button>
-        <div id="resetPasswordStatus" role="status" aria-live="polite" style="min-height:18px;color:var(--muted);font-size:12px;line-height:1.45;"></div>
+        <p class="auth-admin-help">Si no puedes entrar, ponte en contacto con el administrador.</p>
 
         <p class="access-auth-switch">
           ¿No tienes cuenta?
