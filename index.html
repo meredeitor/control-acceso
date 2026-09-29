@@ -2388,7 +2388,19 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
       border:1px solid rgba(37,99,235,.12);box-shadow:0 24px 60px rgba(15,78,160,.13);
       color:#10204a;
     }
-    .access-home::before{content:"";position:absolute;z-index:-1;width:340px;height:340px;right:-170px;top:-190px;border-radius:50%;background:rgba(42,146,255,.10)}
+    .access-home::before{content:"";position:absolute;z-index:0;width:340px;height:340px;right:-170px;top:-190px;border-radius:50%;background:rgba(42,146,255,.10)}
+    .access-sky-decor{position:absolute;z-index:1;right:22px;top:14px;width:clamp(145px,18vw,220px);pointer-events:none;filter:drop-shadow(0 10px 18px rgba(44,106,173,.12))}
+    .access-sky-decor svg{display:block;width:100%;height:auto;overflow:visible}
+    .access-sky-day,.access-sky-night{transform-origin:70% 35%;transition:opacity .45s ease,transform .55s cubic-bezier(.2,.8,.2,1)}
+    .access-sky-day{opacity:1;transform:translateY(0) rotate(0deg) scale(1)}
+    .access-sky-night{opacity:0;transform:translateY(-8px) rotate(-8deg) scale(.88)}
+    .access-sky-cloud{animation:accessCloudFloat 5.5s ease-in-out infinite alternate}
+    .access-sky-cloud.is-second{animation-delay:-2.2s;animation-duration:6.8s}
+    .access-sky-star{transform-origin:center;animation:accessStarTwinkle 2.2s ease-in-out infinite alternate}
+    .access-sky-star:nth-child(2n){animation-delay:-1.1s}.access-sky-star:nth-child(3n){animation-delay:-.5s}
+    @keyframes accessCloudFloat{to{transform:translateX(7px)}}
+    @keyframes accessStarTwinkle{from{opacity:.35;transform:scale(.72)}to{opacity:1;transform:scale(1.1)}}
+    .access-home-welcome,.access-menu-grid{position:relative;z-index:2}
     .access-home-head{display:flex;align-items:center;gap:14px;margin-bottom:clamp(28px,5vw,50px)}
     .access-home-logo{display:grid;place-items:center;width:58px;height:66px;filter:drop-shadow(0 9px 14px rgba(8,104,242,.20))}
     .access-home-logo svg{width:100%;height:100%}
@@ -2439,6 +2451,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     html[data-theme="dark"] .access-home,html[data-theme="copper"] .access-home{background:linear-gradient(155deg,#f8fbff,#e9f5ff);color:#10204a}
     @media(max-width:720px){
       .access-home{min-height:calc(100dvh - 110px);padding:20px 18px 0;border-radius:22px}
+      .access-sky-decor{right:6px;top:8px;width:112px;opacity:.72}
       .access-home-head{margin-bottom:28px}.access-home-logo{width:48px;height:56px}.access-home-menu{width:40px;height:40px}
       .access-home-welcome{margin-bottom:20px}.access-home-welcome h2{font-size:2rem}.access-home-welcome p{max-width:270px}
       .access-home-grid{grid-template-columns:1fr;gap:11px;padding-bottom:190px}
@@ -2455,6 +2468,9 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     /* Tema oscuro completo para la nueva portada y su menú tipo kiosco. */
     html[data-theme="dark"] .access-home{background:linear-gradient(155deg,#0b1220 0%,#111c33 62%,#102746 100%);border-color:rgba(96,165,250,.22);color:#f8fafc;box-shadow:0 24px 60px rgba(0,0,0,.34)}
     html[data-theme="dark"] .access-home::before{background:rgba(37,99,235,.14)}
+    html[data-theme="dark"] .access-sky-decor{filter:drop-shadow(0 0 18px rgba(147,197,253,.16))}
+    html[data-theme="dark"] .access-sky-day{opacity:0;transform:translateY(8px) rotate(10deg) scale(.88)}
+    html[data-theme="dark"] .access-sky-night{opacity:1;transform:translateY(0) rotate(0deg) scale(1)}
     html[data-theme="dark"] .access-home-welcome h2,html[data-theme="dark"] .access-menu-group-head h3{color:#f8fafc}
     html[data-theme="dark"] .access-home-welcome p,html[data-theme="dark"] .access-menu-group-head p{color:#a9b8d2}
     html[data-theme="dark"] .access-menu-group{background:rgba(17,28,51,.96);border-color:rgba(96,165,250,.20);box-shadow:0 14px 30px rgba(0,0,0,.25)}
@@ -3260,7 +3276,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v186</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v187</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3285,7 +3301,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v186";
+  const APP_VERSION = "v187";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -4496,6 +4512,34 @@ function renderModuleHome(){
   ].filter(Boolean).join("");
   appEl.innerHTML = `
     <section class="access-home">
+      <div class="access-sky-decor" aria-hidden="true">
+        <svg viewBox="0 0 230 132" role="presentation">
+          <g class="access-sky-day">
+            <g stroke="#f5b928" stroke-width="4" stroke-linecap="round" opacity=".82">
+              <path d="M174 7v11M174 68v11M139 43h-11M220 43h-11M149 18l-8-8M199 68l8 8M149 68l-8 8M199 18l8-8"/>
+            </g>
+            <circle cx="174" cy="43" r="23" fill="#ffd75e"/>
+            <circle cx="167" cy="36" r="12" fill="#ffe993" opacity=".7"/>
+            <g class="access-sky-cloud" fill="#fff" stroke="#d7e9fa" stroke-width="1.5">
+              <path d="M82 82c2-13 12-21 25-19 5-14 26-15 33-2 13-3 25 6 25 19 0 9-7 16-17 16H97c-10 0-17-6-15-14Z"/>
+            </g>
+            <g class="access-sky-cloud is-second" fill="#f7fbff" stroke="#d7e9fa" stroke-width="1.5" opacity=".9">
+              <path d="M24 105c1-9 9-15 18-13 5-10 20-10 25 0 10-2 18 5 18 14 0 7-5 12-13 12H37c-8 0-14-5-13-13Z"/>
+            </g>
+          </g>
+          <g class="access-sky-night">
+            <path d="M178 17a34 34 0 1 0 29 54 31 31 0 0 1-29-54Z" fill="#dcecff"/>
+            <path d="M182 24a27 27 0 0 0 18 42 27 27 0 0 1-18-42Z" fill="#ffffff" opacity=".72"/>
+            <g fill="#b9dcff">
+              <circle class="access-sky-star" cx="116" cy="23" r="3"/><circle class="access-sky-star" cx="137" cy="52" r="2.4"/>
+              <circle class="access-sky-star" cx="215" cy="18" r="2.2"/><circle class="access-sky-star" cx="220" cy="78" r="3"/>
+              <circle class="access-sky-star" cx="91" cy="68" r="2"/><circle class="access-sky-star" cx="151" cy="91" r="2.6"/>
+              <path class="access-sky-star" d="M52 31l2.4 6.2 6.2 2.4-6.2 2.4-2.4 6.2-2.4-6.2-6.2-2.4 6.2-2.4Z"/>
+              <path class="access-sky-star" d="M104 100l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z"/>
+            </g>
+          </g>
+        </svg>
+      </div>
       <div class="access-home-welcome"><h2>Bienvenido${firstName ? `, ${firstName}` : ""}</h2><p>Selecciona una opción para gestionar el control de accesos.</p></div>
       <div class="access-menu-grid">${groups || `<div style="color:#68779b">No hay módulos disponibles para este perfil.</div>`}</div>
       <div class="access-home-scene" aria-hidden="true"><svg viewBox="0 0 560 275"><defs><linearGradient id="homeSky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#e4f4ff"/><stop offset="1" stop-color="#cce9ff"/></linearGradient><linearGradient id="homeBuilding" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8cc8f5"/><stop offset="1" stop-color="#4b91cf"/></linearGradient></defs><path fill="url(#homeSky)" d="M0 86 90 55l92 24 103-45 118 39 157-55v257H0z"/><path fill="#c2e3f8" d="m0 147 106-46 70 21 98-54 121 47 165-66v226H0z"/><ellipse cx="80" cy="250" rx="58" ry="12" fill="#a7d1ec"/><path fill="#7caaca" d="M48 238h12l4-78-11-13-10 14z"/><circle cx="54" cy="139" r="27" fill="#8bbbd3"/><circle cx="38" cy="160" r="22" fill="#83b1ca"/><circle cx="69" cy="162" r="24" fill="#92c1d7"/><path fill="url(#homeBuilding)" d="M172 118h290v132H172z"/><path fill="#2879bd" d="M151 107 327 53l171 53v19H151z"/><path fill="#d8efff" d="M194 138h90v112h-90z"/><path fill="#2e6eaa" d="M304 135h118v115H304z"/><path fill="#78b9e7" d="M320 151h38v82h-38zM371 151h35v82h-35z"/><path fill="#f5fbff" d="M422 155h25v95h-25z"/><path fill="#de3d3d" d="M0 236h178v12H0z"/><path fill="#fff" d="m8 236 18 12h22l-18-12zm52 0 18 12h22l-18-12zm52 0 18 12h22l-18-12z"/><path fill="#5e8db2" d="M12 225h6v37h-6zm150 0h6v37h-6z"/></svg></div>
@@ -5395,6 +5439,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v187</b><span>La portada incorpora un fondo temático animado: sol y nubes en modo claro, y luna con estrellas en modo oscuro, adaptable a celulares y tablets.</span></div>
           <div class="help-release"><b>v186</b><span>El rol Recepcionista incorpora automáticamente el permiso de autorización de emergencia en configuraciones de roles existentes, mostrando la acción en vales ordinarios de salida pendientes.</span></div>
           <div class="help-release"><b>v185</b><span>La pantalla de inicio de sesión sustituye la recuperación de contraseña por correo por una indicación clara para contactar al administrador cuando el usuario no pueda entrar.</span></div>
           <div class="help-release"><b>v184</b><span>Nuevo rol Recepcionista con autorización de visitantes, consulta de encuestas y vales, PIN propio y autorización auditada de vales personales únicamente por emergencia. También se corrigió la encuesta para operar sobre el registro de visitantes.</span></div>
