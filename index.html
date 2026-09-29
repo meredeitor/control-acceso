@@ -2927,6 +2927,29 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     .rondinero-modern .rondinero-workspace{padding:16px;border:1px solid var(--border);border-radius:20px;background:var(--panel);box-shadow:0 10px 28px rgba(15,23,42,.06)}
     .rondinero-modern .rondinero-workspace>.divider:first-child{display:none}
     .rondinero-modern .rondinero-tabs{margin-bottom:14px}
+    .rondinero-history-tree{display:grid;gap:12px}
+    .rondinero-guard-node{overflow:hidden;border:1px solid var(--border);border-radius:17px;background:var(--panel2);box-shadow:0 7px 18px rgba(15,23,42,.05)}
+    .rondinero-guard-summary{display:grid;grid-template-columns:minmax(220px,2fr) repeat(4,minmax(92px,.72fr));gap:10px;align-items:center;padding:14px 16px;cursor:pointer;list-style:none}
+    .rondinero-guard-summary::-webkit-details-marker{display:none}
+    .rondinero-guard-summary:hover{background:rgba(59,130,246,.07)}
+    .rondinero-guard-name{display:flex;align-items:center;gap:10px;min-width:0;font-weight:900;color:var(--text)}
+    .rondinero-tree-toggle{display:grid;place-items:center;width:28px;height:28px;flex:0 0 auto;border-radius:9px;background:rgba(37,99,235,.12);color:#2563eb;font-size:19px;line-height:1;transition:transform .18s ease}
+    .rondinero-guard-node[open] .rondinero-tree-toggle{transform:rotate(45deg)}
+    .rondinero-guard-metric{display:grid;gap:2px;color:var(--text);font-size:.86rem;font-weight:900;text-align:center}
+    .rondinero-guard-metric small{color:var(--muted);font-size:.64rem;font-weight:750;text-transform:uppercase;letter-spacing:.035em}
+    .rondinero-child-wrap{padding:0 14px 14px;border-top:1px solid var(--border)}
+    .rondinero-child-head,.rondinero-child-row{display:grid;grid-template-columns:minmax(150px,1.45fr) minmax(110px,1fr) 90px 100px 105px minmax(190px,1.25fr);gap:10px;align-items:center}
+    .rondinero-child-head{padding:12px 10px 8px;color:var(--muted);font-size:.66rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+    .rondinero-child-row{padding:11px 10px;border-top:1px solid var(--border);color:var(--text);font-size:.78rem}
+    .rondinero-child-row:first-of-type{border-top:0}
+    .rondinero-child-main{display:grid;gap:3px}.rondinero-child-main small{color:var(--muted)}
+    .rondinero-child-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+    .rondinero-child-actions button{min-height:36px;padding:8px 10px;font-size:.72rem}
+    @media(max-width:860px){
+      .rondinero-guard-summary{grid-template-columns:minmax(190px,1.6fr) repeat(2,minmax(80px,.7fr))}.rondinero-guard-summary .rondinero-guard-metric:nth-last-child(-n+2){display:none}
+      .rondinero-child-head{display:none}.rondinero-child-wrap{display:grid;gap:10px;padding-top:12px}.rondinero-child-row{grid-template-columns:1fr 1fr;padding:12px;border:1px solid var(--border);border-radius:13px}.rondinero-child-main,.rondinero-child-actions{grid-column:1/-1}.rondinero-child-actions{justify-content:flex-start}
+    }
+    @media(max-width:520px){.rondinero-guard-summary{grid-template-columns:1fr 72px}.rondinero-guard-summary .rondinero-guard-metric{display:none}.rondinero-guard-summary .rondinero-guard-metric:nth-child(2){display:grid}.rondinero-child-row{grid-template-columns:1fr}.rondinero-child-row>*{grid-column:1}.rondinero-child-actions button{flex:1 1 80px}}
     .rondinero-modern .rondinero-guard-card{border-radius:19px;background:var(--panel);box-shadow:0 10px 28px rgba(15,23,42,.08)}
     [data-theme="dark"] .provider-dashboard-hero{border-color:rgba(59,130,246,.28);background:linear-gradient(135deg,#111d35 0%,#102c55 58%,#0d4077 100%)}
     [data-theme="dark"] .provider-dashboard-hero h2{color:#f8fbff}
@@ -3276,7 +3299,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v187</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v188</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3301,7 +3324,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v187";
+  const APP_VERSION = "v188";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3986,6 +4009,10 @@ async function saveRolePermsConfig(role, perms){
     let rondineroEventos = loadRondineroEventosLocal();
     let rondineroGuardiaCred = loadRondineroGuardiaCred();
     let rondineroAdminTab = "puntos";
+    let rondineroHistSearch = "";
+    let rondineroHistGuardia = "";
+    let rondineroHistDesde = "";
+    let rondineroHistHasta = "";
     let _rondRutaEditorId = null;
     let _rondRutaEditorPuntoIds = [];
     let _rondRutaEditorDraft = null;
@@ -5439,6 +5466,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v188</b><span>Rondinero unifica Historial y Cumplimiento por guardia en una vista jerárquica con métricas, recorridos desplegables, búsqueda, filtros por guardia y fecha, y acciones administrativas auditadas para ver, editar o eliminar.</span></div>
           <div class="help-release"><b>v187</b><span>La portada incorpora un fondo temático animado: sol y nubes en modo claro, y luna con estrellas en modo oscuro, adaptable a celulares y tablets.</span></div>
           <div class="help-release"><b>v186</b><span>El rol Recepcionista incorpora automáticamente el permiso de autorización de emergencia en configuraciones de roles existentes, mostrando la acción en vales ordinarios de salida pendientes.</span></div>
           <div class="help-release"><b>v185</b><span>La pantalla de inicio de sesión sustituye la recuperación de contraseña por correo por una indicación clara para contactar al administrador cuando el usuario no pueda entrar.</span></div>
@@ -5507,7 +5535,7 @@ function helpGuideHtml(){
       <details><summary>Proveedores</summary><div class="help-guide-content"><ol><li>Crea la cita con proveedor, empresa, área y documentación.</li><li>Si un proveedor recién registrado no aparece en la búsqueda, pulsa <b>Cargar proveedores</b> para actualizar el catálogo desde Firebase sin salir del formulario.</li><li>El guardia escanea el QR y registra la entrada.</li><li>Calidad puede dictaminar la entrega cuando corresponda.</li><li>La salida finaliza el registro y desactiva el QR.</li></ol></div></details>
       <details><summary>Vales de personal</summary><div class="help-guide-content">Genera el vale con número de nómina y datos del permiso. Puede utilizarse el QR del vale o escanear el QR del gafete. El flujo continúa con autorización, salida y regreso del colaborador. Para el rol <b>Jefe</b>, solo se muestran los vales donde su UID o correo coincide con el autorizador asignado. El rol <b>Servicio Médico</b> puede emitir exclusivamente Permisos IMSS con hora programada; el QR funciona desde 5 minutos antes y hasta 30 minutos después, y el regreso se registra el mismo día. Guardia y Administrador disponen de <b>Vales → Historial</b>, donde se presenta el recorrido completo, responsables, tiempo real y minutos excedentes.</div></details>
       <details><summary>Vales de activos</summary><div class="help-guide-content">Registra el activo, responsable, motivo y vigencia. El rol autorizado revisa el vale; Guardia registra la salida y posteriormente el regreso del activo.</div></details>
-      <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>En la pestaña <b>Rutas</b>, usa <b>Editar y ordenar</b>. El editor visual permite agregar o quitar puntos y cambiar la secuencia con los botones <b>Subir</b> y <b>Bajar</b>. La lista de arriba hacia abajo será el orden exacto del recorrido.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>Al reportar una novedad selecciona el punto relacionado; el último punto escaneado aparece preseleccionado. También puede tomar una fotografía opcional, comprimida como JPEG de máximo 640 px y 180 KB sin Firebase Storage.</li><li>En el detalle, cada novedad y su fotografía se muestran dentro de la misma tarjeta del punto para revisarlas de un vistazo.</li><li>El cumplimiento se calcula dividiendo los puntos visitados entre los puntos esperados. Un rondín incompleto conserva su avance real en lugar de mostrar automáticamente 0%.</li><li>Desde <b>Detalle del recorrido</b>, pulsa <b>Generar PDF</b> para descargar el reporte completo paginado con datos del rondín, todos los puntos, evidencia GPS, novedades y fotografías.</li><li>El historial registra hora, distancia al punto, precisión GPS y la fotografía de la novedad como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
+      <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>En la pestaña <b>Rutas</b>, usa <b>Editar y ordenar</b>. El editor visual permite agregar o quitar puntos y cambiar la secuencia con los botones <b>Subir</b> y <b>Bajar</b>. La lista de arriba hacia abajo será el orden exacto del recorrido.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>Al reportar una novedad selecciona el punto relacionado; el último punto escaneado aparece preseleccionado. También puede tomar una fotografía opcional, comprimida como JPEG de máximo 640 px y 180 KB sin Firebase Storage.</li><li>En el detalle, cada novedad y su fotografía se muestran dentro de la misma tarjeta del punto para revisarlas de un vistazo.</li><li>El cumplimiento se calcula dividiendo los puntos visitados entre los puntos esperados. Un rondín incompleto conserva su avance real en lugar de mostrar automáticamente 0%.</li><li>Desde <b>Detalle del recorrido</b>, pulsa <b>Generar PDF</b> para descargar el reporte completo paginado con datos del rondín, todos los puntos, evidencia GPS, novedades y fotografías.</li><li><b>Historial por guardia</b> unifica historial y cumplimiento: busca por texto, filtra por guardia o fechas y despliega cada guardia para consultar sus recorridos. El administrador también puede editar datos administrativos o eliminar un registro finalizado con PIN y auditoría.</li><li>El historial registra hora, distancia al punto, precisión GPS y la fotografía de la novedad como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
       <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. <b>Encuesta recepción</b>, disponible para Administrador y Recepcionista, muestra las encuestas aplicadas cada segunda salida de visitantes, el índice de servicio, participación, distribución de calificaciones y detalle por periodo. El <b>Reporte para Nóminas</b>, visible únicamente para Administrador, concentra los permisos de personal finalizados, minutos autorizados, tiempo real y minutos excedentes por colaborador, con detalle y exportación a Excel. El reporte no calcula importes ni aplica descuentos automáticamente.</div></details>
       <details><summary>Usuarios, roles y permisos</summary><div class="help-guide-content"><p>El administrador aprueba usuarios, asigna roles y configura permisos. Los cambios en Roles afectan qué módulos y acciones puede utilizar cada perfil.</p><p>Cada usuario puede entrar a <b>Configuración → Mi cuenta</b> para cambiar su propia contraseña. Debe confirmar la contraseña actual y crear una nueva de al menos 10 caracteres con mayúscula, minúscula, número y símbolo.</p><p>Para dar de alta varias cuentas, entra a <b>Configuración → Usuarios</b> y pulsa <b>Agregar usuarios</b>. Pega una fila por persona con el formato <b>Nombre; Correo; Contraseña temporal; Rol; Área; Empresa; Teléfono</b>. También puedes copiar filas desde Excel; las columnas separadas por tabulaciones se reconocen automáticamente.</p><p>Si una cuenta ya existe en Authentication pero no tiene perfil en Firestore, vuelve a incluirla con su contraseña temporal: la aplicación reconstruirá el documento en <b>users</b> y lo verificará directamente en el servidor.</p></div></details>
       <details><summary>PIN de autorización</summary><div class="help-guide-content"><p>Administrador, Jefe, Jefe de Compras, Guardia y los perfiles autorizadores habilitados pueden crear o modificar su propio PIN desde <b>Configuración → Mi PIN</b>. El PIN es personal y se utiliza para confirmar acciones sensibles.</p></div></details>
@@ -9885,6 +9913,22 @@ function calcRondineroStats(rondines, eventos){
   };
 }
 
+function rondineroCumplimientoIndividual(r={}){
+  const esperados = Array.isArray(r.puntoIdsEsperados) ? r.puntoIdsEsperados.length : 0;
+  const visitados = Array.isArray(r.puntoIdsVisitados) ? r.puntoIdsVisitados.length : 0;
+  if(esperados) return Math.max(0, Math.min(100, Math.round((visitados / esperados) * 100)));
+  return r.status === "completado" ? 100 : 0;
+}
+
+function rondineroPromedioCumplimiento(list=[]){
+  if(!list.length) return 0;
+  return Math.round(list.reduce((sum,r)=>sum+rondineroCumplimientoIndividual(r),0)/list.length);
+}
+
+function rondineroEstadoLabel(status=""){
+  return status === "completado" ? "Completo" : status === "incompleto" ? "Incompleto" : status === "en_curso" ? "En curso" : String(status || "Sin estado");
+}
+
 function renderRondineroPuntoCard(p){
   const tieneGps = puntoRondineroTieneGps(p);
   const radio = Math.max(5, Number(p.radioMetros) || RONDINERO_GPS_RADIO_DEFAULT_M);
@@ -10053,15 +10097,31 @@ async function renderRondinero(){
   const eventosHoy = rondineroEventos.filter(e => e.fecha === todayISO());
   const statsHoy = calcRondineroStats(rondinesHoy, eventosHoy);
   const statsTotal = calcRondineroStats(rondineroRondines, rondineroEventos);
-  const porGuardia = Object.entries(rondineroRondines.reduce((acc, r) => {
+  const guardiasDisponibles = Array.from(new Set(rondineroRondines.map(r=>r.guardiaNombre||r.guardiaEmail||"Guardia")))
+    .sort((a,b)=>a.localeCompare(b,"es",{sensitivity:"base"}));
+  const desdeTs = rondineroHistDesde ? new Date(`${rondineroHistDesde}T00:00:00`).getTime() : 0;
+  const hastaTs = rondineroHistHasta ? new Date(`${rondineroHistHasta}T23:59:59.999`).getTime() : Number.POSITIVE_INFINITY;
+  const searchNorm = rondineroHistSearch.trim().toLowerCase();
+  const rondinesHistorialFiltrados = rondineroRondines.filter(r=>{
+    const guardia=r.guardiaNombre||r.guardiaEmail||"Guardia";
+    const ts=Number(r.inicioTs||r.createdTs||0);
+    const haystack=[guardia,r.rutaNombre,r.turno,r.status,r.fecha].map(x=>String(x||"").toLowerCase()).join(" ");
+    return (!rondineroHistGuardia||guardia===rondineroHistGuardia)
+      && (!searchNorm||haystack.includes(searchNorm))
+      && (!desdeTs||ts>=desdeTs)
+      && (!Number.isFinite(hastaTs)||ts<=hastaTs);
+  });
+  const porGuardia = Object.entries(rondinesHistorialFiltrados.reduce((acc, r) => {
     const key = r.guardiaNombre || r.guardiaEmail || "Guardia";
     if(!acc[key]) acc[key] = [];
     acc[key].push(r);
     return acc;
   }, {})).map(([guardia, list]) => {
     const sorted = list.slice().sort((a,b)=>(b.inicioTs || b.createdTs || 0)-(a.inicioTs || a.createdTs || 0));
-    return { guardia, latestId: sorted[0]?.id || "", ...calcRondineroStats(list, rondineroEventos.filter(e => list.some(r => r.id === e.rondinId))) };
-  });
+    const ids = new Set(list.map(r=>String(r.id)));
+    const eventosGuardia = rondineroEventos.filter(e => ids.has(String(e.rondinId)));
+    return { guardia, list:sorted, promedio:rondineroPromedioCumplimiento(list), ...calcRondineroStats(list, eventosGuardia) };
+  }).sort((a,b)=>a.guardia.localeCompare(b.guardia,"es",{sensitivity:"base"}));
   const porTurno = Object.entries(rondineroRondines.reduce((acc, r) => {
     const key = r.turno || "Sin turno";
     if(!acc[key]) acc[key] = [];
@@ -10074,9 +10134,8 @@ async function renderRondinero(){
       { key:"rutas", label:"Rutas" }
     ] : []),
     ...(puedeReportes ? [
-      { key:"cumplimiento", label:"Cumplimiento guardia" },
+      { key:"historial", label:"Historial por guardia" },
       { key:"turnos", label:"Cumplimiento turno" },
-      { key:"historial", label:"Historial" }
     ] : [])
   ];
   if(!tabs.some(t => t.key === rondineroAdminTab)){
@@ -10136,26 +10195,6 @@ async function renderRondinero(){
       ${rondineroRutas.length ? rondineroRutas.map(renderRondineroRutaCard).join("") : `<div style="color:var(--muted);font-size:12px;">Sin rutas registradas.</div>`}
     </div>
   `;
-  const cumplimientoTab = `
-    <div class="divider"></div>
-    <h3 style="margin:0 0 10px;">Cumplimiento por guardia</h3>
-    <div class="dashboard-pending-list">
-      ${porGuardia.slice(0, 20).map(g => `
-        <div class="tarjeta history-card">
-          <strong>${esc(g.guardia)}</strong>
-          <div class="meta">
-            <span class="pill">${esc(g.total)} rondines</span>
-            <span class="pill" title="Puntos visitados entre puntos esperados"><span class="dot ok"></span>${esc(g.cumplimiento)}% de puntos</span>
-            <span class="pill">${esc(g.completados)} completos</span>
-            <span class="pill">${esc(g.incompletos)} incompletos</span>
-          </div>
-          <div class="row" style="margin-top:10px;">
-            <button class="secondary" data-action="rondineroDetalle" data-id="${esc(g.latestId)}" data-no-sb="true" ${g.latestId ? "" : "disabled"}>Detalle</button>
-          </div>
-        </div>
-      `).join("") || `<div style="color:var(--muted);font-size:12px;">Sin datos por guardia.</div>`}
-    </div>
-  `;
   const turnosTab = `
     <div class="divider"></div>
     <h3 style="margin:0 0 10px;">Cumplimiento por turno</h3>
@@ -10177,28 +10216,56 @@ async function renderRondinero(){
   `;
   const historialTab = `
     <div class="divider"></div>
-    <h3 style="margin:0 0 10px;">Historial reciente</h3>
-    <div class="dashboard-pending-list">
-      ${rondineroRondines.slice().sort((a,b)=>(b.createdTs||0)-(a.createdTs||0)).slice(0,20).map(r => `
-        <div class="tarjeta history-card">
-          <strong>${esc(r.guardiaNombre || "Guardia")}</strong>
-          <small>${esc(r.rutaNombre || "Ruta")} • ${esc(r.turno || "Sin turno")} • ${esc(new Date(r.inicioTs || r.createdTs || Date.now()).toLocaleString())}</small>
-          <div class="meta">
-            <span class="pill"><span class="dot ${r.status === "completado" ? "ok" : r.status === "incompleto" ? "bad" : "info"}"></span>${esc(r.status || "")}</span>
-            <span class="pill">${esc((r.puntoIdsVisitados || []).length)}/${esc((r.puntoIdsEsperados || []).length)} puntos</span>
-            <span class="pill">${esc(r.novedadesCount || 0)} novedades</span>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;">
+      <div><h3 style="margin:0 0 4px;">Historial y cumplimiento por guardia</h3><div style="color:var(--muted);font-size:12px;">Pulsa + para desplegar los recorridos de cada guardia.</div></div>
+      <span class="pill">${esc(rondinesHistorialFiltrados.length)} de ${esc(rondineroRondines.length)} registros</span>
+    </div>
+    <div class="card" style="margin:0 0 14px;padding:14px;box-shadow:none;">
+      <div style="font-weight:900;margin-bottom:10px;">Buscar y filtrar recorridos</div>
+      <div class="grid" style="grid-template-columns:minmax(190px,1.4fr) minmax(180px,1fr) minmax(145px,.7fr) minmax(145px,.7fr);gap:10px;align-items:end;">
+        <div><label>Buscar</label><input id="rondHistSearch" value="${esc(rondineroHistSearch)}" placeholder="Guardia, ruta, turno o estado"></div>
+        <div><label>Guardia</label><select id="rondHistGuardia"><option value="">Todos los guardias</option>${guardiasDisponibles.map(g=>`<option value="${esc(g)}" ${rondineroHistGuardia===g?"selected":""}>${esc(g)}</option>`).join("")}</select></div>
+        <div><label>Desde</label><input id="rondHistDesde" type="date" value="${esc(rondineroHistDesde)}"></div>
+        <div><label>Hasta</label><input id="rondHistHasta" type="date" value="${esc(rondineroHistHasta)}"></div>
+      </div>
+      <div class="row" style="margin-top:10px;justify-content:flex-end;"><button class="secondary" data-action="rondineroLimpiarFiltros">Limpiar</button><button data-action="rondineroAplicarFiltros">Aplicar filtros</button></div>
+    </div>
+    <div class="rondinero-history-tree">
+      ${porGuardia.map(g => `
+        <details class="rondinero-guard-node">
+          <summary class="rondinero-guard-summary">
+            <span class="rondinero-guard-name"><span class="rondinero-tree-toggle">+</span><span>${esc(g.guardia)}</span></span>
+            <span class="rondinero-guard-metric"><b>${esc(g.total)}</b><small>Rondines</small></span>
+            <span class="rondinero-guard-metric"><b>${esc(g.promedio)}%</b><small>Promedio</small></span>
+            <span class="rondinero-guard-metric"><b>${esc(g.completados)}</b><small>Completos</small></span>
+            <span class="rondinero-guard-metric"><b>${esc(g.incompletos)}</b><small>Incompletos</small></span>
+          </summary>
+          <div class="rondinero-child-wrap">
+            <div class="rondinero-child-head"><span>Fecha y ruta</span><span>Estado</span><span>Cumplimiento</span><span>Puntos</span><span>Novedades</span><span>Acciones</span></div>
+            ${g.list.map(r => {
+              const visitados=(r.puntoIdsVisitados||[]).length, esperados=(r.puntoIdsEsperados||[]).length;
+              const novedadesRondin=rondineroEventos.filter(e=>String(e.rondinId)===String(r.id)&&e.tipo==="novedad").length;
+              const tono=r.status==="completado"?"ok":r.status==="incompleto"?"bad":"info";
+              return `<div class="rondinero-child-row">
+                <span class="rondinero-child-main"><b>${esc(new Date(r.inicioTs||r.createdTs||Date.now()).toLocaleString())}</b><small>${esc(r.rutaNombre||"Ruta")} • ${esc(r.turno||"Sin turno")}</small></span>
+                <span><span class="pill"><span class="dot ${tono}"></span>${esc(rondineroEstadoLabel(r.status))}</span></span>
+                <span><b>${esc(rondineroCumplimientoIndividual(r))}%</b></span>
+                <span>${esc(visitados)}/${esc(esperados)}</span>
+                <span>${esc(novedadesRondin)}</span>
+                <span class="rondinero-child-actions">
+                  <button class="secondary" data-action="rondineroDetalle" data-id="${esc(r.id)}" data-no-sb="true">Ver</button>
+                  ${currentUser?.role===ROLES.ADMIN?`<button class="secondary" data-action="rondineroEditarRegistro" data-id="${esc(r.id)}" data-no-sb="true">Editar</button><button class="danger" data-action="rondineroEliminarRegistro" data-id="${esc(r.id)}" data-no-sb="true">Eliminar</button>`:""}
+                </span>
+              </div>`;
+            }).join("")}
           </div>
-          <div class="row" style="margin-top:10px;">
-            <button class="secondary" data-action="rondineroDetalle" data-id="${esc(r.id)}" data-no-sb="true">Detalle</button>
-          </div>
-        </div>
+        </details>
       `).join("") || `<div style="color:var(--muted);font-size:12px;">Sin rondines registrados.</div>`}
     </div>
   `;
   const activeTabContent = {
     puntos: puntosTab,
     rutas: rutasTab,
-    cumplimiento: cumplimientoTab,
     turnos: turnosTab,
     historial: historialTab
   }[rondineroAdminTab] || "";
@@ -10296,6 +10363,75 @@ async function guardarRondineroPunto(){
   }
   toast("Rondinero",gpsCompleto ? "Punto guardado con GPS." : "Punto guardado. GPS pendiente de configurar.",gpsCompleto ? "ok" : "warn",3200);
   await renderRondinero();
+}
+
+function solicitarEdicionRondineroRegistro(r){
+  return new Promise(resolve=>{
+    const back=document.createElement("div");
+    back.className="modal-backdrop";
+    back.innerHTML=`<div class="modal" style="max-width:620px;">
+      <h3 style="margin-top:0;">Editar datos administrativos</h3>
+      <p class="muted">Las evidencias, puntos, GPS, fotografías, horas y porcentaje de cumplimiento permanecerán sin cambios.</p>
+      <label>Nombre del guardia</label><input id="rondEditGuardia" maxlength="120" value="${esc(r.guardiaNombre||"")}">
+      <label>Nombre de la ruta</label><input id="rondEditRuta" maxlength="120" value="${esc(r.rutaNombre||"")}">
+      <label>Turno</label><select id="rondEditTurno">${["Día","Tarde","Noche","Mixto","Sin turno"].map(x=>`<option ${String(r.turno||"Sin turno")===x?"selected":""}>${x}</option>`).join("")}</select>
+      <label>Nota administrativa</label><textarea id="rondEditNota" rows="3" maxlength="300" placeholder="Motivo de la corrección">${esc(r.observacionAdministrativa||"")}</textarea>
+      <div class="row" style="justify-content:flex-end;margin-top:14px;"><button class="secondary" id="rondEditCancel">Cancelar</button><button id="rondEditSave">Guardar cambios</button></div>
+    </div>`;
+    document.body.appendChild(back);
+    const close=value=>{back.remove();resolve(value);};
+    back.querySelector("#rondEditCancel").onclick=()=>close(null);
+    back.querySelector("#rondEditSave").onclick=()=>{
+      const guardiaNombre=back.querySelector("#rondEditGuardia").value.trim();
+      const rutaNombre=back.querySelector("#rondEditRuta").value.trim();
+      const turno=back.querySelector("#rondEditTurno").value;
+      const observacionAdministrativa=back.querySelector("#rondEditNota").value.trim();
+      if(!guardiaNombre||!rutaNombre){toast("Datos requeridos","Escribe el nombre del guardia y de la ruta.","warn",3200);return;}
+      if(observacionAdministrativa.length<5){toast("Motivo requerido","Describe brevemente el motivo de la corrección.","warn",3200);return;}
+      close({guardiaNombre,rutaNombre,turno,observacionAdministrativa});
+    };
+    back.addEventListener("click",e=>{if(e.target===back)close(null);});
+  });
+}
+
+async function editarRondineroRegistro(id){
+  if(currentUser?.role!==ROLES.ADMIN)return toast("Acceso denegado","Sólo Administrador puede editar recorridos.","bad",3400);
+  const r=rondineroRondines.find(x=>String(x.id)===String(id));
+  if(!r)return toast("No encontrado","El rondín ya no existe.","warn",3000);
+  if(r.status==="en_curso")return toast("Rondín activo","Cierra el recorrido antes de editar sus datos administrativos.","warn",4200);
+  if(!navigator.onLine)return toast("Sin conexión","La edición debe confirmarse directamente en Firebase.","warn",4200);
+  const cambios=await solicitarEdicionRondineroRegistro(r);if(!cambios)return;
+  if(!(await requireAdminPin("editar los datos administrativos del rondín")))return;
+  const before={guardiaNombre:r.guardiaNombre||"",rutaNombre:r.rutaNombre||"",turno:r.turno||"",observacionAdministrativa:r.observacionAdministrativa||""};
+  const updated={...r,...cambios,updatedTs:Date.now(),historialAdministrativo:[...(Array.isArray(r.historialAdministrativo)?r.historialAdministrativo:[]),{ts:Date.now(),accion:"editar",porUid:currentUser?.uid||"",porEmail:currentUser?.email||"",antes:before,despues:cambios}]};
+  try{
+    await cloudUpsertRondineroRondin(updated);
+    Object.assign(r,updated);saveRondineroLocal();
+    toast("Rondín actualizado","Los datos administrativos fueron corregidos y auditados.","ok",3800);
+    await renderRondinero();
+  }catch(error){console.error(error);toast("No se pudo editar",error?.message||"Firebase rechazó la actualización.","bad",4600);}
+}
+
+async function eliminarRondineroRegistro(id){
+  if(currentUser?.role!==ROLES.ADMIN)return toast("Acceso denegado","Sólo Administrador puede eliminar recorridos.","bad",3400);
+  const r=rondineroRondines.find(x=>String(x.id)===String(id));
+  if(!r)return toast("No encontrado","El rondín ya no existe.","warn",3000);
+  if(r.status==="en_curso")return toast("Rondín activo","Cierra el recorrido antes de eliminarlo.","warn",4200);
+  if(!navigator.onLine)return toast("Sin conexión","La eliminación debe confirmarse directamente en Firebase.","warn",4200);
+  const eventos=rondineroEventos.filter(e=>String(e.rondinId)===String(id));
+  if(!confirm(`¿Eliminar definitivamente el rondín de ${r.guardiaNombre||"Guardia"} y sus ${eventos.length} eventos?\n\nEsta acción no se puede deshacer.`))return;
+  if(!(await requireAdminPin("eliminar el rondín y todas sus evidencias")))return;
+  try{
+    const batch=writeBatch(db);
+    batch.delete(doc(db,COL_RONDINERO_RONDINES,String(id)));
+    eventos.forEach(e=>batch.delete(doc(db,COL_RONDINERO_EVENTOS,String(e.id))));
+    await batch.commit();
+    rondineroRondines=rondineroRondines.filter(x=>String(x.id)!==String(id));
+    rondineroEventos=rondineroEventos.filter(e=>String(e.rondinId)!==String(id));
+    saveRondineroLocal();
+    toast("Rondín eliminado",`Se eliminaron el recorrido y ${eventos.length} eventos relacionados.`,"ok",4200);
+    await renderRondinero();
+  }catch(error){console.error(error);toast("No se pudo eliminar",error?.message||"Firebase rechazó la eliminación.","bad",4600);}
 }
 
 function getRondineroNovedadPuntoId(novedad, scans=[]){
@@ -16658,6 +16794,20 @@ function renderProveedores(lista){
           rondineroAdminTab = el.dataset.tab || "puntos";
           await renderRondinero();
           break;
+        case "rondineroAplicarFiltros": {
+          const desde=document.getElementById("rondHistDesde")?.value||"";
+          const hasta=document.getElementById("rondHistHasta")?.value||"";
+          if(desde&&hasta&&desde>hasta){toast("Rango inválido","La fecha Desde no puede ser posterior a Hasta.","warn",3400);break;}
+          rondineroHistSearch=document.getElementById("rondHistSearch")?.value.trim()||"";
+          rondineroHistGuardia=document.getElementById("rondHistGuardia")?.value||"";
+          rondineroHistDesde=desde;rondineroHistHasta=hasta;
+          await renderRondinero();
+          break;
+        }
+        case "rondineroLimpiarFiltros":
+          rondineroHistSearch="";rondineroHistGuardia="";rondineroHistDesde="";rondineroHistHasta="";
+          await renderRondinero();
+          break;
         case "rondineroTogglePunto": await toggleRondineroPunto(id); break;
         case "rondineroGuardarRuta": await guardarRondineroRuta(); break;
         case "rondineroEditarRuta": await editarRondineroRuta(id); break;
@@ -16668,6 +16818,8 @@ function renderProveedores(lista){
         case "rondineroGuardarEditorRuta": await guardarEditorRondineroRuta(); break;
         case "rondineroToggleRuta": await toggleRondineroRuta(id); break;
         case "rondineroDetalle": await renderRondineroDetalle(id); break;
+        case "rondineroEditarRegistro": await editarRondineroRegistro(id); break;
+        case "rondineroEliminarRegistro": await eliminarRondineroRegistro(id); break;
         case "rondineroPdf": await generarPdfRondinero(id); break;
         case "rondineroQR": renderRondineroQR(id); break;
         case "rondineroScanGuardia": renderRondineroGuardiaScanner(); break;
