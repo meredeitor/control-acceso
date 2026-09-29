@@ -447,6 +447,25 @@ service cloud.firestore {
           || (
             isRecepcionista()
             && resource.data.status == "pendiente_autorizacion"
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              "status",
+              "qrActivo",
+              "autorizadoTs",
+              "autorizadoPor",
+              "autorizadoPorUid",
+              "autorizadoPorNombre",
+              "autorizadoPorRol",
+              "autorizacionEmergencia",
+              "autorizacionEmergenciaMotivo",
+              "autorizacionEmergenciaTs",
+              "autorizacionEmergenciaPorUid",
+              "autorizacionEmergenciaPorEmail",
+              "autorizacionEmergenciaPorNombre",
+              "updatedTs",
+              "updatedAt",
+              "updatedByUid",
+              "updatedByEmail"
+            ])
             && request.resource.data.status == "generado"
             && request.resource.data.qrActivo == true
             && request.resource.data.autorizacionEmergencia == true
@@ -454,8 +473,7 @@ service cloud.firestore {
             && request.resource.data.autorizacionEmergenciaMotivo.size() >= 10
             && request.resource.data.autorizacionEmergenciaPorUid == myUid()
             && request.resource.data.autorizadoPorUid == myUid()
-            && request.resource.data.createdByUid == resource.data.createdByUid
-            && request.resource.data.autorizadorUid == resource.data.autorizadorUid
+            && request.resource.data.updatedByUid == myUid()
           )
           || (
             isServicioMedico()
