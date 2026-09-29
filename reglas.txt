@@ -276,9 +276,25 @@ service cloud.firestore {
         || (
           isRecepcionista()
           && resource.data.status == "pendiente_autorizacion"
-          && request.resource.data.tipoVisita == "visitante"
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "status",
+            "qrActivo",
+            "autorizacionEstado",
+            "autorizacionTs",
+            "autorizacionPorUid",
+            "autorizacionPorEmail",
+            "autorizacionPorNombre",
+            "autorizacionPorRol",
+            "historialCambios",
+            "updatedTs",
+            "updatedAt",
+            "updatedByUid",
+            "updatedByEmail"
+          ])
           && request.resource.data.status in ["programado", "cancelado"]
-          && request.resource.data.createdByUid == resource.data.createdByUid
+          && request.resource.data.qrActivo == (request.resource.data.status == "programado")
+          && request.resource.data.autorizacionPorUid == myUid()
+          && request.resource.data.updatedByUid == myUid()
         )
 
         || (
@@ -330,6 +346,7 @@ service cloud.firestore {
           || isCalidad()
           || isAnfitrion()
           || isJefe()
+          || isRecepcionista()
         );
 
       allow delete: if isAdmin() || isCoordinador();
