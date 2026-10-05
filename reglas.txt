@@ -71,8 +71,8 @@ service cloud.firestore {
 
     function canAuthorizeValeActivo() {
       return isAdmin()
-        || hasConfiguredRolePermission("autorizar_vale_activo")
-        || (!hasValeRoleOverride() && (isJefe() || isJefeTi() || isContraloria()));
+        || isContraloria()
+        || userDoc(myUid()).data.puedeAutorizarValeActivo == true;
     }
 
     function canAuthorizeValePersonal() {
@@ -392,11 +392,38 @@ service cloud.firestore {
       allow update: if isAuth()
         && (
           isAdmin()
-          || (!isJefeCompras() && canAuthorizeValeActivo())
-          || isGuardia()
+          || isContraloria()
+          || (
+            canAuthorizeValeActivo()
+            && (
+              resource.data.autorizadorUid == myUid()
+              || resource.data.autorizadorEmail == myEmail()
+            )
+          )
+          || (
+            isGuardia()
+            && (
+              (
+                resource.data.status == "generado"
+                && request.resource.data.status == "fuera"
+                && request.resource.data.salidaPorUid is string
+                && request.resource.data.salidaPorUid != ""
+              )
+              || (
+                resource.data.status == "fuera"
+                && request.resource.data.status == "regreso_cancelado"
+                && request.resource.data.regresoPorUid is string
+                && request.resource.data.regresoPorUid != ""
+              )
+            )
+          )
           || (
             canManageVales()
             && resource.data.createdByUid == myUid()
+            && !(
+              resource.data.status == "pendiente_autorizacion"
+              && request.resource.data.status == "generado"
+            )
           )
         );
 
