@@ -593,7 +593,7 @@ service cloud.firestore {
       allow create: if isAuth()
         && (isAdmin() || isCoordinador() || isGuardia())
         && request.resource.data.operadorUid == myUid()
-        && request.resource.data.tipo in ["scan", "novedad"];
+        && request.resource.data.tipo in ["scan", "novedad", "omision"];
 
       allow update: if isAuth()
         && (

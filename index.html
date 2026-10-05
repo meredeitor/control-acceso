@@ -3141,13 +3141,21 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M16 6h4"/><path d="M18 4v4"/></svg></span>
         <span class="sb-txt">Vales personal</span>
       </div>
+      <div class="sb-btn" data-sb="proximos_vales_personal">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 5h18v16H3z"/><path d="M7 3v4"/><path d="M17 3v4"/><path d="M3 9h18"/><path d="M12 13v4"/><path d="M10 15h4"/></svg></span>
+        <span class="sb-txt">Próximos vales</span>
+      </div>
+      <div class="sb-btn" data-sb="historial_vales_personal">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8v5l3 2"/><path d="M3.5 9A9 9 0 1 1 3 15"/><path d="M3 4v5h5"/></svg></span>
+        <span class="sb-txt">Historial personal</span>
+      </div>
       <div class="sb-btn" data-sb="vales_activos">
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v18H6z"/><path d="M14 3v5h5"/><path d="M8 13h8"/><path d="M8 17h6"/></svg></span>
         <span class="sb-txt">Vales activos</span>
       </div>
-      <div class="sb-btn" data-sb="historial_vales_personal">
+      <div class="sb-btn" data-sb="historial_vales_activos">
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8v5l3 2"/><path d="M3.5 9A9 9 0 1 1 3 15"/><path d="M3 4v5h5"/></svg></span>
-        <span class="sb-txt">Historial</span>
+        <span class="sb-txt">Historial activos</span>
       </div>
     </div>
 
@@ -3299,7 +3307,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v190</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v191</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3324,7 +3332,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v190";
+  const APP_VERSION = "v191";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3387,7 +3395,7 @@ document.getElementById("appVersion").textContent = APP_VERSION;
     onAuthStateChanged,
     signOut,
     deleteUser as deleteAuthUser
-  } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js"; // Email/Password [1](https://modularfirebase.web.app/get-started/quick-start)[2](https://dev.to/patricklusaya/how-to-migrate-to-modular-firebase-sdk-a-quick-guide-10ac)
+  } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
   import {
   getFirestore,
@@ -3498,7 +3506,7 @@ document.getElementById("appVersion").textContent = APP_VERSION;
     "reactivar_qr","eliminar","ver_qr","buscar_proveedor",
     "admin_roles","admin_proveedores","ver_citas_compras",
     "editar_cita","cancelar_cita",
-    "ver_vales_activos","crear_vale_activo","autorizar_vale_activo",
+    "ver_vales_activos","crear_vale_activo","autorizar_vale_activo","ver_historial_vales_activos",
     "registrar_salida_activo","registrar_regreso_activo",
     "ver_vales_personal","crear_vale_personal","autorizar_vale_personal","ver_permisos_imss","crear_permiso_imss","ver_historial_vales_personal",
     "registrar_salida_personal","registrar_regreso_personal",
@@ -3529,6 +3537,7 @@ const PERMISOS = {
     "registrar_salida",
     "ver_qr",
     "ver_vales_activos",
+    "ver_historial_vales_activos",
     "registrar_salida_activo",
     "registrar_regreso_activo",
     "ver_vales_personal",
@@ -3671,7 +3680,7 @@ let rolePermOverrides = {};
 let rolePermsLoaded = false;
 let _selectedRolePermRole = ROLES.ADMIN;
 const ROLE_PERMS_DOC_ID = "role_permissions";
-const ROLE_PERMS_SCHEMA_VERSION = 6;
+const ROLE_PERMS_SCHEMA_VERSION = 7;
 
 const PERM_LABELS = {
   ver_dashboard_proveedores: "Ver dashboard de proveedores",
@@ -3709,6 +3718,7 @@ const PERM_LABELS = {
   ver_permisos_imss: "Ver permisos IMSS",
   crear_permiso_imss: "Crear permisos IMSS",
   ver_historial_vales_personal: "Ver historial de vales de personal",
+  ver_historial_vales_activos: "Ver historial de vales de activos",
   registrar_salida_personal: "Registrar salida personal",
   registrar_regreso_personal: "Registrar regreso personal",
   ver_bitacora_guardia: "Ver bit\u00e1cora guardia",
@@ -3729,8 +3739,8 @@ const PERM_GROUPS = [
   { title:"Citas y acceso", perms:["crear_cita","crear_cita_visitante","editar_cita","cancelar_cita","escanear_qr","registrar_entrada","registrar_salida","reactivar_qr"] },
   { title:"Calidad y documentos", perms:["ver_documentos","dictaminar","despachar"] },
   { title:"Limpieza", perms:["limpiar_finalizados","eliminar"] },
-  { title:"Vales de activos", perms:["ver_vales_activos","crear_vale_activo","autorizar_vale_activo","registrar_salida_activo","registrar_regreso_activo"] },
   { title:"Vales de personal", perms:["ver_vales_personal","crear_vale_personal","autorizar_vale_personal","autorizar_vale_personal_emergencia","registrar_salida_personal","registrar_regreso_personal","ver_permisos_imss","crear_permiso_imss","ver_historial_vales_personal"] },
+  { title:"Vales de activos", perms:["ver_vales_activos","crear_vale_activo","autorizar_vale_activo","registrar_salida_activo","registrar_regreso_activo","ver_historial_vales_activos"] },
   { title:"Guardia y Rondinero", perms:["ver_bitacora_guardia","crear_bitacora_guardia","rondinero_ver","rondinero_ejecutar","rondinero_configurar","rondinero_reportes"] },
   { title:"Administraci\u00f3n", perms:["admin_roles","admin_proveedores","ver_sesiones_activas"] }
 ];
@@ -3917,6 +3927,9 @@ async function loadRolePermsConfig(force=false){
         if(isLegacyConfig && [ROLES.ADMIN, ROLES.GUARDIA].includes(role) && !migrated.includes("ver_historial_vales_personal")){
           migrated.push("ver_historial_vales_personal");
         }
+        if(isLegacyConfig && [ROLES.ADMIN, ROLES.GUARDIA].includes(role) && !migrated.includes("ver_historial_vales_activos")){
+          migrated.push("ver_historial_vales_activos");
+        }
         if(isLegacyConfig && role === ROLES.ADMIN && !migrated.includes("ver_reporte_nominas")){
           migrated.push("ver_reporte_nominas");
         }
@@ -3957,6 +3970,7 @@ async function saveRolePermsConfig(role, perms){
     let valesActivos = loadValesActivosLocal();
     let valesPersonal = loadValesPersonalLocal();
     let historialValesPersonalCache = [];
+    let historialValesActivosCache = [];
     let reporteNominasCache = [];
     let registroManualPersonalHasta = Number(sessionStorage.getItem("registro_manual_personal_hasta") || 0);
     let registroManualPersonalMotivo = sessionStorage.getItem("registro_manual_personal_motivo") || "";
@@ -4500,10 +4514,14 @@ function rememberModuleReturn(view = currentView){
     moduleReturnView = "dashboard_proveedores";
   }else if(view === "vales_activos" || view === "vale_qr"){
     moduleReturnView = "vales_activos";
+  }else if(view === "proximos_vales_personal"){
+    moduleReturnView = "proximos_vales_personal";
   }else if(view === "vales_personal" || view === "vale_personal_qr" || view === "vale_personal_operacion"){
     moduleReturnView = "vales_personal";
   }else if(view === "historial_vales_personal"){
     moduleReturnView = "historial_vales_personal";
+  }else if(view === "historial_vales_activos"){
+    moduleReturnView = "historial_vales_activos";
   }else if(view === "reporte_nominas"){
     moduleReturnView = "reporte_nominas";
   }else if(view === "bitacora_guardia"){
@@ -4527,7 +4545,7 @@ function renderModuleHome(){
   if(qSearch){qSearch.value="";qSearch.style.display="none";}
 
   const firstName = esc(String(currentUser?.nombre || currentUser?.name || "").trim().split(/\s+/)[0] || "");
-  const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"👤",vales_activos:"📦",historial_vales_personal:"🕘",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_encuesta_visitantes:"😊",reporte_nominas:"🧾",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_cuenta:"🔒",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",eliminarfinalizados:"🗑️",depurar_30d:"📆",depurar_base:"⚠️",help_guide:"?",help_about:"ⓘ"};
+  const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"📊",nuevo_vale_personal:"➕",proximos_vales_personal:"📅",vales_activos:"📊",nuevo_vale_activo:"➕",historial_vales_personal:"🕘",historial_vales_activos:"🧭",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_encuesta_visitantes:"😊",reporte_nominas:"🧾",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_cuenta:"🔒",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",eliminarfinalizados:"🗑️",depurar_30d:"📆",depurar_base:"⚠️",help_guide:"?",help_about:"ⓘ"};
   const link = (key,label,show=true,description="") => show ? `<button class="access-menu-link" data-sb="${key}"><span class="access-kiosk-icon" aria-hidden="true">${menuIcons[key] || "•"}</span><span class="access-kiosk-label">${label}</span>${description ? `<span class="access-kiosk-description">${description}</span>` : ""}</button>` : "";
   const group = (title,description,icon,iconClass,items) => {
     const links = items.filter(Boolean).join("");
@@ -4538,8 +4556,15 @@ function renderModuleHome(){
       link("dashboard_proveedores","Dashboard",hasPerm("ver_dashboard_proveedores")),link("nuevo","Nueva cita",canCreateProveedorCita() && !isVisitanteOnlyRole()),link("citas_proveedores","Consultar citas",hasPerm("ver_citas_compras") && !isVisitanteOnlyRole())]),
     group("Visitantes","Registro y seguimiento","👥","visitor",[
       link("dashboard_visitantes","Dashboard",hasPerm("ver_dashboard_visitantes")),link("nuevo_visitante","Nueva cita",canCreateVisitanteCita()),link("citas_visitantes","Consultar citas",hasPerm("ver_citas_compras"))]),
-    group("Vales","Salidas de personal y activos","🎟","vales",[
-      link("vales_personal","Vales de personal",hasPerm("ver_vales_personal")),link("vales_activos","Vales de activos",hasPerm("ver_vales_activos")),link("historial_vales_personal","Historial",hasPerm("ver_historial_vales_personal") && [ROLES.ADMIN,ROLES.GUARDIA].includes(currentUser?.role),"Recorrido completo de vales de personal")]),
+    group("Vales de Personal","Permisos de salida y entrada","👤","vales",[
+      link("vales_personal","Dashboard",hasPerm("ver_vales_personal"),"Operación del día"),
+      link("nuevo_vale_personal",hasPerm("crear_permiso_imss") && !hasPerm("crear_vale_personal") ? "Nuevo permiso IMSS" : "Nuevo vale",hasPerm("crear_vale_personal") || hasPerm("crear_permiso_imss"),"Generar un nuevo permiso de personal"),
+      link("proximos_vales_personal","Próximos vales",hasPerm("ver_vales_personal"),"Permisos programados para fechas posteriores"),
+      link("historial_vales_personal","Historial",hasPerm("ver_historial_vales_personal") && [ROLES.ADMIN,ROLES.GUARDIA].includes(currentUser?.role),"Recorrido completo de vales de personal")]),
+    group("Vales de Activo","Control de salida y regreso de activos","📦","provider",[
+      link("vales_activos","Dashboard",hasPerm("ver_vales_activos"),"Operación de activos"),
+      link("nuevo_vale_activo","Nuevo vale",hasPerm("crear_vale_activo"),"Generar un nuevo vale de activo"),
+      link("historial_vales_activos","Historial",hasPerm("ver_historial_vales_activos") && [ROLES.ADMIN,ROLES.GUARDIA].includes(currentUser?.role),"Recorrido de Vales de Activo")]),
     group("Guardia y Rondinero","Operación de seguridad","🛡","rounds",[
       link("scan","Escáner de accesos",hasPerm("escanear_qr"),"Proveedores, visitantes y vales"),link("bitacora_guardia","Bitácora",hasPerm("ver_bitacora_guardia")),link("rondinero","Rondinero",hasPerm("rondinero_ver"))]),
     group("Reportes","Consultas y exportaciones","📊","provider",[
@@ -5481,6 +5506,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v191</b><span>Vales de Personal y Vales de Activo se presentan como apartados independientes, con accesos propios a Dashboard, Nuevo vale e Historial. Se incorporan Próximos vales con autorización anticipada y QR habilitado únicamente en la fecha programada, historial completo de activos y Rondinero con orden obligatorio y omisiones justificadas.</span></div>
           <div class="help-release"><b>v190</b><span>Los permisos de Roles separan el acceso a Dashboard de proveedores y Dashboard de visitantes, permitiendo mostrar cualquiera de ellos de forma independiente sin alterar los accesos existentes.</span></div>
           <div class="help-release"><b>v189</b><span>Nuevo módulo administrativo de Mantenimiento de datos con limpieza de visitas finalizadas del día, retención de 30 días y depuración histórica hasta hoy, protegido por permisos, confirmación y PIN.</span></div>
           <div class="help-release"><b>v188</b><span>Rondinero unifica Historial y Cumplimiento por guardia en una vista jerárquica con métricas, recorridos desplegables, búsqueda, filtros por guardia y fecha, y acciones administrativas auditadas para ver, editar o eliminar.</span></div>
@@ -5552,7 +5578,7 @@ function helpGuideHtml(){
       <details><summary>Proveedores</summary><div class="help-guide-content"><ol><li>Crea la cita con proveedor, empresa, área y documentación.</li><li>Si un proveedor recién registrado no aparece en la búsqueda, pulsa <b>Cargar proveedores</b> para actualizar el catálogo desde Firebase sin salir del formulario.</li><li>El guardia escanea el QR y registra la entrada.</li><li>Calidad puede dictaminar la entrega cuando corresponda.</li><li>La salida finaliza el registro y desactiva el QR.</li></ol></div></details>
       <details><summary>Vales de personal</summary><div class="help-guide-content">Genera el vale con número de nómina y datos del permiso. Puede utilizarse el QR del vale o escanear el QR del gafete. El flujo continúa con autorización, salida y regreso del colaborador. Para el rol <b>Jefe</b>, solo se muestran los vales donde su UID o correo coincide con el autorizador asignado. El rol <b>Servicio Médico</b> puede emitir exclusivamente Permisos IMSS con hora programada; el QR funciona desde 5 minutos antes y hasta 30 minutos después, y el regreso se registra el mismo día. Guardia y Administrador disponen de <b>Vales → Historial</b>, donde se presenta el recorrido completo, responsables, tiempo real y minutos excedentes.</div></details>
       <details><summary>Vales de activos</summary><div class="help-guide-content">Registra el activo, responsable, motivo y vigencia. El rol autorizado revisa el vale; Guardia registra la salida y posteriormente el regreso del activo.</div></details>
-      <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>En la pestaña <b>Rutas</b>, usa <b>Editar y ordenar</b>. El editor visual permite agregar o quitar puntos y cambiar la secuencia con los botones <b>Subir</b> y <b>Bajar</b>. La lista de arriba hacia abajo será el orden exacto del recorrido.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>Al reportar una novedad selecciona el punto relacionado; el último punto escaneado aparece preseleccionado. También puede tomar una fotografía opcional, comprimida como JPEG de máximo 640 px y 180 KB sin Firebase Storage.</li><li>En el detalle, cada novedad y su fotografía se muestran dentro de la misma tarjeta del punto para revisarlas de un vistazo.</li><li>El cumplimiento se calcula dividiendo los puntos visitados entre los puntos esperados. Un rondín incompleto conserva su avance real en lugar de mostrar automáticamente 0%.</li><li>Desde <b>Detalle del recorrido</b>, pulsa <b>Generar PDF</b> para descargar el reporte completo paginado con datos del rondín, todos los puntos, evidencia GPS, novedades y fotografías.</li><li><b>Historial por guardia</b> unifica historial y cumplimiento: busca por texto, filtra por guardia o fechas y despliega cada guardia para consultar sus recorridos. El administrador también puede editar datos administrativos o eliminar un registro finalizado con PIN y auditoría.</li><li>El historial registra hora, distancia al punto, precisión GPS y la fotografía de la novedad como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
+      <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>En la pestaña <b>Rutas</b>, usa <b>Editar y ordenar</b>. El editor visual permite agregar o quitar puntos y cambiar la secuencia con los botones <b>Subir</b> y <b>Bajar</b>. La lista de arriba hacia abajo será el orden exacto del recorrido.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Los puntos deben registrarse en el orden exacto definido en la ruta. Si un punto no puede visitarse, usa <b>Omitir con justificación</b>, captura el motivo y, opcionalmente, una fotografía. La omisión queda auditada y reduce el cumplimiento.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>Al reportar una novedad selecciona el punto relacionado; el último punto escaneado aparece preseleccionado. También puede tomar una fotografía opcional, comprimida como JPEG de máximo 640 px y 180 KB sin Firebase Storage.</li><li>En el detalle, cada novedad y su fotografía se muestran dentro de la misma tarjeta del punto para revisarlas de un vistazo.</li><li>El cumplimiento se calcula dividiendo los puntos visitados entre los puntos esperados. Un rondín incompleto conserva su avance real en lugar de mostrar automáticamente 0%.</li><li>Desde <b>Detalle del recorrido</b>, pulsa <b>Generar PDF</b> para descargar el reporte completo paginado con datos del rondín, todos los puntos, evidencia GPS, novedades y fotografías.</li><li><b>Historial por guardia</b> unifica historial y cumplimiento: busca por texto, filtra por guardia o fechas y despliega cada guardia para consultar sus recorridos. El administrador también puede editar datos administrativos o eliminar un registro finalizado con PIN y auditoría.</li><li>El historial registra hora, distancia al punto, precisión GPS y la fotografía de la novedad como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
       <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. <b>Encuesta recepción</b>, disponible para Administrador y Recepcionista, muestra las encuestas aplicadas cada segunda salida de visitantes, el índice de servicio, participación, distribución de calificaciones y detalle por periodo. El <b>Reporte para Nóminas</b>, visible únicamente para Administrador, concentra los permisos de personal finalizados, minutos autorizados, tiempo real y minutos excedentes por colaborador, con detalle y exportación a Excel. El reporte no calcula importes ni aplica descuentos automáticamente.</div></details>
       <details><summary>Usuarios, roles y permisos</summary><div class="help-guide-content"><p>El administrador aprueba usuarios, asigna roles y configura permisos. Los cambios en Roles afectan qué módulos y acciones puede utilizar cada perfil. En <b>Dashboard y consultas</b>, los permisos <b>Ver dashboard de proveedores</b> y <b>Ver dashboard de visitantes</b> se asignan por separado.</p><p>Cada usuario puede entrar a <b>Configuración → Mi cuenta</b> para cambiar su propia contraseña. Debe confirmar la contraseña actual y crear una nueva de al menos 10 caracteres con mayúscula, minúscula, número y símbolo.</p><p>Para dar de alta varias cuentas, entra a <b>Configuración → Usuarios</b> y pulsa <b>Agregar usuarios</b>. Pega una fila por persona con el formato <b>Nombre; Correo; Contraseña temporal; Rol; Área; Empresa; Teléfono</b>. También puedes copiar filas desde Excel; las columnas separadas por tabulaciones se reconocen automáticamente.</p><p>Si una cuenta ya existe en Authentication pero no tiene perfil en Firestore, vuelve a incluirla con su contraseña temporal: la aplicación reconstruirá el documento en <b>users</b> y lo verificará directamente en el servidor.</p></div></details>
       <details><summary>Mantenimiento de datos</summary><div class="help-guide-content"><p>Disponible únicamente para el Administrador. Permite eliminar visitas finalizadas del día, aplicar una retención de 30 días o depurar registros históricos hasta hoy. Las acciones sensibles requieren confirmación y PIN administrativo.</p></div></details>
@@ -5628,7 +5654,9 @@ const reporteNominasBtn = sidebarEl.querySelector('[data-sb="reporte_nominas"]')
 const scan  = sidebarEl.querySelector('[data-sb="scan"]');
 const vales = sidebarEl.querySelector('[data-sb="vales_activos"]');
 const valesPersonalBtn = sidebarEl.querySelector('[data-sb="vales_personal"]');
+const proximosValesPersonalBtn = sidebarEl.querySelector('[data-sb="proximos_vales_personal"]');
 const historialValesPersonalBtn = sidebarEl.querySelector('[data-sb="historial_vales_personal"]');
+const historialValesActivosBtn = sidebarEl.querySelector('[data-sb="historial_vales_activos"]');
 const bitacoraBtn = sidebarEl.querySelector('[data-sb="bitacora_guardia"]');
 const rondineroBtn = sidebarEl.querySelector('[data-sb="rondinero"]');
 const groupProveedores = sidebarEl.querySelector('[data-sb="grupo_proveedores"]');
@@ -5647,7 +5675,9 @@ if(reporteNominasBtn) reporteNominasBtn.style.display = currentUser?.role === RO
 if(scan)  scan.style.display  = hasPerm('escanear_qr') ? '' : 'none';
 if(vales) vales.style.display = hasPerm('ver_vales_activos') ? '' : 'none';
 if(valesPersonalBtn) valesPersonalBtn.style.display = hasPerm('ver_vales_personal') ? '' : 'none';
+if(proximosValesPersonalBtn) proximosValesPersonalBtn.style.display = hasPerm('ver_vales_personal') ? '' : 'none';
 if(historialValesPersonalBtn) historialValesPersonalBtn.style.display = hasPerm('ver_historial_vales_personal') && [ROLES.ADMIN,ROLES.GUARDIA].includes(currentUser?.role) ? '' : 'none';
+if(historialValesActivosBtn) historialValesActivosBtn.style.display = hasPerm('ver_historial_vales_activos') && [ROLES.ADMIN,ROLES.GUARDIA].includes(currentUser?.role) ? '' : 'none';
 if(bitacoraBtn) bitacoraBtn.style.display = hasPerm('ver_bitacora_guardia') ? '' : 'none';
 if(rondineroBtn) rondineroBtn.style.display = hasPerm('rondinero_ver') ? '' : 'none';
   // ===============================
@@ -5715,7 +5745,7 @@ const hasVisitantesItems =
   hasPerm('ver_dashboard_visitantes') ||
   canCreateVisitanteCita() ||
   hasPerm('ver_citas_compras');
-const hasValesItems = hasPerm('ver_vales_activos') || hasPerm('ver_vales_personal') || (hasPerm('ver_historial_vales_personal') && [ROLES.ADMIN,ROLES.GUARDIA].includes(currentUser?.role));
+const hasValesItems = hasPerm('ver_vales_activos') || hasPerm('ver_vales_personal') || ((hasPerm('ver_historial_vales_personal') || hasPerm('ver_historial_vales_activos')) && [ROLES.ADMIN,ROLES.GUARDIA].includes(currentUser?.role));
 const hasGuardiaItems = hasPerm('escanear_qr') || hasPerm('ver_bitacora_guardia') || hasPerm('rondinero_ver');
 const hasReportesItems = hasPerm('ver_historial') || hasPerm('ver_reportes') || hasPerm('ver_reporte_cambios') || (currentUser?.role === ROLES.ADMIN && hasPerm('ver_reporte_nominas')) || hasPerm('exportar_excel');
 
@@ -5832,16 +5862,40 @@ if(!sb) return;
   await renderValesActivos();
   return;
 }
+  if(key === 'nuevo_vale_activo'){
+  sbClose();
+  await renderValesActivos();
+  await openValeModal();
+  return;
+}
   if(key === 'vales_personal'){
   setActiveSb('vales_personal');
   sbClose();
   await renderValesPersonal();
   return;
 }
+  if(key === 'nuevo_vale_personal'){
+  sbClose();
+  await renderValesPersonal();
+  await openValePersonalModal();
+  return;
+}
+  if(key === 'proximos_vales_personal'){
+  setActiveSb('proximos_vales_personal');
+  sbClose();
+  await renderProximosValesPersonal();
+  return;
+}
   if(key === 'historial_vales_personal'){
   setActiveSb('historial_vales_personal');
   sbClose();
   await renderHistorialValesPersonal();
+  return;
+}
+  if(key === 'historial_vales_activos'){
+  setActiveSb('historial_vales_activos');
+  sbClose();
+  await renderHistorialValesActivos();
   return;
 }
   if(key === 'bitacora_guardia'){
@@ -6354,6 +6408,14 @@ function fmt(ts){
       return Array.from(map.values());
     }
 
+    async function cloudFetchHistorialValesActivos(){
+      const q = query(collection(db, COL_VALES_ACTIVOS), orderBy("createdTs", "desc"), limit(500));
+      const snap = await getDocs(q);
+      const arr = [];
+      snap.forEach(d => arr.push({ id:d.id, ...d.data() }));
+      return arr;
+    }
+
     async function syncValesActivos(force = false){
       if(!navigator.onLine || !currentUser || currentUser.role === ROLES.PENDIENTE) return;
       if(!shouldReadCloudStamp(cloudReadCache.valesActivos, CLOUD_READ_TTL.valesActivos, force)) return;
@@ -6473,6 +6535,25 @@ function fmt(ts){
       const snap = await getDocs(q);
       const arr = [];
       snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+      return arr;
+    }
+
+    async function cloudFetchProximosValesPersonal(){
+      const currentUid = String(currentUser?.uid || "");
+      const currentEmail = String(currentUser?.email || "").trim().toLowerCase();
+      if([ROLES.JEFE, ROLES.JEFE_COMPRAS].includes(currentUser?.role)){
+        const scopedQueries = [];
+        if(currentUid) scopedQueries.push(query(collection(db, COL_VALES_PERSONAL), where("autorizadorUid", "==", currentUid), limit(300)));
+        if(currentEmail) scopedQueries.push(query(collection(db, COL_VALES_PERSONAL), where("autorizadorEmail", "==", currentEmail), limit(300)));
+        const results = await Promise.all(scopedQueries.map(item => getDocs(item)));
+        const map = new Map();
+        results.forEach(snap => snap.forEach(d => map.set(d.id, { id:d.id, ...d.data() })));
+        return Array.from(map.values()).filter(v => String(v.fecha || "") > todayISO());
+      }
+      const q = query(collection(db, COL_VALES_PERSONAL), where("fecha", ">", todayISO()), orderBy("fecha", "asc"), limit(500));
+      const snap = await getDocs(q);
+      const arr = [];
+      snap.forEach(d => arr.push({ id:d.id, ...d.data() }));
       return arr;
     }
 
@@ -8628,7 +8709,6 @@ async function renderValesActivos(){
       <div class="dashboard-toolbar vale-dashboard-head">
         <span class="pill">Total: <b style="color:var(--text);margin-left:6px;">${list.length}</b></span>
         <button class="secondary" data-action="refreshVales" data-tipo="activos">Actualizar</button>
-        ${hasPerm("crear_vale_activo") ? `<button data-action="openValeModal">Nuevo vale</button>` : ""}
         ${hasPerm("escanear_qr") ? `<button class="secondary" data-action="scan" data-from="vales_activos">Escanear QR</button>` : ""}
       </div>
 
@@ -8848,9 +8928,17 @@ async function updateValeActivoStatus(id, status){
 
   v.status = status;
   v.updatedTs = Date.now();
-  if(status === ValeStatus.FUERA) v.salidaTs = Date.now();
+  if(status === ValeStatus.FUERA){
+    v.salidaTs = Date.now();
+    v.salidaPorUid = currentUser?.uid || "";
+    v.salidaPorEmail = currentUser?.email || "";
+    v.salidaPorNombre = currentUser?.nombre || "";
+  }
   if(status === ValeStatus.REGRESO_CANCELADO){
     v.regresoTs = Date.now();
+    v.regresoPorUid = currentUser?.uid || "";
+    v.regresoPorEmail = currentUser?.email || "";
+    v.regresoPorNombre = currentUser?.nombre || "";
     v.qrActivo = false;
     v.qrDesactivadoTs = Date.now();
     v.qrDesactivadoMotivo = "REGRESO_CANCELADO";
@@ -9318,7 +9406,6 @@ async function renderValesPersonal(){
         <span class="pill">Total: <b style="color:var(--text);margin-left:6px;">${list.length}</b></span>
         <button class="secondary" data-action="refreshVales" data-tipo="personal">Actualizar</button>
         ${(hasPerm("registrar_salida_personal") || hasPerm("registrar_regreso_personal")) ? `<button class="${registroManualPersonalActivo() ? "danger" : "secondary"}" data-action="toggleRegistroManualPersonal">${registroManualPersonalActivo() ? "Ocultar registro manual" : "Habilitar registro manual"}</button>` : ""}
-        ${(hasPerm("crear_vale_personal") || hasPerm("crear_permiso_imss")) ? `<button data-action="openValePersonalModal">${hasPerm("crear_permiso_imss") && !hasPerm("crear_vale_personal") ? "Nuevo permiso IMSS" : "Nuevo vale"}</button>` : ""}
         ${hasPerm("escanear_qr") ? `<button class="secondary" data-action="scan" data-from="vales_personal">Escanear QR</button>` : ""}
       </div>
 
@@ -9342,6 +9429,7 @@ function renderValePersonalCard(v){
   const movimientoDesdeQr = currentView === "vale_personal_operacion";
   const mostrarRegistroManual = movimientoDesdeQr || registroManualPersonalActivo();
   const requiereReautorizacion = isValePersonalReautorizacionPendiente(v);
+  const esFuturo = String(v.fecha || "") > todayISO();
   const tiempoTxt = usadoMin !== null ? formatMinutes(usadoMin) : "-";
   const autorizadoMin = parseTiempoAutorizadoMin(v.tiempoAutorizado);
   const limiteTxt = autorizadoMin === null ? esc(v.tiempoAutorizado || "-") : formatMinutes(autorizadoMin);
@@ -9353,6 +9441,7 @@ function renderValePersonalCard(v){
       <strong>${esc(v.nombreColaborador || "Colaborador")}</strong>
       <small>Nómina: ${esc(v.nomina || "-")} • ${esc(v.departamento || "Departamento")}</small>
       <div class="meta">
+        ${esFuturo ? `<span class="pill"><span class="dot info"></span>Programado: ${esc(valePassDate(v.fecha))}</span>` : ""}
         ${requiereReautorizacion ? `<span class="pill"><span class="dot bad"></span>Requiere autorización del jefe</span>` : ""}
         <span class="pill"><span class="dot ${valeStatusDot(v.status)}"></span>${esc(valeStatusLabel(v.status))}</span>
         <span class="pill"><span class="dot info"></span>${esc(v.tipoPermiso || "Permiso")}</span>
@@ -9366,7 +9455,7 @@ function renderValePersonalCard(v){
         ${esEntrada ? `<span class="pill"><span class="dot info"></span>Entrada posterior a 8:15</span>` : ""}
       </div>
       <div class="row vale-actions">
-        ${v.qrActivo ? `<button class="secondary" data-action="verValePersonalQR" data-id="${esc(v.id)}" data-no-sb="true">QR</button>` : `<span class="pill"><span class="dot bad"></span>QR desactivado</span>`}
+        ${v.qrActivo && !esFuturo ? `<button class="secondary" data-action="verValePersonalQR" data-id="${esc(v.id)}" data-no-sb="true">QR</button>` : esFuturo ? `<span class="pill"><span class="dot warn"></span>QR habilitado el día del vale</span>` : `<span class="pill"><span class="dot bad"></span>QR desactivado</span>`}
         ${(v.status === ValeStatus.PENDIENTE || requiereReautorizacion) && canCurrentUserAuthorizeValePersonal(v) ? `<button class="ok" data-action="autorizarValePersonal" data-id="${esc(v.id)}" data-no-sb="true">${requiereReautorizacion ? "Reautorizar" : "Autorizar"}</button>` : ""}
         ${v.status === ValeStatus.PENDIENTE && hasPerm("autorizar_vale_personal_emergencia") && !isValePersonalEntrada(v) && !isPermisoImss(v) ? `<button class="danger" data-action="autorizarValePersonalEmergencia" data-id="${esc(v.id)}" data-no-sb="true">Autorizar por urgencia</button>` : ""}
         ${mostrarRegistroManual && v.status === ValeStatus.GENERADO && v.autorizadoTs && hasPerm("registrar_salida_personal") ? (esEntrada
@@ -9377,6 +9466,40 @@ function renderValePersonalCard(v){
       </div>
     </div>
   `;
+}
+
+async function renderProximosValesPersonal(refresh=true){
+  if(!requirePerm("ver_vales_personal","Tu rol no puede ver vales de personal.")) return;
+  currentView = "proximos_vales_personal";
+  moduleReturnView = "proximos_vales_personal";
+  if(refresh && navigator.onLine){
+    try{
+      const cloud = await cloudFetchProximosValesPersonal();
+      valesPersonal = mergeById(valesPersonal, cloud);
+      saveValesPersonalLocal();
+    }catch(e){
+      console.warn("No se pudieron cargar los próximos vales:", e);
+      toast("Próximos vales","Se muestran los datos disponibles en este dispositivo.","warn",3400);
+    }
+  }
+  const list = valesPersonal.filter(v => String(v.fecha || "") > todayISO()).filter(v => {
+    if(currentUser?.role === ROLES.SERVICIO_MEDICO) return isPermisoImss(v);
+    if(![ROLES.JEFE,ROLES.JEFE_COMPRAS].includes(currentUser?.role)) return true;
+    const uid = String(currentUser?.uid || "");
+    const email = String(currentUser?.email || "").trim().toLowerCase();
+    return (v.autorizadorUid && String(v.autorizadorUid) === uid) || (v.autorizadorEmail && String(v.autorizadorEmail).trim().toLowerCase() === email);
+  }).sort((a,b)=>String(a.fecha||"").localeCompare(String(b.fecha||"")) || Number(a.createdTs||0)-Number(b.createdTs||0));
+  const groups = new Map();
+  list.forEach(v => { const key=String(v.fecha||""); if(!groups.has(key)) groups.set(key,[]); groups.get(key).push(v); });
+  appEl.innerHTML = `
+    <section class="provider-dashboard-modern vale-dashboard-modern">
+      <div class="provider-dashboard-hero">
+        <div class="provider-dashboard-hero-copy"><div class="provider-dashboard-hero-icon" aria-hidden="true">📅</div><div><h2>Próximos vales</h2><p>Vales de personal programados para fechas posteriores. Pueden autorizarse anticipadamente; el QR funcionará hasta el día indicado.</p></div></div>
+        <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${list.length} programados</div>
+      </div>
+      <div class="dashboard-toolbar vale-dashboard-head"><button class="secondary" data-action="refrescarProximosValesPersonal">Actualizar</button></div>
+      ${list.length ? Array.from(groups.entries()).map(([fecha,items])=>`<section style="margin-top:18px;"><h3 style="margin:0 0 12px;">${esc(valePassDate(fecha))} · ${items.length} vale${items.length===1?"":"s"}</h3><div class="vale-history-grid">${items.map(renderValePersonalCard).join("")}</div></section>`).join("") : `<div class="card" style="margin-top:18px;color:var(--muted);">No hay vales programados para fechas posteriores.</div>`}
+    </section>`;
 }
 
 function valeHistoryDateTime(ts){
@@ -9490,6 +9613,42 @@ async function renderHistorialValesPersonal(refresh=true){
       <div class="vale-history-grid">${list.length ? list.map(renderValePersonalHistoryCard).join("") : `<div class="card" style="color:var(--muted);">No hay vales que coincidan con los filtros.</div>`}</div>
     </section>
   `;
+}
+
+function valeActivoHistoryEvents(v={}){
+  const events=[];
+  const push=(ts,title,detail="",tone="")=>{ const n=Number(ts||0); if(n) events.push({ts:n,title,detail,tone}); };
+  push(v.createdTs,"Vale creado",[v.createdByNombre,v.createdByName,v.createdByEmail].filter(Boolean).join(" · ")||"Usuario no registrado");
+  push(v.autorizadoTs,"Vale autorizado",[v.autorizadoPorNombre,v.autorizadoPor].filter(Boolean).join(" · ")||"Autorizador no registrado","ok");
+  push(v.salidaTs,"Salida del activo",[v.salidaPorNombre,v.salidaPorEmail].filter(Boolean).join(" · ")||"Guardia no registrado","warn");
+  push(v.regresoTs,"Regreso del activo",[v.regresoPorNombre,v.regresoPorEmail].filter(Boolean).join(" · ")||"Guardia no registrado","ok");
+  push(v.canceladoTs,"Vale cancelado",v.canceladoPorNombre||v.canceladoPor||"Usuario no registrado","bad");
+  return events.sort((a,b)=>a.ts-b.ts);
+}
+
+function renderValeActivoHistoryCard(v){
+  const events=valeActivoHistoryEvents(v);
+  return `<article class="vale-history-card">
+    <div class="vale-history-card-head"><div><h3>${esc(v.nombre||v.descripcion||"Activo")}</h3><small>${esc(v.folio||v.id||"-")} · ${esc(v.departamento||"-")} · ${esc(v.tipoActivo||"Activo")}</small></div><span class="pill"><span class="dot ${valeStatusDot(v.status)}"></span>${esc(valeStatusLabel(v.status))}</span></div>
+    <div class="meta" style="margin-top:10px;"><span class="pill">Fecha: ${esc(valePassDate(v.fecha))}</span>${v.noSerie?`<span class="pill">Serie: ${esc(v.noSerie)}</span>`:""}${v.autorizadorNombre?`<span class="pill">Autoriza: ${esc(v.autorizadorNombre)}</span>`:""}</div>
+    <div class="vale-timeline">${events.length?events.map(ev=>`<div class="vale-timeline-item ${ev.tone?`is-${ev.tone}`:""}"><div class="vale-timeline-title">${esc(ev.title)}</div><div class="vale-timeline-meta">${esc(valeHistoryDateTime(ev.ts))}${ev.detail?` · ${esc(ev.detail)}`:""}</div></div>`).join(""):`<div class="vale-timeline-meta">Sin eventos registrados.</div>`}</div>
+  </article>`;
+}
+
+async function renderHistorialValesActivos(refresh=true){
+  if(![ROLES.ADMIN,ROLES.GUARDIA].includes(currentUser?.role)||!hasPerm("ver_historial_vales_activos")) return toast("Acceso restringido","El historial de activos solo está disponible para Guardia y Administrador.","warn",4200);
+  currentView="historial_vales_activos"; moduleReturnView="historial_vales_activos";
+  if(refresh&&navigator.onLine){
+    try{ historialValesActivosCache=await cloudFetchHistorialValesActivos(); valesActivos=mergeById(valesActivos,historialValesActivosCache); saveValesActivosLocal(); }
+    catch(e){ console.warn("No se pudo cargar el historial de activos:",e); toast("Historial de activos","Se muestran los datos disponibles en este dispositivo.","warn",3400); }
+  }
+  if(!historialValesActivosCache.length) historialValesActivosCache=[...valesActivos];
+  const previous={buscar:document.getElementById("vhaBuscar")?.value||"",desde:document.getElementById("vhaDesde")?.value||"",hasta:document.getElementById("vhaHasta")?.value||"",estado:document.getElementById("vhaEstado")?.value||""};
+  const term=previous.buscar.trim().toLowerCase(), desdeTs=previous.desde?new Date(`${previous.desde}T00:00:00`).getTime():0, hastaTs=previous.hasta?new Date(`${previous.hasta}T23:59:59`).getTime():Number.MAX_SAFE_INTEGER;
+  const list=historialValesActivosCache.filter(v=>{const ts=Number(v.createdTs||0),text=[v.folio,v.nombre,v.descripcion,v.departamento,v.tipoActivo,v.noSerie].join(" ").toLowerCase();return(!term||text.includes(term))&&ts>=desdeTs&&ts<=hastaTs&&(!previous.estado||v.status===previous.estado);}).sort((a,b)=>Number(b.createdTs||0)-Number(a.createdTs||0));
+  appEl.innerHTML=`<section class="provider-dashboard-modern"><div class="provider-dashboard-hero"><div class="provider-dashboard-hero-copy"><div class="provider-dashboard-hero-icon" aria-hidden="true">🧭</div><div><h2>Historial recorrido completo · Activos</h2><p>Seguimiento desde la creación y autorización hasta la salida, regreso o cancelación del activo.</p></div></div><div class="provider-dashboard-date"><span aria-hidden="true">●</span>${list.length} registros</div></div>
+  <div class="dashboard-toolbar" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;"><input id="vhaBuscar" value="${esc(previous.buscar)}" placeholder="Folio, activo, serie..."><input id="vhaDesde" type="date" value="${esc(previous.desde)}"><input id="vhaHasta" type="date" value="${esc(previous.hasta)}"><select id="vhaEstado"><option value="">Todos los estados</option>${Object.values(ValeStatus).map(s=>`<option value="${esc(s)}" ${previous.estado===s?"selected":""}>${esc(valeStatusLabel(s))}</option>`).join("")}</select><button data-action="filtrarHistorialValesActivos">Aplicar filtros</button><button class="secondary" data-action="refrescarHistorialValesActivos">Actualizar</button></div>
+  <div class="vale-history-grid">${list.length?list.map(renderValeActivoHistoryCard).join(""):`<div class="card" style="color:var(--muted);">No hay vales de activo que coincidan con los filtros.</div>`}</div></section>`;
 }
 
 let reporteNominasFiltros = {
@@ -9897,6 +10056,24 @@ function getRondineroPuntosParaRondin(rondin){
   return ids.map(id => activos.get(id)).filter(Boolean);
 }
 
+function getRondineroPuntoSnapshot(rondin, puntoId){
+  const id = String(puntoId || "");
+  const actual = rondineroPuntos.find(p => String(p.id) === id);
+  if(actual) return actual;
+  return (Array.isArray(rondin?.puntosEsperadosSnapshot) ? rondin.puntosEsperadosSnapshot : []).find(p => String(p.id) === id) || { id, nombre:id, ubicacion:"" };
+}
+
+function getRondineroPuntosOmitidos(rondin){
+  return (Array.isArray(rondin?.puntoIdsOmitidos) ? rondin.puntoIdsOmitidos : []).map(String);
+}
+
+function getRondineroSiguientePunto(rondin){
+  const visitados = new Set((rondin?.puntoIdsVisitados || []).map(String));
+  const omitidos = new Set(getRondineroPuntosOmitidos(rondin));
+  const siguienteId = (rondin?.puntoIdsEsperados || []).map(String).find(id => !visitados.has(id) && !omitidos.has(id));
+  return siguienteId ? getRondineroPuntoSnapshot(rondin, siguienteId) : null;
+}
+
 function getRondineroActivo(){
   return rondineroRondines.find(r =>
     r.status === "en_curso" &&
@@ -10012,8 +10189,12 @@ async function renderRondineroGuardia(){
   const puntos = activo ? getRondineroPuntosParaRondin(activo) : [];
   const eventos = activo ? getRondineroEventos(activo.id) : [];
   const visitadosCount = activo ? (activo.puntoIdsVisitados || []).length : 0;
+  const omitidosCount = activo ? getRondineroPuntosOmitidos(activo).length : 0;
   const totalCount = activo ? (activo.puntoIdsEsperados || []).length : 0;
-  const avance = totalCount ? Math.round((visitadosCount / totalCount) * 100) : 0;
+  const procesadosCount = Math.min(totalCount, visitadosCount + omitidosCount);
+  const avance = totalCount ? Math.round((procesadosCount / totalCount) * 100) : 0;
+  const siguientePunto = activo ? getRondineroSiguientePunto(activo) : null;
+  const siguienteOrden = siguientePunto ? (activo.puntoIdsEsperados || []).map(String).indexOf(String(siguientePunto.id)) + 1 : 0;
   const ultimoScan = eventos.filter(e => e.tipo === "scan").slice(-1)[0];
   const novedades = eventos.filter(e => e.tipo === "novedad").length;
 
@@ -10042,14 +10223,18 @@ async function renderRondineroGuardia(){
               <strong>Rondín en curso</strong>
               <small>${esc(activo.guardiaNombre || "Guardia")} • ${esc(activo.rutaNombre || "Ruta")} • ${esc(activo.turno || "Sin turno")} • ${esc(new Date(activo.inicioTs || Date.now()).toLocaleString())}</small>
             </div>
-            <span class="pill"><span class="dot info"></span>${visitadosCount}/${totalCount} puntos</span>
+            <span class="pill"><span class="dot info"></span>${procesadosCount}/${totalCount} puntos procesados</span>
           </div>
           <div style="height:10px;"></div>
           <div style="height:10px;border-radius:999px;background:rgba(148,163,184,.22);overflow:hidden;">
             <div style="width:${avance}%;height:100%;background:var(--accent);"></div>
           </div>
+          <div style="margin-top:12px;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--panel2);">
+            ${siguientePunto ? `<strong>Siguiente punto: ${siguienteOrden}. ${esc(siguientePunto.nombre || siguientePunto.id)}</strong><small>${esc(siguientePunto.ubicacion || "Sigue el orden definido en la ruta.")}</small>` : `<strong>Secuencia terminada</strong><small>Todos los puntos fueron visitados u omitidos con justificación.</small>`}
+          </div>
           <div class="row" style="margin-top:12px;">
-            <button data-action="rondineroScan">Escanear punto</button>
+            <button data-action="rondineroScan" ${siguientePunto ? "" : "disabled"}>Escanear punto</button>
+            <button class="secondary" data-action="rondineroOmitir" ${siguientePunto ? "" : "disabled"}>Omitir con justificación</button>
             <button class="secondary" data-action="rondineroNovedad">Reportar novedad</button>
             <button class="ok" data-action="rondineroCerrar">Cerrar rondín</button>
           </div>
@@ -10058,7 +10243,8 @@ async function renderRondineroGuardia(){
         <div class="divider"></div>
         <div class="grid rondinero-stat-grid">
           <div class="tarjeta"><strong>${visitadosCount}</strong><small>Puntos registrados</small></div>
-          <div class="tarjeta"><strong>${Math.max(0, totalCount - visitadosCount)}</strong><small>Puntos pendientes</small></div>
+          <div class="tarjeta"><strong>${omitidosCount}</strong><small>Omitidos justificados</small></div>
+          <div class="tarjeta"><strong>${Math.max(0, totalCount - procesadosCount)}</strong><small>Puntos pendientes</small></div>
           <div class="tarjeta"><strong>${novedades}</strong><small>Novedades</small></div>
         </div>
 
@@ -10480,6 +10666,7 @@ async function renderRondineroDetalle(id){
 
   const eventos = getRondineroEventos(r.id);
   const scans = eventos.filter(e => e.tipo === "scan");
+  const omisiones = eventos.filter(e => e.tipo === "omision");
   const novedades = eventos.filter(e => e.tipo === "novedad");
   const puntoIdDeNovedad = n => getRondineroNovedadPuntoId(n, scans);
   const novedadesGenerales = novedades.filter(n => !puntoIdDeNovedad(n));
@@ -10493,9 +10680,10 @@ async function renderRondineroDetalle(id){
   const esperados = (r.puntoIdsEsperados || []).map(String);
   const visitados = new Set((r.puntoIdsVisitados || []).map(String));
   const puntosDetalle = esperados.map(pid => {
-    const punto = rondineroPuntos.find(p => String(p.id) === pid) || {};
+    const punto = getRondineroPuntoSnapshot(r, pid);
     const evento = scans.find(e => String(e.puntoId) === pid);
-    return { puntoId: pid, punto, evento };
+    const omision = omisiones.find(e => String(e.puntoId) === pid);
+    return { puntoId: pid, punto, evento, omision };
   });
   const avance = esperados.length ? Math.round((visitados.size / esperados.length) * 100) : 0;
   const tiempoTotal = typeof r.tiempoTotalMin === "number"
@@ -10531,16 +10719,19 @@ async function renderRondineroDetalle(id){
       <div class="dashboard-pending-list">
          ${puntosDetalle.map((item, idx) => {
            const ev = item.evento;
+           const om = item.omision;
            const novedadesPunto = novedades.filter(n => puntoIdDeNovedad(n) === String(item.puntoId));
            return `
              <div class="tarjeta history-card">
               <strong>${idx + 1}. ${esc(item.punto.nombre || item.puntoId)}</strong>
               <small>${esc(item.punto.ubicacion || ev?.ubicacion || "")}</small>
               <div class="meta">
-                <span class="pill"><span class="dot ${ev ? "ok" : "bad"}"></span>${ev ? "Visitado" : "Omitido"}</span>
+                <span class="pill"><span class="dot ${ev ? "ok" : om ? "warn" : "bad"}"></span>${ev ? "Visitado" : om ? "Omitido con justificación" : "No procesado"}</span>
                 ${ev ? `<span class="pill">${esc(new Date(ev.createdTs || Date.now()).toLocaleString())}</span>` : ""}
+                ${om ? `<span class="pill">${esc(new Date(om.createdTs || Date.now()).toLocaleString())}</span>` : ""}
                  ${ev?.gpsValidado ? `<span class="pill"><span class="dot ok"></span>GPS validado • ${esc(ev.gpsDistanciaMetros)} m • precisión ±${esc(ev.gpsPrecisionMetros)} m</span>` : (ev ? `<span class="pill"><span class="dot bad"></span>Sin evidencia GPS</span>` : "")}
                </div>
+               ${om ? `<div style="margin-top:10px;padding:10px;border-radius:10px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.08);"><b>Motivo de omisión:</b> ${esc(om.motivoOmision || om.observaciones || "Sin detalle")}${String(om.fotoDataUrl || "").startsWith("data:image/jpeg;base64,") ? `<img src="${om.fotoDataUrl}" alt="Evidencia de la omisión" loading="lazy" style="display:block;width:100%;max-height:220px;object-fit:cover;margin-top:8px;border-radius:9px;border:1px solid var(--border);">` : ""}</div>` : ""}
                ${novedadesPunto.map(renderNovedadEnPunto).join("")}
              </div>
            `;
@@ -10571,6 +10762,7 @@ async function generarPdfRondinero(id){
 
   const eventos = getRondineroEventos(r.id);
   const scans = eventos.filter(e => e.tipo === "scan");
+  const omisiones = eventos.filter(e => e.tipo === "omision");
   const novedades = eventos.filter(e => e.tipo === "novedad");
   const esperados = (r.puntoIdsEsperados || []).map(String);
   const visitados = new Set((r.puntoIdsVisitados || []).map(String));
@@ -10614,7 +10806,7 @@ async function generarPdfRondinero(id){
     docPdf.setFont("helvetica","bold");
     docPdf.setFontSize(8);
     docPdf.setTextColor(180,83,9);
-    docPdf.text(`NOVEDAD - ${new Date(n.createdTs || Date.now()).toLocaleString()}`, margin + 5, y);
+    docPdf.text(`${n.tipo === "omision" ? "OMISIÓN JUSTIFICADA" : "NOVEDAD"} - ${new Date(n.createdTs || Date.now()).toLocaleString()}`, margin + 5, y);
     y += 5;
     docPdf.setFont("helvetica","normal");
     docPdf.setFontSize(9);
@@ -10663,8 +10855,9 @@ async function generarPdfRondinero(id){
   y += 7;
 
   esperados.forEach((pid, idx) => {
-    const punto = rondineroPuntos.find(p => String(p.id) === pid) || {};
+    const punto = getRondineroPuntoSnapshot(r, pid);
     const scan = scans.find(e => String(e.puntoId) === pid);
+    const omision = omisiones.find(e => String(e.puntoId) === pid);
     const novedadesPunto = novedades.filter(n => getRondineroNovedadPuntoId(n, scans) === pid);
     addPageIfNeeded(23);
     docPdf.setFillColor(scan ? 240 : 254, scan ? 253 : 242, scan ? 244 : 242);
@@ -10678,7 +10871,7 @@ async function generarPdfRondinero(id){
     y += 5;
     docPdf.setFont("helvetica","normal");
     docPdf.setFontSize(8.5);
-    const estado = scan ? `Visitado: ${new Date(scan.createdTs || Date.now()).toLocaleString()}` : "Omitido";
+    const estado = scan ? `Visitado: ${new Date(scan.createdTs || Date.now()).toLocaleString()}` : omision ? `Omitido con justificación: ${new Date(omision.createdTs || Date.now()).toLocaleString()}` : "No procesado";
     docPdf.text(clean(`${punto.ubicacion || scan?.ubicacion || "Sin ubicación"} - ${estado}`), margin + 5, y);
     y += 4.5;
     if(scan?.gpsValidado){
@@ -10687,6 +10880,7 @@ async function generarPdfRondinero(id){
       docPdf.text("Sin evidencia GPS", margin + 5, y);
     }
     y += 7;
+    if(omision) addNovedad({ ...omision, observaciones:omision.motivoOmision || omision.observaciones || "Sin detalle" });
     novedadesPunto.forEach(addNovedad);
     y += 2;
   });
@@ -11093,7 +11287,10 @@ async function iniciarRondinero(){
     inicioTs: Date.now(),
     finTs: null,
     puntoIdsEsperados: puntos.map(p => String(p.id)),
+    puntosEsperadosSnapshot: puntos.map((p, index) => ({ id:String(p.id), nombre:p.nombre || String(p.id), ubicacion:p.ubicacion || "", orden:index + 1 })),
     puntoIdsVisitados: [],
+    puntoIdsOmitidos: [],
+    ordenObligatorio: true,
     novedadesCount: 0,
     createdTs: Date.now(),
     updatedTs: Date.now()
@@ -11244,6 +11441,16 @@ async function registrarEscaneoRondinero(qrText){
     toast("Punto ya visitado","Este punto ya fue registrado en el rondín.","warn",2600);
     return renderRondinero();
   }
+  if(getRondineroPuntosOmitidos(activo).includes(String(punto.id))){
+    toast("Punto ya omitido","Este punto fue omitido con justificación y la secuencia ya avanzó.","warn",3600);
+    return renderRondinero();
+  }
+  const siguientePunto = getRondineroSiguientePunto(activo);
+  if(!siguientePunto || String(siguientePunto.id) !== String(punto.id)){
+    const orden = siguientePunto ? (activo.puntoIdsEsperados || []).map(String).indexOf(String(siguientePunto.id)) + 1 : 0;
+    toast("Punto fuera de secuencia", siguientePunto ? `Debes visitar primero el punto ${orden}: ${siguientePunto.nombre || siguientePunto.id}.` : "La secuencia del rondín ya terminó.","bad",5200);
+    return renderRondinero();
+  }
   if(!puntoRondineroTieneGps(punto)){
     toast("Punto sin GPS","Un administrador debe registrar las coordenadas de este punto antes de utilizarlo.","bad",4800);
     return renderRondinero();
@@ -11310,6 +11517,119 @@ async function registrarEscaneoRondinero(qrText){
     }
   }
   toast("Punto registrado", punto.nombre, "ok", 2200);
+  await renderRondinero();
+}
+
+function renderRondineroOmision(){
+  if(!requirePerm("rondinero_ejecutar","Tu rol no puede omitir puntos.")) return;
+  const activo = getRondineroActivo();
+  if(!activo) return renderRondinero();
+  const punto = getRondineroSiguientePunto(activo);
+  if(!punto){
+    toast("Secuencia terminada","No hay puntos pendientes por omitir.","info",3000);
+    return renderRondinero();
+  }
+  const orden = (activo.puntoIdsEsperados || []).map(String).indexOf(String(punto.id)) + 1;
+  currentView = "rondinero_omision";
+  appEl.innerHTML = `
+    <div class="card" style="max-width:760px;margin:0 auto;">
+      <h2 style="margin:0 0 4px;">Omitir punto del recorrido</h2>
+      <div style="color:var(--muted);font-size:12px;">La omisión quedará registrada y reducirá el porcentaje de cumplimiento.</div>
+      <div class="divider"></div>
+      <div class="tarjeta history-card">
+        <strong>${orden}. ${esc(punto.nombre || punto.id)}</strong>
+        <small>${esc(punto.ubicacion || "Sin ubicación descriptiva")}</small>
+      </div>
+      <div style="height:12px;"></div>
+      <label>Motivo de la omisión *</label>
+      <textarea id="rondOmisionMotivo" rows="5" maxlength="800" placeholder="Ejemplo: área cerrada, acceso obstruido o atención de emergencia."></textarea>
+      <div style="height:10px;"></div>
+      <label>Fotografía opcional</label>
+      <input id="rondOmisionFoto" type="file" accept="image/*" capture="environment">
+      <div style="margin-top:6px;color:var(--muted);font-size:12px;">La imagen se comprimirá y se guardará como evidencia dentro del registro, sin Firebase Storage.</div>
+      <img id="rondOmisionPreview" alt="Vista previa" style="display:none;width:100%;max-height:360px;object-fit:contain;margin-top:10px;border-radius:12px;border:1px solid var(--border);">
+      <div class="divider"></div>
+      <div class="row">
+        <button class="danger" data-action="rondineroGuardarOmision">Confirmar omisión</button>
+        <button class="secondary" data-action="rondinero">Cancelar</button>
+      </div>
+    </div>
+  `;
+  const input = document.getElementById("rondOmisionFoto");
+  input?.addEventListener("change", () => {
+    const file = input.files?.[0];
+    const preview = document.getElementById("rondOmisionPreview");
+    if(!file){ if(preview) preview.style.display = "none"; return; }
+    if(!String(file.type || "").startsWith("image/")){
+      input.value = "";
+      toast("Archivo inválido","Selecciona una imagen.","warn",3000);
+      return;
+    }
+    if(preview){ preview.src = URL.createObjectURL(file); preview.style.display = "block"; }
+  });
+  document.getElementById("rondOmisionMotivo")?.focus();
+}
+
+async function guardarRondineroOmision(){
+  if(!requirePerm("rondinero_ejecutar","Tu rol no puede omitir puntos.")) return;
+  const activo = getRondineroActivo();
+  if(!activo) return renderRondinero();
+  const punto = getRondineroSiguientePunto(activo);
+  if(!punto) return renderRondinero();
+  const motivo = document.getElementById("rondOmisionMotivo")?.value.trim() || "";
+  if(motivo.length < 8){
+    toast("Justificación requerida","Describe el motivo con al menos 8 caracteres.","warn",3600);
+    return;
+  }
+  const file = document.getElementById("rondOmisionFoto")?.files?.[0] || null;
+  const btn = document.querySelector('[data-action="rondineroGuardarOmision"]');
+  if(btn) btn.disabled = true;
+  let foto = null;
+  try{ if(file) foto = await comprimirFotoRondinero(file); }
+  catch(e){
+    if(btn) btn.disabled = false;
+    toast("Fotografía",e?.message || "No se pudo procesar la fotografía.","bad",4200);
+    return;
+  }
+  const now = Date.now();
+  const evento = {
+    id:`RO-${now}`,
+    rondinId:activo.id,
+    tipo:"omision",
+    puntoId:String(punto.id),
+    puntoNombre:punto.nombre || String(punto.id),
+    ubicacion:punto.ubicacion || "",
+    estatus:"omitido",
+    observaciones:motivo,
+    motivoOmision:motivo,
+    fotoDataUrl:foto?.dataUrl || "",
+    fotoMime:foto ? "image/jpeg" : "",
+    fotoBytes:foto?.bytes || 0,
+    fotoWidth:foto?.width || 0,
+    fotoHeight:foto?.height || 0,
+    guardiaUid:activo.guardiaUid || "",
+    guardiaEmail:activo.guardiaEmail || "",
+    guardiaNombre:activo.guardiaNombre || currentUser?.nombre || currentUser?.email || "Guardia",
+    operadorUid:currentUser?.uid || "",
+    operadorNombre:currentUser?.nombre || currentUser?.email || "Tablet",
+    fecha:todayISO(),
+    createdTs:now,
+    updatedTs:now
+  };
+  activo.puntoIdsOmitidos = [...getRondineroPuntosOmitidos(activo), String(punto.id)];
+  activo.updatedTs = now;
+  rondineroEventos.unshift(evento);
+  saveRondineroLocal();
+  if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
+    try{
+      await cloudUpsertRondineroEvento(evento);
+      await cloudUpsertRondineroRondin(activo);
+    }catch(e){
+      console.warn(e);
+      toast("Sincronización pendiente","La omisión quedó guardada localmente. Publica las reglas actualizadas para sincronizar este tipo de evento.","warn",5600);
+    }
+  }
+  toast("Punto omitido",`${punto.nombre || punto.id}. Continúa con el siguiente punto.`,"warn",3200);
   await renderRondinero();
 }
 
@@ -11466,8 +11786,15 @@ async function cerrarRondinero(){
   if(!activo) return renderRondinero();
   const esperados = (activo.puntoIdsEsperados || []).map(String);
   const visitados = (activo.puntoIdsVisitados || []).map(String);
+  const omitidos = getRondineroPuntosOmitidos(activo);
+  const pendientes = esperados.filter(id => !visitados.includes(id) && !omitidos.includes(id));
+  if(pendientes.length){
+    const siguiente = getRondineroSiguientePunto(activo);
+    toast("Recorrido pendiente",`Debes visitar u omitir con justificación los ${pendientes.length} punto(s) restantes.${siguiente ? ` Siguiente: ${siguiente.nombre || siguiente.id}.` : ""}`,"warn",5200);
+    return;
+  }
   const completo = esperados.length > 0 && esperados.every(id => visitados.includes(id));
-  if(!completo && !confirm("El rondín está incompleto. ¿Deseas cerrarlo como incompleto?")) return;
+  if(!completo && !confirm(`El rondín tiene ${omitidos.length} punto(s) omitido(s) con justificación y se cerrará como incompleto. ¿Deseas continuar?`)) return;
   activo.status = completo ? "completado" : "incompleto";
   activo.finTs = Date.now();
   activo.tiempoTotalMin = Math.max(0, Math.round((activo.finTs - (activo.inicioTs || activo.finTs)) / 60000));
@@ -11885,6 +12212,7 @@ async function autorizarValePersonal(id){
     return;
   }
   if(!(await requireUserPin("autorizar este vale de personal"))) return;
+  const returnToUpcoming = currentView === "proximos_vales_personal";
   const previousVale = { ...v };
   const now = Date.now();
   const esReautorizacion = isValePersonalReautorizacionPendiente(v);
@@ -11914,12 +12242,12 @@ async function autorizarValePersonal(id){
     Object.assign(v, previousVale);
     await saveValesPersonal();
     toast("No se autorizó","Firebase no confirmó el cambio. Revisa la conexión y vuelve a intentarlo.","bad",5200);
-    await renderValesPersonal();
+    if(returnToUpcoming) await renderProximosValesPersonal(false); else await renderValesPersonal();
     return;
   }
   await saveValesPersonal();
   toast("Autorizado", esReautorizacion ? "Tiempo reautorizado por el jefe." : "El vale de personal quedó autorizado.", "ok",2400);
-  await renderValesPersonal();
+  if(returnToUpcoming) await renderProximosValesPersonal(false); else await renderValesPersonal();
 }
 
 async function cancelarValePersonal(id){
@@ -11946,6 +12274,10 @@ function renderValePersonalQR(id){
   rememberModuleReturn(currentView);
   const v = valesPersonal.find(x => String(x.id) === String(id));
   if(!v) return renderValesPersonal();
+  if(String(v.fecha || "") > todayISO()){
+    toast("QR aún no habilitado",`Este vale podrá utilizarse el ${valePassDate(v.fecha)}.`,"warn",4200);
+    return renderProximosValesPersonal(false);
+  }
   if(!v.qrActivo){
     toast("QR desactivado","Este vale ya está en Regreso o fue cancelado.","warn",3200);
     return renderValesPersonal();
@@ -15398,6 +15730,11 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
           moduleReturnView = "vales_personal";
           return renderModuleHome();
         }
+        if(String(vale.fecha || "") > todayISO()){
+          toast("Vale programado",`Este QR se habilitará el ${valePassDate(vale.fecha)}. No debe registrarse antes de esa fecha.`,"warn",5200);
+          moduleReturnView = "proximos_vales_personal";
+          return renderModuleHome();
+        }
         toast("QR detectado","Vale de personal encontrado.","ok",1800);
         moduleReturnView = "vales_personal";
         return renderValePersonalOperacion(vale.id);
@@ -16791,8 +17128,11 @@ function renderProveedores(lista){
         case "autorizarVale": await autorizarValeActivo(id); break;
         case "cancelarVale": await cancelarValeActivo(id); break;
         case "valesPersonal": await renderValesPersonal(); break;
+        case "refrescarProximosValesPersonal": await renderProximosValesPersonal(true); break;
         case "filtrarHistorialValesPersonal": await renderHistorialValesPersonal(false); break;
         case "refrescarHistorialValesPersonal": await renderHistorialValesPersonal(true); break;
+        case "filtrarHistorialValesActivos": await renderHistorialValesActivos(false); break;
+        case "refrescarHistorialValesActivos": await renderHistorialValesActivos(true); break;
         case "aplicarReporteNominas": await aplicarReporteNominas(); break;
         case "actualizarReporteNominas": await renderReporteNominas(true); break;
         case "exportarReporteNominas": exportarReporteNominas(); break;
@@ -16851,6 +17191,8 @@ function renderProveedores(lista){
         case "rondineroClearGuardia": saveRondineroGuardiaCred(null); await renderRondinero(); break;
         case "rondineroIniciar": await iniciarRondinero(); break;
         case "rondineroScan": renderRondineroScanner(); break;
+        case "rondineroOmitir": renderRondineroOmision(); break;
+        case "rondineroGuardarOmision": await guardarRondineroOmision(); break;
         case "rondineroNovedad": renderRondineroNovedad(); break;
         case "rondineroGuardarNovedad": await guardarRondineroNovedad(); break;
         case "rondineroCerrar": await cerrarRondinero(); break;
