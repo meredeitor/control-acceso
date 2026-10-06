@@ -3307,7 +3307,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v196</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v197</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3332,7 +3332,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v196";
+  const APP_VERSION = "v197";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5506,6 +5506,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v197</b><span>Las salidas sin regreso pendientes se normalizan como Finalizadas y se muestran en Regreso / Finalizado. Después de una reautorización, dashboard, historial y Nóminas conservan el tiempo completo desde la salida original hasta el regreso.</span></div>
           <div class="help-release"><b>v196</b><span>Los vales distinguen Salida sin regreso, que finaliza y desactiva el QR en el primer registro, de Sin horario estimado de regreso, que mantiene el QR activo, mide el tiempo transcurrido y permite registrar el regreso sin bloqueo por excedente.</span></div>
           <div class="help-release"><b>v195</b><span>Los permisos de salida IMSS se habilitan 5 minutos antes de la hora programada y permanecen vigentes hasta las 6:00 p.m. del mismo día, incluso para permisos creados previamente.</span></div>
           <div class="help-release"><b>v194</b><span>La ventana de salida de los permisos IMSS se amplía: el QR funciona desde 5 minutos antes y hasta 1 hora después de la hora programada, incluyendo permisos creados previamente con el límite anterior.</span></div>
@@ -9292,6 +9293,17 @@ function todayISO(){
 
 function calcValePersonalTiempo(v={}){
   if(!v.salidaTs) return null;
+  // El tiempo visible y de reportes siempre comprende el recorrido completo.
+  const base = Number(v.salidaTs || 0);
+  const end = v.regresoTs || Date.now();
+  if(end < base) return null;
+  return Math.round((end - base) / 60000);
+}
+
+function calcValePersonalTramoAutorizado(v={}){
+  if(!v.salidaTs) return null;
+  // Para detectar un nuevo excedente después de una reautorización sí se toma
+  // el inicio del tramo vigente, sin alterar el tiempo total mostrado.
   const base = Math.max(Number(v.salidaTs || 0), Number(v.ultimoTiempoAutorizadoTs || 0));
   const end = v.regresoTs || Date.now();
   if(end < base) return null;
@@ -9300,7 +9312,7 @@ function calcValePersonalTiempo(v={}){
 
 function isValePersonalExcedido(v={}){
   const autorizado = parseTiempoAutorizadoMin(v.tiempoAutorizado);
-  const usado = calcValePersonalTiempo(v);
+  const usado = calcValePersonalTramoAutorizado(v);
   return v.status === ValeStatus.FUERA && autorizado !== null && usado !== null && usado > autorizado;
 }
 
@@ -9326,6 +9338,30 @@ async function marcarValesPersonalExcedidos(){
   saveValesPersonalLocal();
   if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
     await Promise.all(vencidos.map(v => cloudUpsertValePersonal(v).catch(e => console.warn(e))));
+  }
+}
+
+async function normalizarValesSalidaSinRegreso(){
+  const pendientes = valesPersonal.filter(v =>
+    isValePersonalSalidaSinRegreso(v) &&
+    v.status === ValeStatus.FUERA &&
+    Number(v.salidaTs || 0) > 0
+  );
+  if(!pendientes.length) return;
+  const now = Date.now();
+  pendientes.forEach(v => {
+    v.status = ValeStatus.REGRESO_CANCELADO;
+    v.salidaSinRegresoFinalizada = true;
+    v.salidaSinRegresoFinalizadaTs = Number(v.salidaTs || now);
+    v.qrActivo = false;
+    v.qrDesactivadoTs = Number(v.salidaTs || now);
+    v.qrDesactivadoMotivo = "SALIDA_SIN_REGRESO";
+    v.reautorizacionPendiente = false;
+    v.updatedTs = now;
+  });
+  saveValesPersonalLocal();
+  if(navigator.onLine && hasPerm("registrar_salida_personal")){
+    await Promise.all(pendientes.map(v => cloudUpsertValePersonal(v).catch(e => console.warn("No se pudo normalizar salida sin regreso:", e))));
   }
 }
 
@@ -9415,6 +9451,7 @@ async function renderValesPersonal(){
   if(registroManualPersonalActivo()) programarCierreRegistroManualPersonal();
   rememberModuleReturn(currentView);
   await syncValesPersonal(true);
+  await normalizarValesSalidaSinRegreso();
   await marcarValesPersonalExcedidos();
   if(hasPerm("crear_vale_personal")) await ensureValePersonalAutorizadores();
 
@@ -9456,7 +9493,7 @@ async function renderValesPersonal(){
       ${col("Pend x autorizar","warn",pendientes)}
       ${col("Inicio","info",generados)}
       ${col("Fuera","bad",fuera)}
-      ${col("Regreso","ok",regresoCancelado)}
+      ${col("Regreso / Finalizado","ok",regresoCancelado)}
     </div>
   `;
 
@@ -9516,7 +9553,7 @@ function renderValePersonalCard(v){
       <div class="meta">
         ${esFuturo ? `<span class="pill"><span class="dot info"></span>Programado: ${esc(valePassDate(v.fecha))}</span>` : ""}
         ${requiereReautorizacion ? `<span class="pill"><span class="dot bad"></span>Requiere autorización del jefe</span>` : ""}
-        <span class="pill"><span class="dot ${valeStatusDot(v.status)}"></span>${esc(valeStatusLabel(v.status))}</span>
+        <span class="pill"><span class="dot ${valeStatusDot(v.status)}"></span>${esc(esSalidaSinRegreso && v.status === ValeStatus.REGRESO_CANCELADO ? "Finalizado" : valeStatusLabel(v.status))}</span>
         ${esSalidaSinRegreso ? `<span class="pill"><span class="dot ${v.status === ValeStatus.REGRESO_CANCELADO ? "ok" : "warn"}"></span>Salida sin regreso${v.status === ValeStatus.REGRESO_CANCELADO ? " · finalizada" : ""}</span>` : ""}
         ${esSinHorarioRegreso ? `<span class="pill"><span class="dot ${v.status === ValeStatus.REGRESO_CANCELADO ? "ok" : "info"}"></span>Regreso sin horario límite${v.status === ValeStatus.FUERA ? " · tiempo en medición" : v.status === ValeStatus.REGRESO_CANCELADO ? " · regreso registrado" : ""}</span>` : ""}
         <span class="pill"><span class="dot info"></span>${esc(v.tipoPermiso || "Permiso")}</span>
