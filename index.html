@@ -284,9 +284,18 @@
     .vale-dashboard-head{
       justify-content:space-between;
       margin-bottom:10px;
-      align-items:flex-start;
+      align-items:center;
+      padding:14px 16px;
+      border:1px solid var(--border);
+      border-radius:18px;
+      background:var(--panel);
+      box-shadow:0 10px 28px rgba(15,23,42,.08);
     }
-    .vale-dashboard-head > div:first-child{ min-width:0; }
+    .vale-dashboard-summary,
+    .vale-dashboard-tools{ display:flex; align-items:center; gap:10px; min-width:0; }
+    .vale-dashboard-tools{ margin-left:auto; }
+    .vale-dashboard-tools input{ width:min(260px,28vw); min-width:180px; }
+    .vale-total-pill{ font-weight:800; }
     .vale-dashboard-head h2{ overflow-wrap:anywhere; }
     .vale-actions{
       margin-top:10px;
@@ -389,10 +398,21 @@
       .vale-dashboard-head{
         display:grid;
         grid-template-columns:1fr;
+        gap:10px;
       }
-      .vale-dashboard-head .row,
-      .vale-dashboard-head button{
+      .vale-dashboard-summary,
+      .vale-dashboard-tools{
         width:100%;
+        flex-wrap:wrap;
+        margin-left:0;
+      }
+      .vale-dashboard-tools input{
+        width:100%;
+        min-width:0;
+        flex:1 1 100%;
+      }
+      .vale-dashboard-tools button{
+        flex:1 1 150px;
       }
       .vale-actions{
         display:grid;
@@ -3307,7 +3327,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v198</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v199</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3332,7 +3352,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v198";
+  const APP_VERSION = "v199";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3853,6 +3873,7 @@ const PIN_SESSION_KEY = "adminPinOkTs";
     let qSearch = $("#qSearch");
     let dashboardSearchTerm = "";
     let dashboardPendingOnly = false;
+    const valeSearchTerms = { personal:"", activos:"" };
     const netDot = $("#netDot");
     const netText = $("#netText");
     const actionsBar = $("#actionsBar");
@@ -5506,6 +5527,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v199</b><span>Los dashboards de Vales incorporan una barra ordenada con total, búsqueda y acciones adaptables a celular y tablet. En Visitantes se ocultan el dictamen pendiente de Calidad y Factura / OC, conservando el aviso real de Pendiente autorización.</span></div>
           <div class="help-release"><b>v198</b><span>El tiempo de los vales deja de avanzar al registrar el regreso, finalizar una salida sin regreso o cancelar el vale; los estados Regreso / Finalizado conservan la duración exacta del recorrido.</span></div>
           <div class="help-release"><b>v197</b><span>Las salidas sin regreso pendientes se normalizan como Finalizadas y se muestran en Regreso / Finalizado. Después de una reautorización, dashboard, historial y Nóminas conservan el tiempo completo desde la salida original hasta el regreso.</span></div>
           <div class="help-release"><b>v196</b><span>Los vales distinguen Salida sin regreso, que finaliza y desactiva el QR en el primer registro, de Sin horario estimado de regreso, que mantiene el QR activo, mide el tiempo transcurrido y permite registrar el regreso sin bloqueo por excedente.</span></div>
@@ -8045,7 +8067,7 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
     ${esc(v.materialRecibir)}
   </span>
 ` : ""}
-              <span class="badge-dictamen ${esc(dict)}">
+              ${tipo === "proveedor" ? `<span class="badge-dictamen ${esc(dict)}">
   <span class="bdot"></span> ${esc(dictLabel)}
 </span>
 ${incLabel ? `
@@ -8060,7 +8082,7 @@ ${incLabel ? `
     <span class="dot ${showInc ? "warn" : "muted"}"></span>
     ${esc(incLabel)}
   </span>
-` : ""}
+` : ""}` : ""}
               ${v.gafeteNo ? `<span class="pill"><span class="dot info"></span>Gafete: ${esc(v.gafeteNo)}</span>` : ""}
               ${v.incidenciasSalida ? `<span class="pill"><span class="dot warn"></span>Incidencia</span>` : ""}
             </div>
@@ -8665,16 +8687,21 @@ function canCurrentUserAuthorizeValePersonal(v={}){
   );
 }
 
-async function renderValesActivos(){
+async function renderValesActivos(refresh=true){
   if(!requirePerm("ver_vales_activos","Tu rol no puede ver vales de activos.")) return;
   currentView = "vales_activos";
   rememberModuleReturn(currentView);
-  await syncValesActivos(true);
-  if(hasPerm("crear_vale_activo")) await ensureValeActivoAutorizadores();
+  if(refresh) await syncValesActivos(true);
+  if(refresh && hasPerm("crear_vale_activo")) await ensureValeActivoAutorizadores();
 
-  const list = valesActivos
+  const term = valeSearchTerms.activos.trim().toLowerCase();
+  const allList = valesActivos
     .filter(isValeActivoVisible)
     .sort((a,b)=>(b.createdTs||0)-(a.createdTs||0));
+  const list = !term ? allList : allList.filter(v =>
+    [v.folio,v.nombre,v.descripcion,v.departamento,v.tipoActivo,v.noSerie,v.autorizadorNombre]
+      .join(" ").toLowerCase().includes(term)
+  );
   const { generados, pendientes, fuera, regresoCancelado } = getValeCounts(list);
 
   const col = (title, dotClass, items) => `
@@ -8713,9 +8740,14 @@ async function renderValesActivos(){
         <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${new Date().toLocaleDateString()}</div>
       </div>
       <div class="dashboard-toolbar vale-dashboard-head">
-        <span class="pill">Total: <b style="color:var(--text);margin-left:6px;">${list.length}</b></span>
-        <button class="secondary" data-action="refreshVales" data-tipo="activos">Actualizar</button>
-        ${hasPerm("escanear_qr") ? `<button class="secondary" data-action="scan" data-from="vales_activos">Escanear QR</button>` : ""}
+        <div class="vale-dashboard-summary">
+          <span class="pill vale-total-pill">Total: <b style="color:var(--text);margin-left:6px;">${allList.length}</b></span>
+        </div>
+        <div class="vale-dashboard-tools">
+          <input id="valeSearchActivos" value="${esc(valeSearchTerms.activos)}" placeholder="Buscar folio, activo, serie..." aria-label="Buscar vales de activo">
+          <button class="secondary" data-action="refreshVales" data-tipo="activos">Actualizar</button>
+          ${hasPerm("escanear_qr") ? `<button class="secondary" data-action="scan" data-from="vales_activos">Escanear QR</button>` : ""}
+        </div>
       </div>
 
       ${valesContent}
@@ -9458,18 +9490,21 @@ function calcEntrada815Min(v={}){
   return Math.max(0, Math.round((v.llegadaTs - base) / 60000));
 }
 
-async function renderValesPersonal(){
+async function renderValesPersonal(refresh=true){
   if(!requirePerm("ver_vales_personal","Tu rol no puede ver vales de personal.")) return;
   currentView = "vales_personal";
   if(registroManualPersonalActivo()) programarCierreRegistroManualPersonal();
   rememberModuleReturn(currentView);
-  await syncValesPersonal(true);
-  await normalizarValesSalidaSinRegreso();
-  await marcarValesPersonalExcedidos();
-  if(hasPerm("crear_vale_personal")) await ensureValePersonalAutorizadores();
+  if(refresh){
+    await syncValesPersonal(true);
+    await normalizarValesSalidaSinRegreso();
+    await marcarValesPersonalExcedidos();
+  }
+  if(refresh && hasPerm("crear_vale_personal")) await ensureValePersonalAutorizadores();
 
   const today = new Date();
-  const list = valesPersonal
+  const term = valeSearchTerms.personal.trim().toLowerCase();
+  const allList = valesPersonal
     .filter(v => {
       if(currentUser?.role === ROLES.SERVICIO_MEDICO) return isPermisoImss(v);
       if(![ROLES.JEFE, ROLES.JEFE_COMPRAS].includes(currentUser?.role)) return true;
@@ -9485,6 +9520,10 @@ async function renderValesPersonal(){
       return typeof ts === "number" && isSameDay(ts, today);
     })
     .sort((a,b)=>(b.createdTs||0)-(a.createdTs||0));
+  const list = !term ? allList : allList.filter(v =>
+    [v.folio,v.nombreColaborador,v.nomina,v.departamento,v.tipoPermiso,v.autorizadorNombre]
+      .join(" ").toLowerCase().includes(term)
+  );
   const { generados, pendientes, fuera, regresoCancelado } = getValeCounts(list);
 
   const col = (title, dotClass, items) => `
@@ -9523,10 +9562,15 @@ async function renderValesPersonal(){
         <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${new Date().toLocaleDateString()}</div>
       </div>
       <div class="dashboard-toolbar vale-dashboard-head">
-        <span class="pill">Total: <b style="color:var(--text);margin-left:6px;">${list.length}</b></span>
-        <button class="secondary" data-action="refreshVales" data-tipo="personal">Actualizar</button>
-        ${(hasPerm("registrar_salida_personal") || hasPerm("registrar_regreso_personal")) ? `<button class="${registroManualPersonalActivo() ? "danger" : "secondary"}" data-action="toggleRegistroManualPersonal">${registroManualPersonalActivo() ? "Ocultar registro manual" : "Habilitar registro manual"}</button>` : ""}
-        ${hasPerm("escanear_qr") ? `<button class="secondary" data-action="scan" data-from="vales_personal">Escanear QR</button>` : ""}
+        <div class="vale-dashboard-summary">
+          <span class="pill vale-total-pill">Total: <b style="color:var(--text);margin-left:6px;">${allList.length}</b></span>
+        </div>
+        <div class="vale-dashboard-tools">
+          <input id="valeSearchPersonal" value="${esc(valeSearchTerms.personal)}" placeholder="Buscar nombre, nómina, folio..." aria-label="Buscar vales de personal">
+          <button class="secondary" data-action="refreshVales" data-tipo="personal">Actualizar</button>
+          ${(hasPerm("registrar_salida_personal") || hasPerm("registrar_regreso_personal")) ? `<button class="${registroManualPersonalActivo() ? "danger" : "secondary"}" data-action="toggleRegistroManualPersonal">${registroManualPersonalActivo() ? "Ocultar registro manual" : "Habilitar registro manual"}</button>` : ""}
+          ${hasPerm("escanear_qr") ? `<button class="secondary" data-action="scan" data-from="vales_personal">Escanear QR</button>` : ""}
+        </div>
       </div>
 
       ${valesContent}
@@ -15060,9 +15104,9 @@ async function renderNuevo(tipoCita = "proveedor"){
           </select>
         </div>
          
-        <div style="grid-column:1/-1;">
+        ${esVisitanteNuevo ? "" : `<div style="grid-column:1/-1;">
           ${renderFacturaOcEditor([{ facturaNo:"", ocNos:[] }], "facturasOcEditor")}
-        </div>
+        </div>`}
         <div>
         <label>Material a recibir</label>
         <textarea
@@ -16149,7 +16193,7 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
                 }
                 ${v.guardNombre ? `<span class="pill"><span class="dot ok"></span>Guardia: ${esc(v.guardNombre)}</span>` : ""}
                 ${v.gafeteNo ? `<span class="pill"><span class="dot info"></span>Gafete: ${esc(v.gafeteNo)}</span>` : ""}
-                <span class="badge-dictamen ${esc(dict)}">
+                ${tipo === "proveedor" ? `<span class="badge-dictamen ${esc(dict)}">
   <span class="bdot"></span>${esc(dictLabel)}
 </span>
 ${incLabel ? `
@@ -16164,7 +16208,7 @@ ${incLabel ? `
     <span class="dot ${showInc ? "warn" : "muted"}"></span>
     ${esc(incLabel)}
   </span>
-` : ""}
+` : ""}` : ""}
                 ${v.incidenciasSalida ? `<span class="pill"><span class="dot warn"></span>Incidencias</span>` : ""}
               </div>
             </div>
@@ -16226,7 +16270,7 @@ ${incLabel ? `
             </div>
           </div>
 
-          ${hasPerm("ver_documentos") ? `
+          ${hasPerm("ver_documentos") && !isVisitante(v) ? `
             <div class="divider"></div>
             ${renderFacturasOcReadonly(v)}
             <div class="row" style="margin-top:8px;">
@@ -16475,7 +16519,7 @@ ${incLabel ? `
             ${v.gafeteNo ? ` Gafete: <b style="color:var(--text)">${esc(v.gafeteNo)}</b>` : ""}
           </div>
 
-          ${hasPerm("ver_documentos") ? `
+          ${hasPerm("ver_documentos") && !isVisitante(v) ? `
             <div class="divider"></div>
             ${renderFacturasOcReadonly(v)}
             <div class="row" style="margin-top:8px;">
@@ -17656,6 +17700,22 @@ case "volverAEditarCita":
     // Buscar (local inmediato + sync con debounce)
 let _searchTimer = null;
 document.addEventListener("input", (e) => {
+  const valeSearch = e.target.closest("#valeSearchPersonal, #valeSearchActivos");
+  if(valeSearch){
+    const tipo = valeSearch.id === "valeSearchPersonal" ? "personal" : "activos";
+    valeSearchTerms[tipo] = valeSearch.value || "";
+    const cursorPos = valeSearch.selectionStart ?? valeSearchTerms[tipo].length;
+    if(tipo === "personal") renderValesPersonal(false);
+    else renderValesActivos(false);
+    requestAnimationFrame(() => {
+      const nextInput = document.getElementById(valeSearch.id);
+      if(nextInput){
+        nextInput.focus();
+        nextInput.setSelectionRange(cursorPos,cursorPos);
+      }
+    });
+    return;
+  }
   const searchInput = e.target.closest("#dashSearch, #qSearch");
   if(!searchInput) return;
   if(!currentUser) return;
