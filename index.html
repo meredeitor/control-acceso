@@ -3307,7 +3307,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v192</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v193</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3332,7 +3332,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v192";
+  const APP_VERSION = "v193";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5506,6 +5506,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v193</b><span>Los vales de entrada posterior a las 8:15 permanecen vigentes durante toda la fecha indicada: permiten registrar una llegada anticipada con cero minutos o calcular el retraso real después de esa hora. La ventana corta se conserva exclusivamente para salidas IMSS.</span></div>
           <div class="help-release"><b>v192</b><span>La autorización de vales de activo se asigna individualmente desde Usuarios y exige que la persona habilitada sea el autorizador seleccionado. La salida y el regreso requieren escanear el gafete QR de un guardia activo, cuya identidad queda registrada en el recorrido.</span></div>
           <div class="help-release"><b>v191</b><span>Vales de Personal y Vales de Activo se presentan como apartados independientes, con accesos propios a Dashboard, Nuevo vale e Historial. Se incorporan Próximos vales con autorización anticipada y QR habilitado únicamente en la fecha programada, historial completo de activos y Rondinero con orden obligatorio y omisiones justificadas.</span></div>
           <div class="help-release"><b>v190</b><span>Los permisos de Roles separan el acceso a Dashboard de proveedores y Dashboard de visitantes, permitiendo mostrar cualquiera de ellos de forma independiente sin alterar los accesos existentes.</span></div>
@@ -5577,7 +5578,7 @@ function helpGuideHtml(){
       <details open><summary>Inicio y navegación</summary><div class="help-guide-content"><p>Abre las secciones desde el menú lateral. Las opciones visibles dependen de tu rol. Usa Inicio para volver al tablero principal de tu perfil y Sincronizar cuando necesites actualizar la información de la nube. En el rol <b>Jefe</b>, la pantalla principal es <b>Vales de Personal</b> y el menú se presenta de forma compacta en el orden Vales, Configuración y Ayuda.</p><p>Si no puedes iniciar sesión o necesitas restablecer tu contraseña, ponte en contacto con el administrador.</p><p>En celulares y tablets, el botón compacto <b>Tema</b> permanece en el encabezado para cambiar rápidamente a un diseño claro cuando haya mucha luz.</p></div></details>
       <details><summary>Visitantes</summary><div class="help-guide-content"><ol><li>Programa la visita o autoriza una solicitud pendiente.</li><li>Al escanear el QR se registra la llegada y comienza el tiempo de espera.</li><li>Usa <b>Dar acceso</b> para registrar gafete y entrada.</li><li>Al salir, registra la salida para finalizar y obtener los tiempos de espera, permanencia y total.</li></ol></div></details>
       <details><summary>Proveedores</summary><div class="help-guide-content"><ol><li>Crea la cita con proveedor, empresa, área y documentación.</li><li>Si un proveedor recién registrado no aparece en la búsqueda, pulsa <b>Cargar proveedores</b> para actualizar el catálogo desde Firebase sin salir del formulario.</li><li>El guardia escanea el QR y registra la entrada.</li><li>Calidad puede dictaminar la entrega cuando corresponda.</li><li>La salida finaliza el registro y desactiva el QR.</li></ol></div></details>
-      <details><summary>Vales de personal</summary><div class="help-guide-content">Genera el vale con número de nómina y datos del permiso. Puede utilizarse el QR del vale o escanear el QR del gafete. El flujo continúa con autorización, salida y regreso del colaborador. Para el rol <b>Jefe</b>, solo se muestran los vales donde su UID o correo coincide con el autorizador asignado. El rol <b>Servicio Médico</b> puede emitir exclusivamente Permisos IMSS con hora programada; el QR funciona desde 5 minutos antes y hasta 30 minutos después, y el regreso se registra el mismo día. Guardia y Administrador disponen de <b>Vales → Historial</b>, donde se presenta el recorrido completo, responsables, tiempo real y minutos excedentes.</div></details>
+      <details><summary>Vales de personal</summary><div class="help-guide-content">Genera el vale con número de nómina y datos del permiso. Puede utilizarse el QR del vale o escanear el QR del gafete. El flujo continúa con autorización, salida y regreso del colaborador. Para el rol <b>Jefe</b>, solo se muestran los vales donde su UID o correo coincide con el autorizador asignado. Una <b>Entrada posterior a las 8:15</b> es válida durante toda la fecha indicada: permite ingresar antes de esa hora con cero minutos de retraso o después, calculando la diferencia desde las 8:15. La ventana de 5 minutos antes y 30 minutos después aplica exclusivamente a salidas IMSS con hora programada. Guardia y Administrador disponen de <b>Vales → Historial</b>, donde se presenta el recorrido completo, responsables, tiempo real y minutos excedentes.</div></details>
       <details><summary>Vales de activos</summary><div class="help-guide-content">Registra el activo, responsable, motivo y vigencia. El autorizador debe estar habilitado individualmente desde Usuarios y confirmar con su PIN. Para registrar la salida o el regreso, el guardia debe escanear su gafete QR; Firebase valida que corresponda a un guardia activo y guarda su identidad en el recorrido.</div></details>
       <details><summary>Guardia y Rondinero</summary><div class="help-guide-content"><ol><li>El administrador puede dar de alta todos los puntos y rutas sin estar físicamente en cada ubicación. Los puntos nuevos quedan identificados como <b>GPS pendiente</b>.</li><li>Usa <b>Editar punto</b> para corregir nombre, ubicación descriptiva, descripción, orden o radio. La edición conserva el QR, las coordenadas y las rutas asociadas.</li><li>En la pestaña <b>Rutas</b>, usa <b>Editar y ordenar</b>. El editor visual permite agregar o quitar puntos y cambiar la secuencia con los botones <b>Subir</b> y <b>Bajar</b>. La lista de arriba hacia abajo será el orden exacto del recorrido.</li><li>Después debe acudir a cada punto y pulsar <b>Configurar GPS</b> una vez. El sistema guarda sus coordenadas y un radio permitido de 30 metros.</li><li>Un punto con GPS pendiente puede administrarse, incluirse en rutas e imprimirse, pero no puede registrarse durante un rondín.</li><li>El guardia inicia el rondín y permite a la aplicación utilizar la ubicación precisa de la tablet.</li><li>Los puntos deben registrarse en el orden exacto definido en la ruta. Si un punto no puede visitarse, usa <b>Omitir con justificación</b>, captura el motivo y, opcionalmente, una fotografía. La omisión queda auditada y reduce el cumplimiento.</li><li>Al escanear un QR, Rondinero comprueba que la tablet esté dentro del radio autorizado. Un QR fotografiado y escaneado desde otro lugar será rechazado.</li><li>Al reportar una novedad selecciona el punto relacionado; el último punto escaneado aparece preseleccionado. También puede tomar una fotografía opcional, comprimida como JPEG de máximo 640 px y 180 KB sin Firebase Storage.</li><li>En el detalle, cada novedad y su fotografía se muestran dentro de la misma tarjeta del punto para revisarlas de un vistazo.</li><li>El cumplimiento se calcula dividiendo los puntos visitados entre los puntos esperados. Un rondín incompleto conserva su avance real en lugar de mostrar automáticamente 0%.</li><li>Desde <b>Detalle del recorrido</b>, pulsa <b>Generar PDF</b> para descargar el reporte completo paginado con datos del rondín, todos los puntos, evidencia GPS, novedades y fotografías.</li><li><b>Historial por guardia</b> unifica historial y cumplimiento: busca por texto, filtra por guardia o fechas y despliega cada guardia para consultar sus recorridos. El administrador también puede editar datos administrativos o eliminar un registro finalizado con PIN y auditoría.</li><li>El historial registra hora, distancia al punto, precisión GPS y la fotografía de la novedad como evidencia.</li><li>Si la precisión supera 40 metros, el registro se bloquea; muévete a un área abierta y vuelve a intentarlo.</li></ol></div></details>
       <details><summary>Reportes</summary><div class="help-guide-content">Historial permite consultar registros por fecha. Reportes presenta indicadores de visitas, tiempos, calidad y puntualidad. <b>Encuesta recepción</b>, disponible para Administrador y Recepcionista, muestra las encuestas aplicadas cada segunda salida de visitantes, el índice de servicio, participación, distribución de calificaciones y detalle por periodo. El <b>Reporte para Nóminas</b>, visible únicamente para Administrador, concentra los permisos de personal finalizados, minutos autorizados, tiempo real y minutos excedentes por colaborador, con detalle y exportación a Excel. El reporte no calcula importes ni aplica descuentos automáticamente.</div></details>
@@ -9344,6 +9345,12 @@ function getPermisoImssWindow(v={}){
 
 function getPermisoImssQrState(v={}, now=Date.now()){
   if(!isPermisoImss(v)) return "normal";
+  if(isValePersonalEntrada(v)){
+    const fecha = String(v.fecha || "");
+    if(fecha < todayISO()) return "vencido";
+    if(fecha > todayISO()) return "anticipado";
+    return v.status === ValeStatus.GENERADO && v.qrActivo !== false ? "habilitado" : "cerrado";
+  }
   if(v.status === ValeStatus.FUERA) return String(v.fecha || "") === todayISO() ? "regreso" : "vencido";
   if(v.status !== ValeStatus.GENERADO || v.qrActivo === false) return "cerrado";
   const { inicioTs, finTs } = getPermisoImssWindow(v);
@@ -9473,6 +9480,7 @@ function renderValePersonalCard(v){
   const esEntrada = isValePersonalEntrada(v);
   const excedido = isValePersonalExcedido(v);
   const esImss = isPermisoImss(v);
+  const esSalidaImss = esImss && !esEntrada;
   const imssEstado = getPermisoImssQrState(v);
   const imssWindow = getPermisoImssWindow(v);
   const movimientoDesdeQr = currentView === "vale_personal_operacion";
@@ -9494,7 +9502,7 @@ function renderValePersonalCard(v){
         ${requiereReautorizacion ? `<span class="pill"><span class="dot bad"></span>Requiere autorización del jefe</span>` : ""}
         <span class="pill"><span class="dot ${valeStatusDot(v.status)}"></span>${esc(valeStatusLabel(v.status))}</span>
         <span class="pill"><span class="dot info"></span>${esc(v.tipoPermiso || "Permiso")}</span>
-        ${esImss ? `<span class="pill"><span class="dot ${imssEstado === "habilitado" || imssEstado === "regreso" ? "ok" : imssEstado === "anticipado" ? "warn" : "bad"}"></span>Salida programada: ${esc(formatHoraTs(imssWindow.salidaTs))} · ${imssEstado === "anticipado" ? "Aún no habilitado" : imssEstado === "habilitado" ? "QR habilitado" : imssEstado === "regreso" ? "Esperando regreso" : "Ventana vencida"}</span>` : ""}
+        ${esSalidaImss ? `<span class="pill"><span class="dot ${imssEstado === "habilitado" || imssEstado === "regreso" ? "ok" : imssEstado === "anticipado" ? "warn" : "bad"}"></span>Salida programada: ${esc(formatHoraTs(imssWindow.salidaTs))} · ${imssEstado === "anticipado" ? "Aún no habilitado" : imssEstado === "habilitado" ? "QR habilitado" : imssEstado === "regreso" ? "Esperando regreso" : "Ventana vencida"}</span>` : ""}
         <span class="pill"><span class="dot warn"></span>Autorizado: ${limiteTxt}</span>
         ${autorizador ? `<span class="pill"><span class="dot warn"></span>Autoriza: ${esc(autorizador)}</span>` : ""}
         ${esEntrada
@@ -9563,7 +9571,7 @@ function valeHistoryEvents(v={}){
     if(n) events.push({ ts:n, title, detail, tone });
   };
   push(v.createdTs, "Vale creado", [v.createdByNombre, v.createdByEmail].filter(Boolean).join(" · ") || "Usuario no registrado");
-  if(isPermisoImss(v) && v.salidaProgramadaTs){
+  if(isPermisoImss(v) && !isValePersonalEntrada(v) && v.salidaProgramadaTs){
     push(v.salidaProgramadaTs, "Salida IMSS programada", `Ventana: ${formatHoraTs(v.imssVentanaInicioTs)} a ${formatHoraTs(v.imssVentanaFinTs)}`, "warn");
   }
   push(v.autorizadoTs, v.autorizacionEmergencia ? "Vale autorizado por emergencia" : (isPermisoImss(v) ? "Permiso emitido por Servicio Médico" : "Vale autorizado"), v.autorizacionEmergencia ? `${v.autorizacionEmergenciaPorNombre || v.autorizadoPorNombre || v.autorizadoPor || "Recepcionista"} · ${v.autorizacionEmergenciaMotivo || "Sin motivo"}` : [v.autorizadoPorNombre, v.autorizadoPor].filter(Boolean).join(" · "), v.autorizacionEmergencia ? "bad" : "ok");
@@ -12086,6 +12094,10 @@ async function updateValePersonalStatus(id, status){
   }
 
   const now = Date.now();
+  if(isValePersonalEntrada(v) && status === ValeStatus.REGRESO_CANCELADO && String(v.fecha || "") !== todayISO()){
+    toast("Fecha no vigente","Este vale de entrada solo puede registrarse durante la fecha indicada.","bad",4800);
+    return;
+  }
   if(isPermisoImss(v) && status === ValeStatus.FUERA){
     const estadoImss = getPermisoImssQrState(v, now);
     if(estadoImss === "anticipado"){
@@ -12172,7 +12184,13 @@ async function renderValePersonalOperacion(id){
     toast("No encontrado","No se encontró el vale de personal.","warn",3200);
     return renderValesPersonal();
   }
-  if(isPermisoImss(v) && v.status === ValeStatus.GENERADO){
+  const esEntrada = isValePersonalEntrada(v);
+  if(esEntrada && String(v.fecha || "") !== todayISO()){
+    const futura = String(v.fecha || "") > todayISO();
+    toast(futura ? "Vale programado" : "Vale vencido", futura ? `La entrada corresponde al ${valePassDate(v.fecha)}.` : "Este vale de entrada solo podía utilizarse en la fecha indicada.", "warn", 5200);
+    return await renderValesPersonal();
+  }
+  if(isPermisoImss(v) && !esEntrada && v.status === ValeStatus.GENERADO){
     const estadoImss = getPermisoImssQrState(v);
     if(estadoImss === "anticipado"){
       const { inicioTs, salidaTs } = getPermisoImssWindow(v);
@@ -12186,7 +12204,6 @@ async function renderValePersonalOperacion(id){
       return await renderValesPersonal();
     }
   }
-  const esEntrada = isValePersonalEntrada(v);
   const accion = v.status === ValeStatus.GENERADO
     ? (esEntrada ? "Registrar ingreso" : "Marcar salida")
     : v.status === ValeStatus.FUERA
@@ -12327,6 +12344,10 @@ function renderValePersonalQR(id){
     toast("QR aún no habilitado",`Este vale podrá utilizarse el ${valePassDate(v.fecha)}.`,"warn",4200);
     return renderProximosValesPersonal(false);
   }
+  if(isValePersonalEntrada(v) && String(v.fecha || "") < todayISO()){
+    toast("QR vencido","Este vale de entrada solo podía utilizarse en la fecha indicada.","warn",4200);
+    return renderValesPersonal();
+  }
   if(!v.qrActivo){
     toast("QR desactivado","Este vale ya está en Regreso o fue cancelado.","warn",3200);
     return renderValesPersonal();
@@ -12347,7 +12368,7 @@ function renderValePersonalQR(id){
   ].join("\n");
 
   appEl.innerHTML = renderValePermisoPass({
-    tipo:isPermisoImss(v) ? "Permiso IMSS" : "Entrada / Salida",
+    tipo:isValePersonalEntrada(v) ? "Entrada autorizada" : isPermisoImss(v) ? "Permiso IMSS" : "Entrada / Salida",
     payload,
     folio,
     nombre:v.nombreColaborador || "",
@@ -12357,12 +12378,12 @@ function renderValePersonalQR(id){
     depto:v.departamento || "",
     tipoPermiso:v.tipoPermiso || "",
     fecha:valePassDate(v.fecha),
-    fechaSub:isPermisoImss(v) ? `${v.tiempoAutorizado || ""} · Salida ${formatHoraTs(v.salidaProgramadaTs)}` : (v.tiempoAutorizado || ""),
+    fechaSub:esEntrada ? (v.tiempoAutorizado || "Entrada posterior a las 8:15 a.m.") : isPermisoImss(v) ? `${v.tiempoAutorizado || ""} · Salida ${formatHoraTs(v.salidaProgramadaTs)}` : (v.tiempoAutorizado || ""),
     autoriza:v.autorizadorNombre || v.autorizadorEmail || "",
-    instrucciones: isPermisoImss(v)
+    instrucciones: esEntrada
+      ? "Muestra este código QR al llegar. Es válido durante la fecha indicada, incluso si llegas antes de las 8:15 a.m.; el sistema registrará la hora real."
+      : isPermisoImss(v)
       ? `Muestra este QR en caseta. La salida se habilita 5 minutos antes y vence 30 minutos después de las ${formatHoraTs(v.salidaProgramadaTs)}.`
-      : esEntrada
-      ? "Muestra este codigo QR en el acceso. Este permiso es personal e intransferible."
       : "Muestra este codigo QR en caseta. Este permiso es personal e intransferible.",
     volverAction:"valesPersonal"
   });
@@ -15824,6 +15845,11 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
         if(String(vale.fecha || "") > todayISO()){
           toast("Vale programado",`Este QR se habilitará el ${valePassDate(vale.fecha)}. No debe registrarse antes de esa fecha.`,"warn",5200);
           moduleReturnView = "proximos_vales_personal";
+          return renderModuleHome();
+        }
+        if(isValePersonalEntrada(vale) && String(vale.fecha || "") < todayISO()){
+          toast("Vale vencido","Este QR de entrada solo podía utilizarse en la fecha indicada.","warn",4800);
+          moduleReturnView = "vales_personal";
           return renderModuleHome();
         }
         toast("QR detectado","Vale de personal encontrado.","ok",1800);
