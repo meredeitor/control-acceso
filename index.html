@@ -3307,7 +3307,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v197</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v198</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3332,7 +3332,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v197";
+  const APP_VERSION = "v198";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5506,6 +5506,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v198</b><span>El tiempo de los vales deja de avanzar al registrar el regreso, finalizar una salida sin regreso o cancelar el vale; los estados Regreso / Finalizado conservan la duración exacta del recorrido.</span></div>
           <div class="help-release"><b>v197</b><span>Las salidas sin regreso pendientes se normalizan como Finalizadas y se muestran en Regreso / Finalizado. Después de una reautorización, dashboard, historial y Nóminas conservan el tiempo completo desde la salida original hasta el regreso.</span></div>
           <div class="help-release"><b>v196</b><span>Los vales distinguen Salida sin regreso, que finaliza y desactiva el QR en el primer registro, de Sin horario estimado de regreso, que mantiene el QR activo, mide el tiempo transcurrido y permite registrar el regreso sin bloqueo por excedente.</span></div>
           <div class="help-release"><b>v195</b><span>Los permisos de salida IMSS se habilitan 5 minutos antes de la hora programada y permanecen vigentes hasta las 6:00 p.m. del mismo día, incluso para permisos creados previamente.</span></div>
@@ -9295,7 +9296,13 @@ function calcValePersonalTiempo(v={}){
   if(!v.salidaTs) return null;
   // El tiempo visible y de reportes siempre comprende el recorrido completo.
   const base = Number(v.salidaTs || 0);
-  const end = v.regresoTs || Date.now();
+  const end = Number(
+    v.regresoTs ||
+    v.salidaSinRegresoFinalizadaTs ||
+    v.canceladoTs ||
+    (v.status === ValeStatus.REGRESO_CANCELADO ? v.updatedTs : 0) ||
+    Date.now()
+  );
   if(end < base) return null;
   return Math.round((end - base) / 60000);
 }
@@ -9305,7 +9312,13 @@ function calcValePersonalTramoAutorizado(v={}){
   // Para detectar un nuevo excedente después de una reautorización sí se toma
   // el inicio del tramo vigente, sin alterar el tiempo total mostrado.
   const base = Math.max(Number(v.salidaTs || 0), Number(v.ultimoTiempoAutorizadoTs || 0));
-  const end = v.regresoTs || Date.now();
+  const end = Number(
+    v.regresoTs ||
+    v.salidaSinRegresoFinalizadaTs ||
+    v.canceladoTs ||
+    (v.status === ValeStatus.REGRESO_CANCELADO ? v.updatedTs : 0) ||
+    Date.now()
+  );
   if(end < base) return null;
   return Math.round((end - base) / 60000);
 }
