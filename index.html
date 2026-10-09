@@ -3327,7 +3327,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v200</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v201</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3352,7 +3352,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v200";
+  const APP_VERSION = "v201";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5528,6 +5528,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v201</b><span>La validación del PIN administrativo utiliza una ventana segura integrada en la aplicación, compatible con navegadores internos, móviles y aplicaciones instaladas.</span></div>
           <div class="help-release"><b>v200</b><span>La creación de vales de personal queda protegida contra pulsaciones y reintentos duplicados mediante un identificador único por formulario. Mantenimiento incorpora detección y limpieza segura de copias repetidas, conservando el vale con mayor recorrido.</span></div>
           <div class="help-release"><b>v199</b><span>Los dashboards de Vales incorporan una barra ordenada con total, búsqueda y acciones adaptables a celular y tablet. En Visitantes se ocultan el dictamen pendiente de Calidad y Factura / OC, conservando el aviso real de Pendiente autorización.</span></div>
           <div class="help-release"><b>v198</b><span>El tiempo de los vales deja de avanzar al registrar el regreso, finalizar una salida sin regreso o cancelar el vale; los estados Regreso / Finalizado conservan la duración exacta del recorrido.</span></div>
@@ -6104,6 +6105,35 @@ async function getCurrentAdminPinHash(){
   return data.pinHash || "";
 }
 
+function requestPinModal(actionLabel="esta acción"){
+  return new Promise(resolve => {
+    document.getElementById("securityPinModal")?.remove();
+    const overlay = document.createElement("div");
+    overlay.id = "securityPinModal";
+    overlay.className = "modal";
+    overlay.style.display = "flex";
+    overlay.innerHTML = `
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="securityPinTitle" style="max-width:430px;">
+        <div class="modal-head"><div><h2 id="securityPinTitle" style="margin:0;">Validar PIN</h2><small>Autorización de seguridad</small></div></div>
+        <div class="modal-body">
+          <p style="margin-top:0;color:var(--muted);">Ingresa tu PIN para ${esc(actionLabel)}.</p>
+          <label for="securityPinInput">PIN</label>
+          <input id="securityPinInput" type="password" inputmode="numeric" autocomplete="off" maxlength="12" aria-label="PIN de seguridad">
+          <div class="divider"></div>
+          <div class="row"><button id="securityPinAccept">Continuar</button><button id="securityPinCancel" class="secondary">Cancelar</button></div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector("#securityPinInput");
+    const finish = value => { overlay.remove(); resolve(value); };
+    overlay.querySelector("#securityPinAccept").addEventListener("click",()=>finish(input.value.trim()));
+    overlay.querySelector("#securityPinCancel").addEventListener("click",()=>finish(""));
+    overlay.addEventListener("click",event=>{ if(event.target===overlay) finish(""); });
+    input.addEventListener("keydown",event=>{ if(event.key==="Enter") finish(input.value.trim()); else if(event.key==="Escape") finish(""); });
+    requestAnimationFrame(()=>input.focus());
+  });
+}
+
 async function requireAdminPin(actionLabel = "esta acción"){
   if(!currentUser || currentUser.role !== ROLES.ADMIN){
     toast("Acceso denegado", "Solo ADMIN puede realizar esta acción.", "bad", 3200);
@@ -6118,7 +6148,7 @@ async function requireAdminPin(actionLabel = "esta acción"){
     await renderMiPin();
     return false;
   }
-  const pin = prompt(`🔐 Ingresa el PIN de administrador para ${actionLabel}:`);
+  const pin = await requestPinModal(actionLabel);
   if(!pin) return false;
   const pinHash = await hashPin(pin);
   if(pinHash === savedHash){
@@ -6144,7 +6174,7 @@ async function requireUserPin(actionLabel = "esta acción"){
     await renderMiPin();
     return false;
   }
-  const pin = prompt(`🔐 Ingresa tu PIN para ${actionLabel}:`);
+  const pin = await requestPinModal(actionLabel);
   if(!pin) return false;
   const pinHash = await hashPin(pin);
   if(pinHash === savedHash){
@@ -6166,7 +6196,7 @@ async function requireFreshUserPin(actionLabel = "esta acción"){
     await renderMiPin();
     return false;
   }
-  const pin = prompt(`🔐 Ingresa tu PIN para ${actionLabel}:`);
+  const pin = await requestPinModal(actionLabel);
   if(!pin) return false;
   if(await hashPin(pin) === savedHash){
     toast("PIN validado", "Acción autorizada.", "ok", 1800);
