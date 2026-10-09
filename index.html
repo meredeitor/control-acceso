@@ -297,6 +297,40 @@
     .vale-dashboard-tools input{ width:min(260px,28vw); min-width:180px; }
     .vale-total-pill{ font-weight:800; }
     .vale-dashboard-head h2{ overflow-wrap:anywhere; }
+    .provider-dashboard-modern .provider-visit-card.vale-card-excedido{
+      overflow:hidden;
+      border-color:#ff3150;
+      background:linear-gradient(155deg,#ef0a3d 0%,#c70035 58%,#8d092d 100%);
+      color:#fff;
+      box-shadow:0 0 0 2px rgba(255,69,96,.28),0 16px 34px rgba(225,6,50,.38),0 0 26px rgba(255,21,68,.28);
+    }
+    .provider-dashboard-modern .provider-visit-card.vale-card-excedido strong,
+    .provider-dashboard-modern .provider-visit-card.vale-card-excedido small{ color:#fff; }
+    .provider-dashboard-modern .provider-visit-card.vale-card-excedido .pill{
+      border-color:rgba(255,255,255,.38);
+      background:rgba(255,255,255,.82);
+      color:#3a1020;
+    }
+    .vale-overdue-banner{
+      margin:-15px -15px 14px;
+      padding:10px 14px;
+      border-bottom:1px solid rgba(255,255,255,.55);
+      background:#ff0b43;
+      color:#fff;
+      text-align:center;
+      font-size:12px;
+      font-weight:950;
+      letter-spacing:1.25px;
+      text-transform:uppercase;
+    }
+    .vale-overdue-banner small{
+      display:block;
+      margin-top:3px;
+      color:#fff;
+      font-size:10px;
+      font-weight:800;
+      letter-spacing:.45px;
+    }
     .vale-actions{
       margin-top:10px;
       align-items:stretch;
@@ -3327,7 +3361,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v205</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v206</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3352,7 +3386,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v205";
+  const APP_VERSION = "v206";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5528,6 +5562,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v206</b><span>Los vales de personal con tiempo excedido utilizan una tarjeta de alerta roja con resplandor, encabezado destacado y minutos de retraso visibles, conservando el estado Fuera y el registro normal del regreso.</span></div>
           <div class="help-release"><b>v205</b><span>Cuando un Jefe genera un vale de personal y él mismo es el autorizador asignado, puede autorizarlo inmediatamente con su PIN o dejarlo pendiente para atenderlo después. El QR se activa únicamente al completar la autorización inmediata.</span></div>
           <div class="help-release"><b>v204</b><span>Los vales de personal que exceden el tiempo permanecen en Fuera y se muestran en rojo con los minutos excedidos, sin regresar a Pendiente ni solicitar una nueva autorización del jefe. Los registros antiguos pendientes de reautorización se normalizan automáticamente.</span></div>
           <div class="help-release"><b>v203</b><span>La limpieza de vales duplicados reconoce copias aunque existan variaciones internas en autorizador, departamento o tiempo, comparando la fecha, nómina, colaborador y tipo dentro de una ventana de 30 minutos.</span></div>
@@ -9726,16 +9761,13 @@ function renderValePersonalCard(v){
   const autorizadoMin = parseTiempoAutorizadoMin(v.tiempoAutorizado);
   const excedenteMin = excedido && usadoMin !== null && autorizadoMin !== null ? Math.max(0, usadoMin-autorizadoMin) : 0;
   const limiteTxt = autorizadoMin === null ? esc(v.tiempoAutorizado || "-") : formatMinutes(autorizadoMin);
-  const cardStyle = excedido
-    ? "border-color:rgba(239,68,68,.85); background:linear-gradient(180deg, rgba(127,29,29,.42), rgba(69,10,10,.28)); box-shadow:0 18px 44px rgba(127,29,29,.28);"
-    : "";
   return `
-    <div class="tarjeta history-card provider-visit-card tipo-visitante" data-action="verValePersonalQR" data-id="${esc(v.id)}" style="${cardStyle}">
+    <div class="tarjeta history-card provider-visit-card tipo-visitante ${excedido ? "vale-card-excedido" : ""}" data-action="verValePersonalQR" data-id="${esc(v.id)}">
+      ${excedido ? `<div class="vale-overdue-banner">Tiempo excedido<small>Excedido por ${esc(String(excedenteMin))} min</small></div>` : ""}
       <strong>${esc(v.nombreColaborador || "Colaborador")}</strong>
       <small>Nómina: ${esc(v.nomina || "-")} • ${esc(v.departamento || "Departamento")}</small>
       <div class="meta">
         ${esFuturo ? `<span class="pill"><span class="dot info"></span>Programado: ${esc(valePassDate(v.fecha))}</span>` : ""}
-        ${excedido ? `<span class="pill"><span class="dot bad"></span>Tiempo excedido: ${esc(String(excedenteMin))} min</span>` : ""}
         <span class="pill"><span class="dot ${valeStatusDot(v.status)}"></span>${esc(esSalidaSinRegreso && v.status === ValeStatus.REGRESO_CANCELADO ? "Finalizado" : valeStatusLabel(v.status))}</span>
         ${esSalidaSinRegreso ? `<span class="pill"><span class="dot ${v.status === ValeStatus.REGRESO_CANCELADO ? "ok" : "warn"}"></span>Salida sin regreso${v.status === ValeStatus.REGRESO_CANCELADO ? " · finalizada" : ""}</span>` : ""}
         ${esSinHorarioRegreso ? `<span class="pill"><span class="dot ${v.status === ValeStatus.REGRESO_CANCELADO ? "ok" : "info"}"></span>Regreso sin horario límite${v.status === ValeStatus.FUERA ? " · tiempo en medición" : v.status === ValeStatus.REGRESO_CANCELADO ? " · regreso registrado" : ""}</span>` : ""}
