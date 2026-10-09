@@ -3327,7 +3327,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v199</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v200</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3352,7 +3352,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v199";
+  const APP_VERSION = "v200";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -4566,7 +4566,7 @@ function renderModuleHome(){
   if(qSearch){qSearch.value="";qSearch.style.display="none";}
 
   const firstName = esc(String(currentUser?.nombre || currentUser?.name || "").trim().split(/\s+/)[0] || "");
-  const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"📊",nuevo_vale_personal:"➕",proximos_vales_personal:"📅",vales_activos:"📊",nuevo_vale_activo:"➕",historial_vales_personal:"🕘",historial_vales_activos:"🧭",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_encuesta_visitantes:"😊",reporte_nominas:"🧾",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_cuenta:"🔒",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",eliminarfinalizados:"🗑️",depurar_30d:"📆",depurar_base:"⚠️",help_guide:"?",help_about:"ⓘ"};
+  const menuIcons = {dashboard_proveedores:"📊",nuevo:"📅",citas_proveedores:"🗂️",dashboard_visitantes:"📈",nuevo_visitante:"➕",citas_visitantes:"📋",vales_personal:"📊",nuevo_vale_personal:"➕",proximos_vales_personal:"📅",vales_activos:"📊",nuevo_vale_activo:"➕",historial_vales_personal:"🕘",historial_vales_activos:"🧭",scan:"▦",bitacora_guardia:"📝",rondinero:"🛡️",historial:"🕘",reportes:"📊",reporte_encuesta_visitantes:"😊",reporte_nominas:"🧾",reporte_cambios:"↻",export_excel:"X",export_pdf:"PDF",mi_cuenta:"🔒",mi_pin:"🔐",roles:"👥",role_permissions:"🔑",personas_visita:"📇",proveedores:"🚚",sesiones_activas:"●",eliminarfinalizados:"🗑️",duplicados_vales_personal:"🧹",depurar_30d:"📆",depurar_base:"⚠️",help_guide:"?",help_about:"ⓘ"};
   const link = (key,label,show=true,description="") => show ? `<button class="access-menu-link" data-sb="${key}"><span class="access-kiosk-icon" aria-hidden="true">${menuIcons[key] || "•"}</span><span class="access-kiosk-label">${label}</span>${description ? `<span class="access-kiosk-description">${description}</span>` : ""}</button>` : "";
   const group = (title,description,icon,iconClass,items) => {
     const links = items.filter(Boolean).join("");
@@ -4594,6 +4594,7 @@ function renderModuleHome(){
       link("mi_cuenta","Mi cuenta",true,"Cambiar contraseña y revisar seguridad"),link("mi_pin","Mi PIN",canConfigurePin()),link("roles","Usuarios",hasPerm("admin_roles")),link("role_permissions","Roles y permisos",hasPerm("admin_roles")),link("personas_visita","Directorio",currentUser?.role === ROLES.ADMIN),link("proveedores","Catálogo proveedores",currentUser?.role === ROLES.ADMIN),link("sesiones_activas","Sesiones activas",hasPerm("ver_sesiones_activas"))]),
     group("Mantenimiento de datos","Herramientas administrativas de eliminación","⚠","vales",[
       link("eliminarfinalizados","Finalizados de hoy",currentUser?.role === ROLES.ADMIN && hasPerm("limpiar_finalizados"),"Elimina únicamente visitas finalizadas del día"),
+      link("duplicados_vales_personal","Duplicados de vales",currentUser?.role === ROLES.ADMIN && hasPerm("eliminar"),"Detecta y elimina copias repetidas; conserva el registro con mayor avance"),
       link("depurar_30d","Retención de 30 días",currentUser?.role === ROLES.ADMIN && hasPerm("eliminar"),"Elimina registros con más de 30 días"),
       link("depurar_base","Depuración hasta hoy",currentUser?.role === ROLES.ADMIN && hasPerm("eliminar"),"Elimina registros históricos hasta hoy; conserva futuros")]),
     group("Ayuda","Información y asistencia","?","vales",[link("help_guide","Guía rápida"),link("help_about","Acerca de")])
@@ -5527,6 +5528,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v200</b><span>La creación de vales de personal queda protegida contra pulsaciones y reintentos duplicados mediante un identificador único por formulario. Mantenimiento incorpora detección y limpieza segura de copias repetidas, conservando el vale con mayor recorrido.</span></div>
           <div class="help-release"><b>v199</b><span>Los dashboards de Vales incorporan una barra ordenada con total, búsqueda y acciones adaptables a celular y tablet. En Visitantes se ocultan el dictamen pendiente de Calidad y Factura / OC, conservando el aviso real de Pendiente autorización.</span></div>
           <div class="help-release"><b>v198</b><span>El tiempo de los vales deja de avanzar al registrar el regreso, finalizar una salida sin regreso o cancelar el vale; los estados Regreso / Finalizado conservan la duración exacta del recorrido.</span></div>
           <div class="help-release"><b>v197</b><span>Las salidas sin regreso pendientes se normalizan como Finalizadas y se muestran en Regreso / Finalizado. Después de una reautorización, dashboard, historial y Nóminas conservan el tiempo completo desde la salida original hasta el regreso.</span></div>
@@ -6023,6 +6025,11 @@ if(key === "sesiones_activas"){
 if (key === "depurar_30d") {
   sbClose();
   await depurarBaseRetencion30Dias();
+  return;
+}
+if (key === "duplicados_vales_personal") {
+  sbClose();
+  await limpiarDuplicadosValesPersonal();
   return;
 }
   if(key === 'export_excel'){
@@ -7173,6 +7180,103 @@ async function pushRecentToCloud(){
   // 🔇 NO mostrar toast en auto-sync
   // El guardado principal ya ocurrió
 }
+}
+
+function valePersonalDuplicateSignature(v={}){
+  const clean = value => String(value || "").trim().toLowerCase().replace(/\s+/g," ");
+  return [
+    clean(v.fecha),
+    clean(v.nomina).replace(/^0+(?=\d)/,""),
+    clean(v.nombreColaborador),
+    clean(v.tipoPermiso),
+    clean(v.tiempoAutorizado),
+    clean(v.departamento),
+    clean(v.autorizadorUid || v.autorizadorEmail),
+    Number(v.salidaProgramadaTs || 0)
+  ].join("|");
+}
+
+function valePersonalProgressScore(v={}){
+  let score = 0;
+  if(v.regresoTs || v.finalizadoTs || v.canceladoTs) score += 100;
+  if(v.salidaTs || v.llegadaTs) score += 60;
+  if(v.autorizadoTs || v.autorizadoPorUid || v.autorizadoPor) score += 30;
+  if(v.status === ValeStatus.REGRESO_CANCELADO) score += 20;
+  else if(v.status === ValeStatus.FUERA) score += 15;
+  else if(v.status === ValeStatus.GENERADO) score += 10;
+  if(Array.isArray(v.historial)) score += Math.min(v.historial.length,9);
+  return score;
+}
+
+function detectarDuplicadosValesPersonal(list=[]){
+  const groups = new Map();
+  list.forEach(v => {
+    const key = valePersonalDuplicateSignature(v);
+    if(!key || key.startsWith("|")) return;
+    if(!groups.has(key)) groups.set(key,[]);
+    groups.get(key).push(v);
+  });
+  const duplicates = [];
+  const clusters = [];
+  groups.forEach(items => {
+    const ordered = [...items].sort((a,b)=>Number(a.createdTs||0)-Number(b.createdTs||0));
+    let cluster = [];
+    const flush = () => {
+      if(cluster.length < 2){ cluster=[]; return; }
+      const ranked = [...cluster].sort((a,b)=>valePersonalProgressScore(b)-valePersonalProgressScore(a) || Number(a.createdTs||0)-Number(b.createdTs||0));
+      const keep = ranked[0];
+      const remove = ranked.slice(1);
+      clusters.push({ keep, remove });
+      duplicates.push(...remove);
+      cluster = [];
+    };
+    ordered.forEach(item => {
+      const previous = cluster[cluster.length-1];
+      if(previous && Number(item.createdTs||0)-Number(previous.createdTs||0) > 10*60*1000) flush();
+      cluster.push(item);
+    });
+    flush();
+  });
+  return { clusters, duplicates };
+}
+
+async function limpiarDuplicadosValesPersonal(){
+  if(currentUser?.role !== ROLES.ADMIN || !requirePerm("eliminar","Solo ADMIN puede limpiar vales duplicados.")) return;
+  if(!navigator.onLine) return toast("Sin conexión","Conéctate a internet para verificar y limpiar los duplicados en Firebase.","warn",4200);
+  if(!(await requireAdminPin("limpiar vales de personal duplicados"))) return;
+
+  let cloud = [];
+  try{
+    cloud = await cloudFetchHistorialValesPersonal();
+  }catch(error){
+    console.error(error);
+    return toast("No se pudo revisar","Firebase no respondió. No se eliminó ningún vale.","bad",4800);
+  }
+  const { clusters, duplicates } = detectarDuplicadosValesPersonal(cloud);
+  if(!duplicates.length) return toast("Sin duplicados","No se encontraron vales idénticos creados con menos de 10 minutos de diferencia.","ok",4200);
+
+  const preview = clusters.slice(0,8).map(group => {
+    const v = group.keep;
+    return `• ${v.nombreColaborador || "Sin nombre"} · nómina ${v.nomina || "-"} · ${v.fecha || "-"}: ${group.remove.length} copia(s)`;
+  }).join("\n");
+  const extra = clusters.length > 8 ? `\n• ...y ${clusters.length-8} grupo(s) más` : "";
+  const ok = confirm(
+    `LIMPIEZA DE VALES DUPLICADOS\n\nSe detectaron ${duplicates.length} copias en ${clusters.length} grupo(s).\n\n${preview}${extra}\n\nSe conservará en cada grupo el vale con autorización o mayor recorrido. Si empatan, se conserva el más antiguo.\n\n¿Deseas eliminar únicamente las copias detectadas?`
+  );
+  if(!ok) return;
+
+  const results = await Promise.allSettled(duplicates.map(v => cloudDeleteValePersonal(v.id)));
+  const deletedIds = new Set();
+  results.forEach((result,index) => { if(result.status === "fulfilled") deletedIds.add(String(duplicates[index].id)); });
+  valesPersonal = mergeById(valesPersonal, cloud).filter(v => !deletedIds.has(String(v.id)));
+  saveValesPersonalLocal();
+  const failed = duplicates.length - deletedIds.size;
+  if(failed){
+    toast("Limpieza parcial",`Se eliminaron ${deletedIds.size} copias y ${failed} no pudieron eliminarse. Puedes ejecutar la revisión nuevamente.`,"warn",6000);
+  }else{
+    toast("Duplicados eliminados",`Se eliminaron ${deletedIds.size} copias y se conservaron ${clusters.length} vales válidos.`,"ok",5200);
+  }
+  renderModuleHome();
 }
 
 async function depurarBaseHastaHoy() {
@@ -12081,7 +12185,10 @@ async function openValePersonalModal(){
     if(sel) sel.innerHTML = renderValePersonalAutorizadorOptions();
   }
   const modal = document.getElementById("valePersonalModal");
-  if(modal) modal.style.display = "flex";
+  if(modal){
+    modal.dataset.draftId = (globalThis.crypto?.randomUUID?.() || `VP-${Date.now()}-${Math.random().toString(36).slice(2,10)}`);
+    modal.style.display = "flex";
+  }
   const tipo = document.getElementById("vpTipoPermiso");
   if(tipo){
     tipo.onchange = syncValePersonalTiempoPorTipo;
@@ -12107,7 +12214,10 @@ function syncValePersonalTiempoPorTipo(){
 
 function closeValePersonalModal(){
   const modal = document.getElementById("valePersonalModal");
-  if(modal) modal.style.display = "none";
+  if(modal){
+    modal.style.display = "none";
+    delete modal.dataset.draftId;
+  }
 }
 
 function createValePersonalFromModal(){
@@ -12147,7 +12257,8 @@ function createValePersonalFromModal(){
     return null;
   }
 
-  const id = Date.now().toString();
+  const modal = document.getElementById("valePersonalModal");
+  const id = modal?.dataset?.draftId || globalThis.crypto?.randomUUID?.() || `VP-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
   return {
     id,
     folio: `${esPermisoImss ? "IMSS" : "VP"}-${new Date().getFullYear()}-${String(valesPersonal.length + 1).padStart(4,"0")}`,
@@ -12182,18 +12293,40 @@ function createValePersonalFromModal(){
   };
 }
 
+let guardandoValePersonal = false;
 async function guardarValePersonal(){
+  if(guardandoValePersonal) return;
   if(!hasPerm("crear_vale_personal") && !hasPerm("crear_permiso_imss")) return toast("No permitido","Tu rol no puede crear este permiso.","warn");
   const v = createValePersonalFromModal();
   if(!v) return;
-  valesPersonal.unshift(v);
-  await saveValesPersonal();
-  if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
-    try{ await cloudUpsertValePersonal(v); }catch(e){ console.warn(e); }
+  const recentDuplicate = valesPersonal.find(existing =>
+    valePersonalDuplicateSignature(existing) === valePersonalDuplicateSignature(v) &&
+    Math.abs(Number(existing.createdTs||0)-Number(v.createdTs||0)) <= 2*60*1000
+  );
+  if(recentDuplicate){
+    toast("Vale ya generado",`Ya existe el vale ${recentDuplicate.folio || recentDuplicate.id}. Se abrirá el registro existente.`,"warn",4200);
+    closeValePersonalModal();
+    return renderValePersonalQR(recentDuplicate.id);
   }
-  toast(isPermisoImss(v) ? "Permiso IMSS generado" : "Vale generado", isPermisoImss(v) ? "El QR respetará el horario programado." : "Vale de personal guardado y QR generado.","ok",2400);
-  closeValePersonalModal();
-  renderValePersonalQR(v.id);
+  const saveButton = document.querySelector('[data-action="guardarValePersonal"]');
+  guardandoValePersonal = true;
+  if(saveButton){ saveButton.disabled=true; saveButton.textContent="Guardando..."; }
+  try{
+    if(!valesPersonal.some(existing => String(existing.id) === String(v.id))) valesPersonal.unshift(v);
+    await saveValesPersonal();
+    if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE) await cloudUpsertValePersonal(v);
+    toast(isPermisoImss(v) ? "Permiso IMSS generado" : "Vale generado", isPermisoImss(v) ? "El QR respetará el horario programado." : "Vale de personal guardado y QR generado.","ok",2400);
+    closeValePersonalModal();
+    renderValePersonalQR(v.id);
+  }catch(error){
+    console.error(error);
+    valesPersonal = valesPersonal.filter(existing => String(existing.id) !== String(v.id));
+    saveValesPersonalLocal();
+    toast("No se pudo confirmar el vale","La operación no se repetirá automáticamente. Revisa tu conexión y vuelve a intentarlo.","bad",5200);
+  }finally{
+    guardandoValePersonal = false;
+    if(saveButton?.isConnected){ saveButton.disabled=false; saveButton.textContent="Guardar y generar QR"; }
+  }
 }
 
 async function updateValePersonalStatus(id, status){
