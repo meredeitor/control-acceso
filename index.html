@@ -3327,7 +3327,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v201</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v202</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3352,7 +3352,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v201";
+  const APP_VERSION = "v202";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5528,6 +5528,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v202</b><span>La ventana integrada de validación del PIN se presenta nuevamente como un modal flotante, centrado y adaptable en computadora, tablet y celular.</span></div>
           <div class="help-release"><b>v201</b><span>La validación del PIN administrativo utiliza una ventana segura integrada en la aplicación, compatible con navegadores internos, móviles y aplicaciones instaladas.</span></div>
           <div class="help-release"><b>v200</b><span>La creación de vales de personal queda protegida contra pulsaciones y reintentos duplicados mediante un identificador único por formulario. Mantenimiento incorpora detección y limpieza segura de copias repetidas, conservando el vale con mayor recorrido.</span></div>
           <div class="help-release"><b>v199</b><span>Los dashboards de Vales incorporan una barra ordenada con total, búsqueda y acciones adaptables a celular y tablet. En Visitantes se ocultan el dictamen pendiente de Calidad y Factura / OC, conservando el aviso real de Pendiente autorización.</span></div>
@@ -6110,10 +6111,10 @@ function requestPinModal(actionLabel="esta acción"){
     document.getElementById("securityPinModal")?.remove();
     const overlay = document.createElement("div");
     overlay.id = "securityPinModal";
-    overlay.className = "modal";
+    overlay.className = "modal-overlay show";
     overlay.style.display = "flex";
     overlay.innerHTML = `
-      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="securityPinTitle" style="max-width:430px;">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="securityPinTitle" style="max-width:430px;">
         <div class="modal-head"><div><h2 id="securityPinTitle" style="margin:0;">Validar PIN</h2><small>Autorización de seguridad</small></div></div>
         <div class="modal-body">
           <p style="margin-top:0;color:var(--muted);">Ingresa tu PIN para ${esc(actionLabel)}.</p>
