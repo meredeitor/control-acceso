@@ -3370,7 +3370,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v207</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v208</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3395,7 +3395,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v207";
+  const APP_VERSION = "v208";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3508,7 +3508,27 @@ document.getElementById("appVersion").textContent = APP_VERSION;
 
   function qrLateBlockMin(v = {}){
     const tipo = String(v.tipoVisita || v.tipoAcceso || "proveedor").toLowerCase();
-    return tipo === "visitante" ? VISITOR_QR_LATE_BLOCK_MIN : QR_LATE_BLOCK_MIN;
+    return tipo === "visitante" ? Number.POSITIVE_INFINITY : QR_LATE_BLOCK_MIN;
+  }
+
+  function normalizarQrVisitanteRetrasado(v={}){
+    if(!isVisitante(v) || v.status !== Status.PROGRAMADO || v.qrDesactivadoMotivo !== "RETRASO") return false;
+    v.qrActivo = true;
+    v.qrDesactivadoMotivo = "";
+    v.qrDesactivadoMin = null;
+    v.qrDesactivadoTs = null;
+    v.qrReactivadoTs = Date.now();
+    v.updatedTs = Date.now();
+    return true;
+  }
+
+  async function normalizarQrVisitantesRetrasados(){
+    const restaurados = visitas.filter(normalizarQrVisitanteRetrasado);
+    if(!restaurados.length) return;
+    saveVisitasLocal();
+    if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
+      await Promise.all(restaurados.map(v => cloudUpsertVisita(v).catch(error => console.warn("No se pudo reactivar QR de visitante:",error))));
+    }
   }
   const VALES_ACTIVOS_LOOKBACK_DAYS = 30;
 
@@ -5571,6 +5591,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v208</b><span>Las citas de Visitantes ya no desactivan su QR por retraso. Los QR antiguos bloqueados únicamente por retraso se reactivan al sincronizar, mientras se conservan los bloqueos por cancelación, salida, desactivación manual o falta de autorización.</span></div>
           <div class="help-release"><b>v207</b><span>La tarjeta roja de Tiempo excedido conserva el fondo, resplandor y contraste correcto también en el tema claro, sin afectar las tarjetas normales.</span></div>
           <div class="help-release"><b>v206</b><span>Los vales de personal con tiempo excedido utilizan una tarjeta de alerta roja con resplandor, encabezado destacado y minutos de retraso visibles, conservando el estado Fuera y el registro normal del regreso.</span></div>
           <div class="help-release"><b>v205</b><span>Cuando un Jefe genera un vale de personal y él mismo es el autorizador asignado, puede autorizarlo inmediatamente con su PIN o dejarlo pendiente para atenderlo después. El QR se activa únicamente al completar la autorización inmediata.</span></div>
@@ -7194,6 +7215,7 @@ function fmt(ts){
         const cloud = await cloudFetchByDay(d);
         visitas = mergeById(visitas, cloud);
         saveVisitasLocal();
+        await normalizarQrVisitantesRetrasados();
         // El resumen diario se mantiene con deltas en cloudUpsertVisita/cloudDeleteVisita.
         // Reconstruirlo en cada sync genera escrituras repetidas y puede inflar la cuota gratuita.
         markCloudRead(cloudReadCache.visitasDia, cacheKey);
@@ -8021,6 +8043,7 @@ function renderRegisterForm(){
     }
     function qrInactivoPorImpuntualidad(v){
       if(!v || v.status !== Status.PROGRAMADO) return false;
+      if(isVisitante(v)) return false;
       if(typeof v.fechaHoraTs !== "number") return false;
       const limiteTs = v.fechaHoraTs + (qrLateBlockMin(v) * 60 * 1000);
       if(qrRetrasoAutorizado(v)) return false;
@@ -16221,6 +16244,13 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
         }
       }
 
+      if(v && normalizarQrVisitanteRetrasado(v)){
+        saveVisitasLocal();
+        if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
+          await cloudUpsertVisita(v).catch(error => console.warn("No se pudo reactivar el QR del visitante:",error));
+        }
+      }
+
       if(v?.status === "pendiente_autorizacion"){
         rememberModuleReturnForVisita(v);
         toast("Pendiente de autorización","Esta solicitud aún no está autorizada. No liberar acceso.", "warn", 4200);
@@ -16552,6 +16582,8 @@ ${incLabel ? `
     return renderModuleHome();
   }
 
+  if(normalizarQrVisitanteRetrasado(v)) saveVisitasLocal();
+
   // BLOQUEO Bloqueo por QR desactivado
  if(!v.qrActivo){
   // ✅ Si fue desactivado por retraso, muestra el toast con minutos
@@ -16648,6 +16680,8 @@ ${incLabel ? `
     toast("Datos incompletos","Esta cita no tiene fechaHoraTs válida. Requiere revisión por ADMIN.","warn", 4200);
     return renderModuleHome();
   }
+
+  if(normalizarQrVisitanteRetrasado(v)) saveVisitasLocal();
 
   // ⛔ QR DESACTIVADO → TOAST OBLIGATORIO AL INTENTAR REGISTRAR ENTRADA
   // (Esto es lo que pediste: aunque el botón exista, al click aquí se bloquea con toast)
