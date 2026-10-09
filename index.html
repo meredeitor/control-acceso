@@ -3327,7 +3327,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v202</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v203</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3352,7 +3352,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v202";
+  const APP_VERSION = "v203";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5528,6 +5528,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v203</b><span>La limpieza de vales duplicados reconoce copias aunque existan variaciones internas en autorizador, departamento o tiempo, comparando la fecha, nómina, colaborador y tipo dentro de una ventana de 30 minutos.</span></div>
           <div class="help-release"><b>v202</b><span>La ventana integrada de validación del PIN se presenta nuevamente como un modal flotante, centrado y adaptable en computadora, tablet y celular.</span></div>
           <div class="help-release"><b>v201</b><span>La validación del PIN administrativo utiliza una ventana segura integrada en la aplicación, compatible con navegadores internos, móviles y aplicaciones instaladas.</span></div>
           <div class="help-release"><b>v200</b><span>La creación de vales de personal queda protegida contra pulsaciones y reintentos duplicados mediante un identificador único por formulario. Mantenimiento incorpora detección y limpieza segura de copias repetidas, conservando el vale con mayor recorrido.</span></div>
@@ -7219,11 +7220,7 @@ function valePersonalDuplicateSignature(v={}){
     clean(v.fecha),
     clean(v.nomina).replace(/^0+(?=\d)/,""),
     clean(v.nombreColaborador),
-    clean(v.tipoPermiso),
-    clean(v.tiempoAutorizado),
-    clean(v.departamento),
-    clean(v.autorizadorUid || v.autorizadorEmail),
-    Number(v.salidaProgramadaTs || 0)
+    clean(v.tipoPermiso)
   ].join("|");
 }
 
@@ -7263,7 +7260,9 @@ function detectarDuplicadosValesPersonal(list=[]){
     };
     ordered.forEach(item => {
       const previous = cluster[cluster.length-1];
-      if(previous && Number(item.createdTs||0)-Number(previous.createdTs||0) > 10*60*1000) flush();
+      const previousTs = Number(previous?.createdTs || 0);
+      const itemTs = Number(item.createdTs || 0);
+      if(previous && previousTs > 0 && itemTs > 0 && itemTs-previousTs > 30*60*1000) flush();
       cluster.push(item);
     });
     flush();
@@ -7284,7 +7283,7 @@ async function limpiarDuplicadosValesPersonal(){
     return toast("No se pudo revisar","Firebase no respondió. No se eliminó ningún vale.","bad",4800);
   }
   const { clusters, duplicates } = detectarDuplicadosValesPersonal(cloud);
-  if(!duplicates.length) return toast("Sin duplicados","No se encontraron vales idénticos creados con menos de 10 minutos de diferencia.","ok",4200);
+  if(!duplicates.length) return toast("Sin duplicados","No se encontraron permisos repetidos para la misma fecha, nómina, persona y tipo dentro de una ventana de 30 minutos.","ok",5200);
 
   const preview = clusters.slice(0,8).map(group => {
     const v = group.keep;
