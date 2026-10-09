@@ -3327,7 +3327,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v204</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v205</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3352,7 +3352,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v204";
+  const APP_VERSION = "v205";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5528,6 +5528,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v205</b><span>Cuando un Jefe genera un vale de personal y él mismo es el autorizador asignado, puede autorizarlo inmediatamente con su PIN o dejarlo pendiente para atenderlo después. El QR se activa únicamente al completar la autorización inmediata.</span></div>
           <div class="help-release"><b>v204</b><span>Los vales de personal que exceden el tiempo permanecen en Fuera y se muestran en rojo con los minutos excedidos, sin regresar a Pendiente ni solicitar una nueva autorización del jefe. Los registros antiguos pendientes de reautorización se normalizan automáticamente.</span></div>
           <div class="help-release"><b>v203</b><span>La limpieza de vales duplicados reconoce copias aunque existan variaciones internas en autorizador, departamento o tiempo, comparando la fecha, nómina, colaborador y tipo dentro de una ventana de 30 minutos.</span></div>
           <div class="help-release"><b>v202</b><span>La ventana integrada de validación del PIN se presenta nuevamente como un modal flotante, centrado y adaptable en computadora, tablet y celular.</span></div>
@@ -12315,11 +12316,39 @@ function createValePersonalFromModal(){
 }
 
 let guardandoValePersonal = false;
+
+function solicitarAutorizacionInmediataVale(v={}){
+  return new Promise(resolve => {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay show";
+    overlay.innerHTML = `
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="autorizarAhoraTitle" style="max-width:520px;">
+        <div class="modal-head"><div><h2 id="autorizarAhoraTitle" style="margin:0;">Vale generado correctamente</h2><small>${esc(v.folio || v.id || "")}</small></div></div>
+        <div class="modal-body">
+          <p style="margin-top:0;">Eres el autorizador asignado para el vale de <b>${esc(v.nombreColaborador || "este colaborador")}</b>.</p>
+          <p style="color:var(--muted);">¿Deseas autorizarlo ahora? La autorización solicitará tu PIN y quedará registrada a tu nombre.</p>
+          <div class="divider"></div>
+          <div class="row" style="justify-content:flex-end;">
+            <button class="secondary" id="autorizarValeDespues">Autorizar posteriormente</button>
+            <button class="ok" id="autorizarValeAhora">Autorizar ahora</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const finish = value => { overlay.remove(); resolve(value); };
+    overlay.querySelector("#autorizarValeAhora").addEventListener("click",()=>finish(true));
+    overlay.querySelector("#autorizarValeDespues").addEventListener("click",()=>finish(false));
+    overlay.addEventListener("click",event=>{ if(event.target===overlay) finish(false); });
+  });
+}
+
 async function guardarValePersonal(){
   if(guardandoValePersonal) return;
   if(!hasPerm("crear_vale_personal") && !hasPerm("crear_permiso_imss")) return toast("No permitido","Tu rol no puede crear este permiso.","warn");
   const v = createValePersonalFromModal();
   if(!v) return;
+  const ofreceAutorizacionInmediata = currentUser?.role === ROLES.JEFE && canCurrentUserAuthorizeValePersonal(v);
+  if(ofreceAutorizacionInmediata) v.qrActivo = false;
   const recentDuplicate = valesPersonal.find(existing =>
     valePersonalDuplicateSignature(existing) === valePersonalDuplicateSignature(v) &&
     Math.abs(Number(existing.createdTs||0)-Number(v.createdTs||0)) <= 2*60*1000
@@ -12336,8 +12365,14 @@ async function guardarValePersonal(){
     if(!valesPersonal.some(existing => String(existing.id) === String(v.id))) valesPersonal.unshift(v);
     await saveValesPersonal();
     if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE) await cloudUpsertValePersonal(v);
-    toast(isPermisoImss(v) ? "Permiso IMSS generado" : "Vale generado", isPermisoImss(v) ? "El QR respetará el horario programado." : "Vale de personal guardado y QR generado.","ok",2400);
+    toast(isPermisoImss(v) ? "Permiso IMSS generado" : "Vale generado", isPermisoImss(v) ? "El QR respetará el horario programado." : ofreceAutorizacionInmediata ? "Vale guardado. El QR se activará al autorizarlo." : "Vale de personal guardado y QR generado.","ok",2400);
     closeValePersonalModal();
+    if(ofreceAutorizacionInmediata){
+      const autorizarAhora = await solicitarAutorizacionInmediataVale(v);
+      if(autorizarAhora) return await autorizarValePersonal(v.id);
+      toast("Pendiente de autorización","El vale quedó guardado para autorizarlo posteriormente.","info",3200);
+      return await renderValesPersonal(false);
+    }
     renderValePersonalQR(v.id);
   }catch(error){
     console.error(error);
