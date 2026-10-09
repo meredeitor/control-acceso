@@ -3327,7 +3327,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v203</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v204</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3352,7 +3352,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v203";
+  const APP_VERSION = "v204";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5528,6 +5528,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v204</b><span>Los vales de personal que exceden el tiempo permanecen en Fuera y se muestran en rojo con los minutos excedidos, sin regresar a Pendiente ni solicitar una nueva autorización del jefe. Los registros antiguos pendientes de reautorización se normalizan automáticamente.</span></div>
           <div class="help-release"><b>v203</b><span>La limpieza de vales duplicados reconoce copias aunque existan variaciones internas en autorizador, departamento o tiempo, comparando la fecha, nómina, colaborador y tipo dentro de una ventana de 30 minutos.</span></div>
           <div class="help-release"><b>v202</b><span>La ventana integrada de validación del PIN se presenta nuevamente como un modal flotante, centrado y adaptable en computadora, tablet y celular.</span></div>
           <div class="help-release"><b>v201</b><span>La validación del PIN administrativo utiliza una ventana segura integrada en la aplicación, compatible con navegadores internos, móviles y aplicaciones instaladas.</span></div>
@@ -8687,8 +8688,8 @@ function valeStatusDot(status){
 function getValeCounts(list){
   return {
     generados: list.filter(v => v.status === ValeStatus.GENERADO),
-    pendientes: list.filter(v => v.status === ValeStatus.PENDIENTE || v.reautorizacionPendiente),
-    fuera: list.filter(v => v.status === ValeStatus.FUERA && !v.reautorizacionPendiente),
+    pendientes: list.filter(v => v.status === ValeStatus.PENDIENTE),
+    fuera: list.filter(v => v.status === ValeStatus.FUERA),
     regresoCancelado: list.filter(v => v.status === ValeStatus.REGRESO_CANCELADO),
   };
 }
@@ -9475,9 +9476,8 @@ function calcValePersonalTiempo(v={}){
 
 function calcValePersonalTramoAutorizado(v={}){
   if(!v.salidaTs) return null;
-  // Para detectar un nuevo excedente después de una reautorización sí se toma
-  // el inicio del tramo vigente, sin alterar el tiempo total mostrado.
-  const base = Math.max(Number(v.salidaTs || 0), Number(v.ultimoTiempoAutorizadoTs || 0));
+  // El tiempo autorizado siempre se compara desde la salida original.
+  const base = Number(v.salidaTs || 0);
   const end = Number(
     v.regresoTs ||
     v.salidaSinRegresoFinalizadaTs ||
@@ -9495,28 +9495,19 @@ function isValePersonalExcedido(v={}){
   return v.status === ValeStatus.FUERA && autorizado !== null && usado !== null && usado > autorizado;
 }
 
-function isValePersonalReautorizacionPendiente(v={}){
-  return v.status === ValeStatus.FUERA && Boolean(v.reautorizacionPendiente);
-}
-
 async function marcarValesPersonalExcedidos(){
-  const vencidos = valesPersonal.filter(v =>
-    isValePersonalExcedido(v) &&
-    !v.reautorizacionPendiente &&
-    !isValePersonalEntrada(v)
-  );
-  if(!vencidos.length) return;
+  const legacy = valesPersonal.filter(v => Boolean(v.reautorizacionPendiente));
+  if(!legacy.length) return;
 
-  vencidos.forEach(v => {
-    v.reautorizacionPendiente = true;
-    v.reautorizacionMotivo = "tiempo_excedido";
-    v.reautorizacionSolicitadaTs = Date.now();
+  legacy.forEach(v => {
+    v.reautorizacionPendiente = false;
+    v.reautorizacionEliminadaTs = Date.now();
     v.updatedTs = Date.now();
   });
 
   saveValesPersonalLocal();
   if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
-    await Promise.all(vencidos.map(v => cloudUpsertValePersonal(v).catch(e => console.warn(e))));
+    await Promise.all(legacy.map(v => cloudUpsertValePersonal(v).catch(e => console.warn(e))));
   }
 }
 
@@ -9729,12 +9720,12 @@ function renderValePersonalCard(v){
   const imssWindow = getPermisoImssWindow(v);
   const movimientoDesdeQr = currentView === "vale_personal_operacion";
   const mostrarRegistroManual = movimientoDesdeQr || registroManualPersonalActivo();
-  const requiereReautorizacion = isValePersonalReautorizacionPendiente(v);
   const esFuturo = String(v.fecha || "") > todayISO();
   const tiempoTxt = usadoMin !== null ? formatMinutes(usadoMin) : "-";
   const autorizadoMin = parseTiempoAutorizadoMin(v.tiempoAutorizado);
+  const excedenteMin = excedido && usadoMin !== null && autorizadoMin !== null ? Math.max(0, usadoMin-autorizadoMin) : 0;
   const limiteTxt = autorizadoMin === null ? esc(v.tiempoAutorizado || "-") : formatMinutes(autorizadoMin);
-  const cardStyle = requiereReautorizacion
+  const cardStyle = excedido
     ? "border-color:rgba(239,68,68,.85); background:linear-gradient(180deg, rgba(127,29,29,.42), rgba(69,10,10,.28)); box-shadow:0 18px 44px rgba(127,29,29,.28);"
     : "";
   return `
@@ -9743,7 +9734,7 @@ function renderValePersonalCard(v){
       <small>Nómina: ${esc(v.nomina || "-")} • ${esc(v.departamento || "Departamento")}</small>
       <div class="meta">
         ${esFuturo ? `<span class="pill"><span class="dot info"></span>Programado: ${esc(valePassDate(v.fecha))}</span>` : ""}
-        ${requiereReautorizacion ? `<span class="pill"><span class="dot bad"></span>Requiere autorización del jefe</span>` : ""}
+        ${excedido ? `<span class="pill"><span class="dot bad"></span>Tiempo excedido: ${esc(String(excedenteMin))} min</span>` : ""}
         <span class="pill"><span class="dot ${valeStatusDot(v.status)}"></span>${esc(esSalidaSinRegreso && v.status === ValeStatus.REGRESO_CANCELADO ? "Finalizado" : valeStatusLabel(v.status))}</span>
         ${esSalidaSinRegreso ? `<span class="pill"><span class="dot ${v.status === ValeStatus.REGRESO_CANCELADO ? "ok" : "warn"}"></span>Salida sin regreso${v.status === ValeStatus.REGRESO_CANCELADO ? " · finalizada" : ""}</span>` : ""}
         ${esSinHorarioRegreso ? `<span class="pill"><span class="dot ${v.status === ValeStatus.REGRESO_CANCELADO ? "ok" : "info"}"></span>Regreso sin horario límite${v.status === ValeStatus.FUERA ? " · tiempo en medición" : v.status === ValeStatus.REGRESO_CANCELADO ? " · regreso registrado" : ""}</span>` : ""}
@@ -9759,7 +9750,7 @@ function renderValePersonalCard(v){
       </div>
       <div class="row vale-actions">
         ${v.qrActivo && !esFuturo ? `<button class="secondary" data-action="verValePersonalQR" data-id="${esc(v.id)}" data-no-sb="true">QR</button>` : esFuturo ? `<span class="pill"><span class="dot warn"></span>QR habilitado el día del vale</span>` : `<span class="pill"><span class="dot bad"></span>QR desactivado</span>`}
-        ${(v.status === ValeStatus.PENDIENTE || requiereReautorizacion) && canCurrentUserAuthorizeValePersonal(v) ? `<button class="ok" data-action="autorizarValePersonal" data-id="${esc(v.id)}" data-no-sb="true">${requiereReautorizacion ? "Reautorizar" : "Autorizar"}</button>` : ""}
+        ${v.status === ValeStatus.PENDIENTE && canCurrentUserAuthorizeValePersonal(v) ? `<button class="ok" data-action="autorizarValePersonal" data-id="${esc(v.id)}" data-no-sb="true">Autorizar</button>` : ""}
         ${v.status === ValeStatus.PENDIENTE && hasPerm("autorizar_vale_personal_emergencia") && !isValePersonalEntrada(v) && !isPermisoImss(v) ? `<button class="danger" data-action="autorizarValePersonalEmergencia" data-id="${esc(v.id)}" data-no-sb="true">Autorizar por urgencia</button>` : ""}
         ${mostrarRegistroManual && v.status === ValeStatus.GENERADO && v.autorizadoTs && hasPerm("registrar_salida_personal") ? (esEntrada
           ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar ingreso</button>`
@@ -12570,25 +12561,13 @@ async function autorizarValePersonal(id){
   const returnToUpcoming = currentView === "proximos_vales_personal";
   const previousVale = { ...v };
   const now = Date.now();
-  const esReautorizacion = isValePersonalReautorizacionPendiente(v);
-  if(esReautorizacion){
-    v.status = ValeStatus.FUERA;
-    v.reautorizacionPendiente = false;
-    v.reautorizacionAtendidaTs = now;
-    v.reautorizacionAtendidaPor = currentUser?.email || "";
-    v.reautorizacionAtendidaPorNombre = currentUser?.nombre || "";
-    v.reautorizacionAtendidaPorUid = currentUser?.uid || "";
-    v.reautorizacionAtendidaPorRol = currentUser?.role || "";
-    v.ultimoTiempoAutorizadoTs = now;
-  }else{
-    v.status = ValeStatus.GENERADO;
-    v.qrActivo = true;
-    v.autorizadoTs = now;
-    v.autorizadoPor = currentUser?.email || "";
-    v.autorizadoPorUid = currentUser?.uid || "";
-    v.autorizadoPorNombre = currentUser?.nombre || "";
-    v.autorizadoPorRol = currentUser?.role || "";
-  }
+  v.status = ValeStatus.GENERADO;
+  v.qrActivo = true;
+  v.autorizadoTs = now;
+  v.autorizadoPor = currentUser?.email || "";
+  v.autorizadoPorUid = currentUser?.uid || "";
+  v.autorizadoPorNombre = currentUser?.nombre || "";
+  v.autorizadoPorRol = currentUser?.role || "";
   v.updatedTs = Date.now();
   try{
     await cloudUpsertValePersonal(v);
@@ -12601,7 +12580,7 @@ async function autorizarValePersonal(id){
     return;
   }
   await saveValesPersonal();
-  toast("Autorizado", esReautorizacion ? "Tiempo reautorizado por el jefe." : "El vale de personal quedó autorizado.", "ok",2400);
+  toast("Autorizado", "El vale de personal quedó autorizado.", "ok",2400);
   if(returnToUpcoming) await renderProximosValesPersonal(false); else await renderValesPersonal();
 }
 
