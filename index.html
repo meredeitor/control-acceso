@@ -2974,6 +2974,15 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     .provider-dashboard-modern .provider-visit-card>small{display:block;margin-top:4px;color:var(--muted)}
     .provider-dashboard-modern .provider-visit-card .meta{margin-top:12px;gap:6px}
     .provider-dashboard-modern .provider-visit-card .pill,.provider-dashboard-modern .provider-visit-card .badge-dictamen{font-size:10px;padding:4px 7px}
+    html[data-theme="light"] .provider-dashboard-modern .provider-visit-card.vale-card-excedido,
+    html[data-theme="light"] .provider-dashboard-modern .provider-visit-card.vale-card-excedido:hover{
+      border-color:#ff3150;
+      background:linear-gradient(155deg,#ef0a3d 0%,#c70035 58%,#8d092d 100%);
+      color:#fff;
+      box-shadow:0 0 0 2px rgba(255,69,96,.28),0 16px 34px rgba(225,6,50,.38),0 0 26px rgba(255,21,68,.28);
+    }
+    html[data-theme="light"] .provider-dashboard-modern .provider-visit-card.vale-card-excedido>strong,
+    html[data-theme="light"] .provider-dashboard-modern .provider-visit-card.vale-card-excedido>small{color:#fff}
     .rondinero-modern .rondinero-stat-grid{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))!important;gap:12px}
     .rondinero-modern .rondinero-stat-grid>.tarjeta{padding:16px;border:1px solid var(--border);border-radius:17px;background:linear-gradient(145deg,color-mix(in srgb,var(--panel) 92%,#fff),color-mix(in srgb,var(--panel2) 90%,#dbeafe));box-shadow:0 8px 22px rgba(15,23,42,.06)}
     .rondinero-modern .rondinero-stat-grid>.tarjeta strong{display:block;font-size:25px;line-height:1.05;color:var(--text)}
@@ -3361,7 +3370,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v206</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v207</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3386,7 +3395,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v206";
+  const APP_VERSION = "v207";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5562,6 +5571,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v207</b><span>La tarjeta roja de Tiempo excedido conserva el fondo, resplandor y contraste correcto también en el tema claro, sin afectar las tarjetas normales.</span></div>
           <div class="help-release"><b>v206</b><span>Los vales de personal con tiempo excedido utilizan una tarjeta de alerta roja con resplandor, encabezado destacado y minutos de retraso visibles, conservando el estado Fuera y el registro normal del regreso.</span></div>
           <div class="help-release"><b>v205</b><span>Cuando un Jefe genera un vale de personal y él mismo es el autorizador asignado, puede autorizarlo inmediatamente con su PIN o dejarlo pendiente para atenderlo después. El QR se activa únicamente al completar la autorización inmediata.</span></div>
           <div class="help-release"><b>v204</b><span>Los vales de personal que exceden el tiempo permanecen en Fuera y se muestran en rojo con los minutos excedidos, sin regresar a Pendiente ni solicitar una nueva autorización del jefe. Los registros antiguos pendientes de reautorización se normalizan automáticamente.</span></div>
