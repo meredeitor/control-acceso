@@ -3512,7 +3512,8 @@ document.getElementById("appVersion").textContent = APP_VERSION;
   }
 
   function normalizarQrVisitanteRetrasado(v={}){
-    if(!isVisitante(v) || v.status !== Status.PROGRAMADO || v.qrDesactivadoMotivo !== "RETRASO") return false;
+    const tipo = String(v.tipoVisita || v.tipoAcceso || "proveedor").toLowerCase();
+    if(tipo !== "visitante" || v.status !== "programado" || v.qrDesactivadoMotivo !== "RETRASO") return false;
     v.qrActivo = true;
     v.qrDesactivadoMotivo = "";
     v.qrDesactivadoMin = null;
@@ -3522,14 +3523,6 @@ document.getElementById("appVersion").textContent = APP_VERSION;
     return true;
   }
 
-  async function normalizarQrVisitantesRetrasados(){
-    const restaurados = visitas.filter(normalizarQrVisitanteRetrasado);
-    if(!restaurados.length) return;
-    saveVisitasLocal();
-    if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
-      await Promise.all(restaurados.map(v => cloudUpsertVisita(v).catch(error => console.warn("No se pudo reactivar QR de visitante:",error))));
-    }
-  }
   const VALES_ACTIVOS_LOOKBACK_DAYS = 30;
 
   const CLOUD_READ_TTL = {
@@ -4053,6 +4046,15 @@ async function saveRolePermsConfig(role, perms){
     let visitas = loadVisitasLocal();
     let valesActivos = loadValesActivosLocal();
     let valesPersonal = loadValesPersonalLocal();
+
+    async function normalizarQrVisitantesRetrasados(){
+      const restaurados = visitas.filter(normalizarQrVisitanteRetrasado);
+      if(!restaurados.length) return;
+      saveVisitasLocal();
+      if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
+        await Promise.all(restaurados.map(v => cloudUpsertVisita(v).catch(error => console.warn("No se pudo reactivar QR de visitante:",error))));
+      }
+    }
     let historialValesPersonalCache = [];
     let historialValesActivosCache = [];
     let reporteNominasCache = [];
