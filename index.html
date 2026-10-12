@@ -6585,14 +6585,44 @@ function fmt(ts){
       }catch{ return []; }
     }
 
+    function compactValesPersonalLocal(list, retentionDays = 35, maxItems = 400){
+      const cutoff = new Date();
+      cutoff.setHours(0,0,0,0);
+      cutoff.setDate(cutoff.getDate() - retentionDays);
+      const cutoffISO = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart(2,"0")}-${String(cutoff.getDate()).padStart(2,"0")}`;
+      return [...(Array.isArray(list) ? list : [])]
+        .filter(v => {
+          const fecha = String(v?.fecha || "");
+          if(fecha) return fecha >= cutoffISO;
+          const ts = Number(v?.createdTs || v?.updatedTs || 0);
+          return ts > 0 && ts >= cutoff.getTime();
+        })
+        .sort((a,b) => Number(b.updatedTs || b.createdTs || 0) - Number(a.updatedTs || a.createdTs || 0))
+        .slice(0, maxItems);
+    }
+
     function saveValesPersonalLocal(){
+      const compacted = compactValesPersonalLocal(valesPersonal);
       try{
-        localStorage.setItem(LS_VALES_PERSONAL_KEY, JSON.stringify(valesPersonal));
+        localStorage.setItem(LS_VALES_PERSONAL_KEY, JSON.stringify(compacted));
+        valesPersonal = compacted;
         return true;
       }catch(e){
         console.warn(e);
-        toast("Almacenamiento", "No se pudieron guardar vales de personal.", "warn", 3600);
-        return false;
+        // Si el navegador ya alcanzó su cuota, conserva únicamente hoy y fechas futuras.
+        const today = new Date();
+        const todayISO = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+        const essential = compacted.filter(v => String(v?.fecha || "") >= todayISO).slice(0,200);
+        try{
+          localStorage.setItem(LS_VALES_PERSONAL_KEY, JSON.stringify(essential));
+          valesPersonal = essential;
+          console.warn("Se redujo la caché local de vales de personal por límite de almacenamiento.");
+          return true;
+        }catch(fallbackError){
+          console.warn(fallbackError);
+          toast("Almacenamiento", "El navegador no tiene espacio para guardar la caché de vales. Los datos continúan en Firebase.", "warn", 4800);
+          return false;
+        }
       }
     }
 
