@@ -3370,7 +3370,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v211</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v212</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3395,7 +3395,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v211";
+  const APP_VERSION = "v212";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5593,6 +5593,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v212</b><span>Después de crear un vale de personal se puede autorizar inmediatamente mediante el modal flotante de PIN o dejarlo pendiente, y en ambos casos se abre el QR para compartirlo. Se evita el autollenado del correo en la búsqueda y se unifica Compartir QR con el botón verde e ícono de WhatsApp.</span></div>
           <div class="help-release"><b>v211</b><span>Se limita y compacta la caché local de vales de personal para evitar errores de almacenamiento, conservando los vales actuales y futuros sin eliminar información de Firebase.</span></div>
           <div class="help-release"><b>v210</b><span>Se corrige el registro de entrada mediante botón y QR para proveedores y visitantes, conservando las validaciones, permisos y formularios existentes.</span></div>
           <div class="help-release"><b>v209</b><span>La sincronización diaria consulta únicamente los módulos autorizados para cada rol y ahora muestra mensajes específicos para errores de sesión, permisos, índices o conexión.</span></div>
@@ -9028,7 +9029,7 @@ async function renderValesActivos(refresh=true){
           <span class="pill vale-total-pill">Total: <b style="color:var(--text);margin-left:6px;">${allList.length}</b></span>
         </div>
         <div class="vale-dashboard-tools">
-          <input id="valeSearchActivos" value="${esc(valeSearchTerms.activos)}" placeholder="Buscar folio, activo, serie..." aria-label="Buscar vales de activo">
+          <input id="valeSearchActivos" type="search" name="buscar_vales_activos" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" value="${esc(valeSearchTerms.activos)}" placeholder="Buscar folio, activo, serie..." aria-label="Buscar vales de activo">
           <button class="secondary" data-action="refreshVales" data-tipo="activos">Actualizar</button>
           ${hasPerm("escanear_qr") ? `<button class="secondary" data-action="scan" data-from="vales_activos">Escanear QR</button>` : ""}
         </div>
@@ -9840,7 +9841,7 @@ async function renderValesPersonal(refresh=true){
           <span class="pill vale-total-pill">Total: <b style="color:var(--text);margin-left:6px;">${allList.length}</b></span>
         </div>
         <div class="vale-dashboard-tools">
-          <input id="valeSearchPersonal" value="${esc(valeSearchTerms.personal)}" placeholder="Buscar nombre, nómina, folio..." aria-label="Buscar vales de personal">
+          <input id="valeSearchPersonal" type="search" name="buscar_vales_personal" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" value="${esc(valeSearchTerms.personal)}" placeholder="Buscar nombre, nómina, folio..." aria-label="Buscar vales de personal">
           <button class="secondary" data-action="refreshVales" data-tipo="personal">Actualizar</button>
           ${(hasPerm("registrar_salida_personal") || hasPerm("registrar_regreso_personal")) ? `<button class="${registroManualPersonalActivo() ? "danger" : "secondary"}" data-action="toggleRegistroManualPersonal">${registroManualPersonalActivo() ? "Ocultar registro manual" : "Habilitar registro manual"}</button>` : ""}
           ${hasPerm("escanear_qr") ? `<button class="secondary" data-action="scan" data-from="vales_personal">Escanear QR</button>` : ""}
@@ -12514,9 +12515,9 @@ async function guardarValePersonal(){
     closeValePersonalModal();
     if(ofreceAutorizacionInmediata){
       const autorizarAhora = await solicitarAutorizacionInmediataVale(v);
-      if(autorizarAhora) return await autorizarValePersonal(v.id);
-      toast("Pendiente de autorización","El vale quedó guardado para autorizarlo posteriormente.","info",3200);
-      return await renderValesPersonal(false);
+      if(autorizarAhora) await autorizarValePersonal(v.id, { renderAfter:false, freshPin:true });
+      else toast("Pendiente de autorización","Puedes compartir el QR; podrá utilizarse cuando el vale sea autorizado.","info",3600);
+      return renderValePersonalQR(v.id, { allowCreatedPreview:true });
     }
     renderValePersonalQR(v.id);
   }catch(error){
@@ -12720,10 +12721,10 @@ async function autorizarValePersonalEmergencia(id){
   await renderValesPersonal();
 }
 
-async function autorizarValePersonal(id){
-  if(!requirePerm("autorizar_vale_personal","Tu rol no puede autorizar vales de personal.")) return;
+async function autorizarValePersonal(id, { renderAfter=true, freshPin=false }={}){
+  if(!requirePerm("autorizar_vale_personal","Tu rol no puede autorizar vales de personal.")) return false;
   const v = valesPersonal.find(x => String(x.id) === String(id));
-  if(!v) return toast("No encontrado","No se encontró el vale.","warn");
+  if(!v){ toast("No encontrado","No se encontró el vale.","warn"); return false; }
   if(!canCurrentUserAuthorizeValePersonal(v)){
     toast(
       "No permitido",
@@ -12731,13 +12732,16 @@ async function autorizarValePersonal(id){
       "warn",
       4200
     );
-    return;
+    return false;
   }
   if(!navigator.onLine){
     toast("Sin conexión","No se puede autorizar hasta confirmar el cambio en Firebase.","warn",4200);
-    return;
+    return false;
   }
-  if(!(await requireUserPin("autorizar este vale de personal"))) return;
+  const pinValido = freshPin
+    ? await requireFreshUserPin("autorizar este vale de personal")
+    : await requireUserPin("autorizar este vale de personal");
+  if(!pinValido) return false;
   const returnToUpcoming = currentView === "proximos_vales_personal";
   const previousVale = { ...v };
   const now = Date.now();
@@ -12756,12 +12760,17 @@ async function autorizarValePersonal(id){
     Object.assign(v, previousVale);
     await saveValesPersonal();
     toast("No se autorizó","Firebase no confirmó el cambio. Revisa la conexión y vuelve a intentarlo.","bad",5200);
-    if(returnToUpcoming) await renderProximosValesPersonal(false); else await renderValesPersonal();
-    return;
+    if(renderAfter){
+      if(returnToUpcoming) await renderProximosValesPersonal(false); else await renderValesPersonal();
+    }
+    return false;
   }
   await saveValesPersonal();
   toast("Autorizado", "El vale de personal quedó autorizado.", "ok",2400);
-  if(returnToUpcoming) await renderProximosValesPersonal(false); else await renderValesPersonal();
+  if(renderAfter){
+    if(returnToUpcoming) await renderProximosValesPersonal(false); else await renderValesPersonal();
+  }
+  return true;
 }
 
 async function cancelarValePersonal(id){
@@ -12782,13 +12791,13 @@ async function cancelarValePersonal(id){
   await renderValesPersonal();
 }
 
-function renderValePersonalQR(id){
+function renderValePersonalQR(id, { allowCreatedPreview=false }={}){
   if(!requirePerm("ver_vales_personal","Tu rol no puede ver vales de personal.")) return;
   currentView = "vale_personal_qr";
   rememberModuleReturn(currentView);
   const v = valesPersonal.find(x => String(x.id) === String(id));
   if(!v) return renderValesPersonal();
-  if(String(v.fecha || "") > todayISO()){
+  if(String(v.fecha || "") > todayISO() && !allowCreatedPreview){
     toast("QR aún no habilitado",`Este vale podrá utilizarse el ${valePassDate(v.fecha)}.`,"warn",4200);
     return renderProximosValesPersonal(false);
   }
@@ -12796,7 +12805,7 @@ function renderValePersonalQR(id){
     toast("QR vencido","Este vale de entrada solo podía utilizarse en la fecha indicada.","warn",4200);
     return renderValesPersonal();
   }
-  if(!v.qrActivo){
+  if(!v.qrActivo && !(allowCreatedPreview && v.status === ValeStatus.PENDIENTE)){
     toast("QR desactivado","Este vale ya está en Regreso o fue cancelado.","warn",3200);
     return renderValesPersonal();
   }
@@ -12835,13 +12844,18 @@ function renderValePersonalQR(id){
       : "Muestra este codigo QR en caseta. Este permiso es personal e intransferible.",
     volverAction:"valesPersonal"
   });
-  const actions = appEl.querySelector(".permit-pass-actions");
-  if(actions){
-    actions.insertAdjacentHTML("beforeend", `
-      <button class="ok" data-action="whatsappValePersonal" data-id="${esc(v.id)}" type="button" ${v.autorizadorTelefono ? "" : "disabled title=\"El autorizador no tiene teléfono registrado\""}>
-        Enviar por WhatsApp
-      </button>
-    `);
+  const compartirQrButton = appEl.querySelector("#btnCompartirValePass");
+  if(compartirQrButton){
+    compartirQrButton.className = "ok";
+    compartirQrButton.style.display = "inline-flex";
+    compartirQrButton.style.alignItems = "center";
+    compartirQrButton.style.justifyContent = "center";
+    compartirQrButton.style.gap = "8px";
+    compartirQrButton.innerHTML = `
+      <svg aria-hidden="true" viewBox="0 0 32 32" width="21" height="21" fill="currentColor" focusable="false">
+        <path d="M16.04 3.2A12.7 12.7 0 0 0 5.3 22.67L3.6 28.8l6.28-1.65a12.72 12.72 0 1 0 6.16-23.95Zm0 22.93c-1.93 0-3.82-.52-5.47-1.5l-.39-.23-3.72.98.99-3.62-.25-.37a10.2 10.2 0 1 1 8.84 4.74Zm5.6-7.64c-.3-.15-1.82-.9-2.1-1-.28-.1-.48-.15-.69.15-.2.3-.79 1-.97 1.2-.18.2-.36.23-.66.08-.3-.15-1.3-.48-2.47-1.53a9.2 9.2 0 0 1-1.7-2.12c-.18-.3-.02-.46.13-.61.14-.14.3-.36.46-.54.15-.18.2-.3.3-.51.1-.2.05-.38-.03-.54-.08-.15-.69-1.65-.94-2.26-.25-.6-.5-.52-.69-.53h-.58c-.2 0-.53.08-.81.38-.28.3-1.07 1.05-1.07 2.56s1.1 2.97 1.25 3.18c.15.2 2.16 3.3 5.24 4.63.73.32 1.3.5 1.75.65.74.23 1.4.2 1.93.12.59-.09 1.82-.74 2.08-1.46.25-.71.25-1.33.18-1.46-.08-.13-.28-.2-.59-.36Z"/>
+      </svg>
+      <span>Compartir QR</span>`;
   }
   setupValePassActions({
     payload,
@@ -18036,7 +18050,13 @@ document.addEventListener("input", (e) => {
   const valeSearch = e.target.closest("#valeSearchPersonal, #valeSearchActivos");
   if(valeSearch){
     const tipo = valeSearch.id === "valeSearchPersonal" ? "personal" : "activos";
-    valeSearchTerms[tipo] = valeSearch.value || "";
+    const incomingValue = valeSearch.value || "";
+    const loginEmail = String(currentUser?.email || "").trim().toLowerCase();
+    if(!valeSearchTerms[tipo] && loginEmail && incomingValue.trim().toLowerCase() === loginEmail){
+      valeSearch.value = "";
+      return;
+    }
+    valeSearchTerms[tipo] = incomingValue;
     const cursorPos = valeSearch.selectionStart ?? valeSearchTerms[tipo].length;
     if(tipo === "personal") renderValesPersonal(false);
     else renderValesActivos(false);
