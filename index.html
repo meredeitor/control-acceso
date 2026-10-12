@@ -3370,7 +3370,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v208</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v209</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3395,7 +3395,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v208";
+  const APP_VERSION = "v209";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5591,6 +5591,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v209</b><span>La sincronización diaria consulta únicamente los módulos autorizados para cada rol y ahora muestra mensajes específicos para errores de sesión, permisos, índices o conexión.</span></div>
           <div class="help-release"><b>v208</b><span>Las citas de Visitantes ya no desactivan su QR por retraso. Los QR antiguos bloqueados únicamente por retraso se reactivan al sincronizar, mientras se conservan los bloqueos por cancelación, salida, desactivación manual o falta de autorización.</span></div>
           <div class="help-release"><b>v207</b><span>La tarjeta roja de Tiempo excedido conserva el fondo, resplandor y contraste correcto también en el tema claro, sin afectar las tarjetas normales.</span></div>
           <div class="help-release"><b>v206</b><span>Los vales de personal con tiempo excedido utilizan una tarjeta de alerta roja con resplandor, encabezado destacado y minutos de retraso visibles, conservando el estado Fuera y el registro normal del regreso.</span></div>
@@ -7172,15 +7173,32 @@ function fmt(ts){
       await batch.commit();
     }
 
+    function cloudDayReadAccess(){
+      const role = currentUser?.role;
+      return {
+        proveedores: [
+          ROLES.ADMIN, ROLES.COORDINADOR, ROLES.COMPRAS, ROLES.JEFE_COMPRAS,
+          ROLES.GUARDIA, ROLES.CALIDAD, ROLES.CONTRALORIA, ROLES.JEFE,
+          ROLES.ANFITRION, ROLES.PROVEEDOR
+        ].includes(role),
+        visitantes: [
+          ROLES.ADMIN, ROLES.COORDINADOR, ROLES.COMPRAS, ROLES.JEFE_COMPRAS,
+          ROLES.GUARDIA, ROLES.CALIDAD, ROLES.CONTRALORIA, ROLES.JEFE,
+          ROLES.JEFE_TI, ROLES.ANFITRION, ROLES.RECEPCIONISTA
+        ].includes(role)
+      };
+    }
+
     async function cloudFetchByDay(dateObj){
       const { start, end } = dayBounds(dateObj);
+      const access = cloudDayReadAccess();
       // Query por rango en fechaHoraTs (misma field), sin pedir índices compuestos
       const qProveedores = query(
         collection(db, COL_VISITAS),
         where("fechaHoraTs", ">=", start),
         where("fechaHoraTs", "<", end),
         orderBy("fechaHoraTs", "desc"),
-        limit(500)
+        limit(currentUser?.role === ROLES.PROVEEDOR ? 10 : 500)
       );
       const qVisitantes = query(
         collection(db, COL_VISITANTES),
@@ -7189,21 +7207,43 @@ function fmt(ts){
         orderBy("fechaHoraTs", "desc"),
         limit(500)
       );
-      const [proveedoresRes, visitantesRes] = await Promise.allSettled([getDocs(qProveedores), getDocs(qVisitantes)]);
-      if(proveedoresRes.status === "rejected" && visitantesRes.status === "rejected"){
-        throw proveedoresRes.reason || visitantesRes.reason;
+      const reads = [];
+      if(access.proveedores) reads.push({ tipo:"proveedores", promise:getDocs(qProveedores) });
+      if(access.visitantes) reads.push({ tipo:"visitantes", promise:getDocs(qVisitantes) });
+      if(!reads.length) return [];
+
+      const results = await Promise.allSettled(reads.map(read => read.promise));
+      const fulfilled = results.filter(result => result.status === "fulfilled");
+      if(!fulfilled.length){
+        const error = results.find(result => result.status === "rejected")?.reason;
+        throw error || new Error("No fue posible leer las colecciones permitidas para el rol actual.");
       }
       const arr = [];
-      const snap = proveedoresRes.status === "fulfilled" ? proveedoresRes.value : null;
-      const visitantesSnap = visitantesRes.status === "fulfilled" ? visitantesRes.value : null;
-      if(proveedoresRes.status === "rejected") console.warn("No se pudo leer visitas:", proveedoresRes.reason);
-      if(visitantesRes.status === "rejected") console.warn("No se pudo leer visitantes:", visitantesRes.reason);
-      snap?.forEach(d => {
-        const data = { id: d.id, ...d.data() };
-        if(!isVisitante(data)) arr.push(data);
+      results.forEach((result, index) => {
+        const tipo = reads[index].tipo;
+        if(result.status === "rejected"){
+          console.warn(`No se pudo leer ${tipo}:`, result.reason);
+          return;
+        }
+        result.value.forEach(d => {
+          const data = { id: d.id, ...d.data() };
+          if(tipo === "visitantes"){
+            arr.push({ ...data, tipoVisita:"visitante", tipoAcceso:"visitante" });
+          }else if(!isVisitante(data)){
+            arr.push(data);
+          }
+        });
       });
-      visitantesSnap?.forEach(d => arr.push({ id: d.id, ...d.data(), tipoVisita:"visitante", tipoAcceso:"visitante" }));
       return arr;
+    }
+
+    function cloudReadErrorMessage(error){
+      const code = String(error?.code || "").toLowerCase();
+      if(code.includes("permission-denied")) return "Tu sesión no tiene permiso para consultar este módulo.";
+      if(code.includes("failed-precondition")) return "Firestore requiere un índice para completar esta consulta.";
+      if(code.includes("unavailable") || code.includes("network")) return "Firebase no respondió. Revisa la conexión a Internet.";
+      if(code.includes("unauthenticated")) return "La sesión venció. Cierra sesión e ingresa nuevamente.";
+      return "No se pudo actualizar la información del día.";
     }
 
     async function syncDay(dateObj, force = false){
@@ -7215,14 +7255,20 @@ function fmt(ts){
         const cloud = await cloudFetchByDay(d);
         visitas = mergeById(visitas, cloud);
         saveVisitasLocal();
-        await normalizarQrVisitantesRetrasados();
+        if(cloudDayReadAccess().visitantes){
+          try{
+            await normalizarQrVisitantesRetrasados();
+          }catch(normalizeError){
+            console.warn("No se pudieron normalizar los QR de visitantes:", normalizeError);
+          }
+        }
         // El resumen diario se mantiene con deltas en cloudUpsertVisita/cloudDeleteVisita.
         // Reconstruirlo en cada sync genera escrituras repetidas y puede inflar la cuota gratuita.
         markCloudRead(cloudReadCache.visitasDia, cacheKey);
       }catch(e){
         console.warn(e);
         markCloudRead(cloudReadCache.visitasDia, cacheKey);
-        toast("Sync", "No se pudo leer del día (revisa Rules/Internet).", "warn", 3200);
+        toast("Sync", cloudReadErrorMessage(e), "warn", 3800);
       }
     }
 
