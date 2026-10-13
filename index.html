@@ -3021,6 +3021,112 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     @media(max-width:900px){.provider-dashboard-hero{padding:18px}.provider-dashboard-modern .grid.cols-5{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
     @media(max-width:520px){.provider-dashboard-hero{align-items:flex-start;flex-direction:column}.provider-dashboard-hero-icon{width:54px;height:54px;flex-basis:54px;border-radius:17px;font-size:26px}.provider-dashboard-date{align-self:flex-start}.provider-dashboard-modern .grid.cols-5{grid-template-columns:1fr!important}}
 
+    /* Dashboard operativo de Proveedores */
+    .provider-kanban-dashboard{
+      --provider-blue:#0b72f6;
+      --provider-navy:#071b3d;
+      --provider-sky:#1498d5;
+      --provider-amber:#ef8b16;
+      --provider-green:#18a957;
+      --provider-final:#71809b;
+      gap:12px;
+    }
+    .provider-kanban-dashboard .provider-dashboard-hero{padding:16px 20px;border-radius:18px}
+    .provider-kanban-dashboard .provider-dashboard-hero-icon{width:56px;height:56px;flex-basis:56px;border-radius:16px;font-size:27px}
+    .provider-kanban-dashboard .provider-dashboard-hero h2{font-size:clamp(24px,2.4vw,31px)}
+    .provider-kanban-dashboard .provider-dashboard-date{border-radius:14px}
+    .provider-summary-tools{display:grid;grid-template-columns:minmax(420px,.9fr) minmax(440px,1.1fr);gap:18px;align-items:center}
+    .provider-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));min-width:0}
+    .provider-summary-item{display:grid;grid-template-columns:42px 1fr;align-items:center;gap:10px;padding:4px 16px;border-right:1px solid var(--border);min-width:0}
+    .provider-summary-item:last-child{border-right:0}
+    .provider-summary-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:color-mix(in srgb,var(--provider-blue) 10%,var(--panel));color:var(--provider-blue);font-size:19px;font-weight:900}
+    .provider-summary-item.warn .provider-summary-icon{color:var(--provider-amber);background:color-mix(in srgb,var(--provider-amber) 11%,var(--panel))}
+    .provider-summary-item.ok .provider-summary-icon{color:var(--provider-green);background:color-mix(in srgb,var(--provider-green) 11%,var(--panel))}
+    .provider-summary-copy{min-width:0}.provider-summary-copy strong{display:block;color:var(--text);font-size:21px;line-height:1}.provider-summary-copy span{display:block;margin-top:4px;color:var(--muted);font-size:11px;white-space:nowrap}
+    .provider-toolbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;min-width:0}
+    .provider-search-wrap{position:relative;flex:1 1 260px;min-width:170px;max-width:390px}
+    .provider-search-wrap>span{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+    .provider-search-wrap input{width:100%;padding-left:38px;margin:0}
+    .provider-icon-button{display:inline-grid;place-items:center;min-width:44px;width:44px;height:44px;padding:0;border-radius:12px;font-size:18px}
+    .provider-scan-button{min-height:44px;background:linear-gradient(135deg,#1687ff,#0862df);border-color:#0a67df;color:#fff;box-shadow:0 8px 20px rgba(11,114,246,.24)}
+    .provider-mobile-tabs{display:none}
+    .provider-kanban-board{display:grid;grid-template-columns:repeat(5,minmax(215px,1fr));gap:12px;align-items:stretch;min-width:0}
+    .provider-kanban-board .provider-stage{display:flex;flex-direction:column;min-height:390px;padding:8px;border-radius:16px;background:color-mix(in srgb,var(--panel) 86%,var(--bg))}
+    .provider-stage-head{display:flex;align-items:center;gap:8px;padding:5px 4px 11px;color:var(--text);font-size:13px;font-weight:900}
+    .provider-stage-head .provider-stage-count{margin-left:auto;display:grid;place-items:center;min-width:28px;height:28px;padding:0 8px;border-radius:999px;background:color-mix(in srgb,var(--provider-blue) 8%,var(--panel2));font-size:12px}
+    .provider-stage-dot{width:9px;height:9px;border-radius:50%;background:var(--provider-sky);box-shadow:0 0 0 4px color-mix(in srgb,var(--provider-sky) 12%,transparent)}
+    .provider-stage[data-stage="llegados"] .provider-stage-dot{background:var(--provider-amber)}
+    .provider-stage[data-stage="dentro"] .provider-stage-dot{background:var(--provider-green)}
+    .provider-stage[data-stage="despachados"] .provider-stage-dot{background:var(--provider-blue)}
+    .provider-stage[data-stage="finalizados"] .provider-stage-dot{background:var(--provider-final)}
+    .provider-stage-list{display:grid;gap:11px;align-content:start}
+    .provider-kanban-card{position:relative;padding:15px 14px!important;margin:0!important;border-radius:14px!important;border-left:3px solid var(--provider-sky)!important;cursor:pointer}
+    .provider-kanban-card.status-llegado{border-left-color:var(--provider-amber)!important}.provider-kanban-card.status-dentro{border-left-color:var(--provider-green)!important}.provider-kanban-card.status-despachado{border-left-color:var(--provider-blue)!important}.provider-kanban-card.status-finalizado{border-left-color:var(--provider-final)!important}
+    .provider-card-top{display:grid;grid-template-columns:40px minmax(0,1fr);column-gap:11px;row-gap:5px;align-items:start}
+    .provider-avatar{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#e5f0ff;color:#0862d9;font-size:12px;font-weight:900}
+    [data-theme="dark"] .provider-avatar{background:#173968;color:#9dc7ff}
+    .provider-card-name{min-width:0}.provider-card-name strong{font-size:13px!important;line-height:1.3!important;overflow-wrap:normal;word-break:normal}.provider-card-name small{margin-top:3px!important;font-size:10px}
+    .provider-state-chip{grid-column:2;justify-self:start;padding:4px 8px;border-radius:999px;background:#e4f1ff;color:#0862d9;font-size:9px;font-weight:900;white-space:nowrap}
+    .provider-card-ops{display:grid;grid-template-columns:1fr 1.35fr;gap:8px;margin-top:13px;color:var(--text);font-size:10px}
+    .provider-card-ops span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .provider-card-created{margin-top:9px;color:var(--muted);font-size:9px;line-height:1.4;overflow-wrap:anywhere}
+    .provider-card-secondary{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:11px;padding-top:10px;border-top:1px solid var(--border)}
+    .provider-card-secondary .provider-mini-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 6px;border-radius:999px;background:var(--panel2);color:var(--muted);font-size:9px;font-weight:700;max-width:100%}
+    .provider-card-secondary .provider-mini-pill.alert{background:rgba(245,158,11,.13);color:#b86305}.provider-card-secondary .provider-mini-pill.success{background:rgba(34,197,94,.12);color:#12813f}
+    [data-theme="dark"] .provider-card-secondary .provider-mini-pill.alert{color:#ffd089}
+    .provider-card-actions{margin-left:auto;display:flex;gap:4px}.provider-card-actions button{min-width:34px;width:34px;height:34px;padding:0;border-radius:9px;font-size:14px}
+    .provider-empty{display:grid;place-items:center;text-align:center;gap:7px;min-height:250px;padding:20px;color:var(--muted);font-size:11px}.provider-empty-icon{display:grid;place-items:center;width:58px;height:58px;border-radius:18px;background:color-mix(in srgb,var(--provider-blue) 6%,var(--panel));color:#91a4c4;font-size:28px}.provider-empty strong{color:var(--text);font-size:13px}
+    .provider-no-results{grid-column:1/-1;padding:30px;text-align:center;border:1px dashed var(--border);border-radius:16px;color:var(--muted)}
+    .provider-mobile-navigation{display:none}
+    @media(max-width:1250px) and (min-width:1025px){.provider-summary-tools{grid-template-columns:1fr}.provider-toolbar-actions{justify-content:flex-start}.provider-kanban-scroll{overflow-x:auto;padding-bottom:8px}.provider-kanban-board{grid-template-columns:repeat(5,minmax(240px,1fr));min-width:1240px}}
+    @media(max-width:1024px) and (min-width:681px){.provider-summary-tools{grid-template-columns:1fr}.provider-toolbar-actions{justify-content:flex-start}.provider-kanban-scroll{overflow:visible}.provider-kanban-board{grid-template-columns:repeat(2,minmax(0,1fr));min-width:0}.provider-kanban-board .provider-stage{min-height:260px}.provider-kanban-board .provider-stage:last-child{grid-column:1/-1}.provider-kanban-card{min-width:0}}
+    .visitor-kanban-dashboard .provider-kanban-board{grid-template-columns:repeat(4,minmax(220px,1fr))}
+    .visitor-kanban-card.status-pendiente{border-left-color:var(--provider-amber)!important}
+    @media(max-width:1250px) and (min-width:1025px){.visitor-kanban-dashboard .provider-kanban-scroll{overflow:visible}.visitor-kanban-dashboard .provider-kanban-board{grid-template-columns:repeat(3,minmax(0,1fr));min-width:0}.visitor-kanban-dashboard .provider-stage:last-child{grid-column:auto}}
+    @media(max-width:1024px) and (min-width:681px){.visitor-kanban-dashboard .provider-kanban-board{grid-template-columns:repeat(2,minmax(0,1fr));min-width:0}.visitor-kanban-dashboard .provider-stage:last-child{grid-column:auto}}
+    @media(max-width:680px){
+      .provider-kanban-dashboard{gap:10px}.provider-kanban-dashboard .provider-dashboard-hero{padding:2px 2px 6px;border:0;background:transparent;box-shadow:none;display:grid;grid-template-columns:1fr auto}.provider-kanban-dashboard .provider-dashboard-hero-copy{display:block}.provider-kanban-dashboard .provider-dashboard-hero-icon,.provider-kanban-dashboard .provider-dashboard-hero p{display:none}.provider-kanban-dashboard .provider-dashboard-hero h2{font-size:23px}.provider-kanban-dashboard .provider-dashboard-date{align-self:center;padding:6px 8px;border:0;background:transparent}
+      .provider-kanban-dashboard .dashboard-toolbar{padding:10px;border-radius:15px}.provider-summary-tools{display:block}.provider-summary{grid-template-columns:1fr 1fr}.provider-summary-item{padding:5px 8px;grid-template-columns:38px 1fr}.provider-summary-item:nth-child(2){display:none}.provider-summary-item:nth-child(3){border-right:0}.provider-summary-copy strong{font-size:20px}
+      .provider-kanban-dashboard{padding-bottom:138px}.provider-toolbar-actions{margin-top:10px;display:grid;grid-template-columns:minmax(0,1fr) 44px}.provider-search-wrap{min-width:0;max-width:none}.provider-toolbar-actions .provider-scan-button,.provider-toolbar-actions .dashboard-pending-pill{display:none}
+      .provider-mobile-tabs{display:flex;gap:6px;overflow-x:auto;padding:1px 1px 7px;scrollbar-width:none}.provider-mobile-tabs::-webkit-scrollbar{display:none}.provider-mobile-tab{flex:0 0 auto;min-width:88px;min-height:44px;padding:7px 10px;border-radius:12px;background:var(--panel);color:var(--muted);border:1px solid var(--border);font-size:10px}.provider-mobile-tab.active{background:linear-gradient(135deg,#1687ff,#0862df);border-color:#0862df;color:#fff;box-shadow:0 7px 18px rgba(11,114,246,.22)}.provider-mobile-tab b{display:block;margin-top:2px;font-size:11px}
+      .provider-kanban-scroll{overflow:visible}.provider-kanban-board{display:block;min-width:0}.provider-kanban-board .provider-stage{display:none;min-height:0;padding:4px;border:0;background:transparent;box-shadow:none}.provider-kanban-board .provider-stage.active{display:block}.provider-stage-head{display:none}.provider-stage-list{gap:9px}.provider-kanban-card{padding:13px!important}.provider-card-top{grid-template-columns:40px minmax(0,1fr)}.provider-avatar{width:40px;height:40px}.provider-card-name strong{font-size:14px!important}.provider-card-name small{font-size:11px}.provider-card-ops{font-size:11px}.provider-empty{min-height:220px}.provider-no-results{margin-top:8px}
+      .provider-mobile-navigation{position:fixed;z-index:9000;left:0;right:0;bottom:0;display:grid;gap:7px;padding:7px 12px calc(7px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--panel) 96%,transparent);border-top:1px solid var(--border);box-shadow:0 -12px 30px rgba(15,23,42,.13);backdrop-filter:blur(14px)}
+      .provider-mobile-scan{width:100%;min-height:46px;border-radius:12px;background:linear-gradient(135deg,#1687ff,#0862df);border-color:#0862df;color:#fff;box-shadow:0 8px 20px rgba(11,114,246,.24)}
+      .provider-mobile-nav-row{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.provider-mobile-nav-row button{position:relative;min-width:0;min-height:50px;padding:5px 2px;border:0;background:transparent;color:var(--muted);box-shadow:none}.provider-mobile-nav-row button .provider-nav-icon{display:grid;place-items:center;width:22px;height:22px;margin:0 auto;color:currentColor}.provider-mobile-nav-row button .provider-nav-icon svg{display:block;width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.provider-mobile-nav-row button small{display:block;margin-top:3px;font-size:9px;font-weight:800;white-space:nowrap}.provider-mobile-nav-row button.active{color:var(--provider-blue)}.provider-mobile-nav-row .provider-nav-count{position:absolute;top:2px;left:calc(50% + 8px);display:grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#f59e0b;color:#fff;font-size:9px;font-weight:900;box-shadow:0 0 0 2px var(--panel)}.provider-mobile-nav-row button.pending-active{color:#b96805}.provider-mobile-nav-row button.pending-active .provider-nav-icon{background:rgba(245,158,11,.13);border-radius:8px}
+    }
+
+    /* Dashboard operativo de Vales de Personal */
+    .vale-personal-kanban{--vale-personal-blue:#0b72f6;--vale-personal-amber:#e78408;--vale-personal-red:#ef334f;--vale-personal-green:#16a45b;gap:12px}
+    .vale-personal-kanban .provider-dashboard-hero{padding:16px 20px;border-radius:18px}
+    .vale-personal-kanban .provider-dashboard-hero-icon{width:56px;height:56px;flex-basis:56px;border-radius:16px;font-size:27px}
+    .vale-personal-kanban .provider-dashboard-hero h2{font-size:clamp(24px,2.4vw,31px)}
+    .vale-personal-board{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:12px;align-items:start}
+    .vale-personal-board .provider-stage{display:flex;flex-direction:column;min-width:0;min-height:390px;padding:8px;border-radius:16px;background:color-mix(in srgb,var(--panel) 86%,var(--bg))}
+    .vale-personal-board .provider-stage[data-stage="pendientes"] .provider-stage-dot{background:var(--vale-personal-amber)}
+    .vale-personal-board .provider-stage[data-stage="inicio"] .provider-stage-dot{background:var(--vale-personal-blue)}
+    .vale-personal-board .provider-stage[data-stage="fuera"] .provider-stage-dot{background:var(--vale-personal-red)}
+    .vale-personal-board .provider-stage[data-stage="regreso"] .provider-stage-dot{background:var(--vale-personal-green)}
+    .vale-personal-stage-list{display:grid;gap:11px;align-content:start}
+    .vale-personal-card{margin:0!important;padding:15px 14px!important;border-left:3px solid var(--vale-personal-blue)!important;border-radius:14px!important}
+    .vale-personal-board [data-stage="pendientes"] .vale-personal-card{border-left-color:var(--vale-personal-amber)!important}
+    .vale-personal-board [data-stage="fuera"] .vale-personal-card{border-left-color:var(--vale-personal-red)!important}
+    .vale-personal-board [data-stage="regreso"] .vale-personal-card{border-left-color:var(--vale-personal-green)!important}
+    .vale-personal-card>strong{display:block;font-size:14px;line-height:1.25}.vale-personal-card>small{display:block;margin-top:4px;font-size:11px}
+    .vale-personal-card .meta{gap:6px;margin-top:11px}.vale-personal-card .pill{padding:5px 8px;font-size:9px}.vale-personal-card .vale-actions{gap:6px}.vale-personal-card .vale-actions button{min-height:35px;padding:7px 9px;font-size:10px}
+    .vale-personal-card-head{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:10px;align-items:start}.vale-personal-avatar{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:#e8f1ff;color:#0862d9;font-size:12px;font-weight:950}.vale-personal-identity{min-width:0}.vale-personal-identity strong{display:block;color:var(--text);font-size:13px;line-height:1.25;overflow-wrap:anywhere}.vale-personal-identity small{display:block;margin-top:4px;color:var(--muted);font-size:10px;line-height:1.3}.vale-personal-status{justify-self:end;padding:5px 8px;border-radius:999px;background:color-mix(in srgb,var(--vale-personal-blue) 10%,var(--panel));color:var(--vale-personal-blue);font-size:9px;font-weight:900;white-space:nowrap}.vale-personal-status.is-warn{background:rgba(245,158,11,.13);color:#b96805}.vale-personal-status.is-bad{background:rgba(239,51,79,.12);color:#d21f41}.vale-personal-status.is-ok{background:rgba(22,164,91,.12);color:#128348}.vale-personal-folio{margin:9px 0 0 52px;color:var(--muted);font-size:9px;overflow-wrap:anywhere}.vale-personal-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:12px}.vale-personal-fact{min-width:0;padding:8px 9px;border-radius:10px;background:color-mix(in srgb,var(--panel2) 82%,transparent)}.vale-personal-fact small{display:block;color:var(--muted);font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.35px}.vale-personal-fact b{display:block;margin-top:3px;color:var(--text);font-size:10px;line-height:1.3;overflow-wrap:anywhere}.vale-personal-card .vale-card-details{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}.vale-personal-card .vale-card-details .pill{width:auto;max-width:100%}.vale-personal-card.vale-card-excedido .vale-personal-avatar{background:rgba(255,255,255,.88);color:#d80038}.vale-personal-card.vale-card-excedido .vale-personal-status,.vale-personal-card.vale-card-excedido .vale-personal-fact{background:rgba(255,255,255,.84);color:#4a1020}.vale-personal-card.vale-card-excedido .vale-personal-identity strong,.vale-personal-card.vale-card-excedido .vale-personal-identity small,.vale-personal-card.vale-card-excedido .vale-personal-folio{color:#fff}.vale-personal-card.vale-card-excedido .vale-personal-fact small,.vale-personal-card.vale-card-excedido .vale-personal-fact b{color:#4a1020}
+    .vale-personal-mobile-tabs,.vale-personal-mobile-navigation{display:none}
+    @media(max-width:1250px) and (min-width:1025px){.vale-personal-board{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+    @media(max-width:1024px) and (min-width:681px){.vale-personal-board{grid-template-columns:repeat(2,minmax(0,1fr))!important}.vale-personal-board .provider-stage{min-height:270px}}
+    @media(max-width:680px){
+      .vale-personal-kanban{padding-bottom:138px}.vale-personal-kanban .provider-dashboard-hero{padding:2px 2px 6px;border:0;background:transparent;box-shadow:none;display:grid;grid-template-columns:1fr auto}.vale-personal-kanban .provider-dashboard-hero-icon,.vale-personal-kanban .provider-dashboard-hero p{display:none}.vale-personal-kanban .provider-dashboard-hero h2{font-size:22px}.vale-personal-kanban .provider-dashboard-date{align-self:center;padding:6px 8px;border:0;background:transparent}
+      .vale-personal-kanban .vale-dashboard-head{padding:10px;border-radius:15px}.vale-personal-kanban .vale-dashboard-summary{display:none}.vale-personal-kanban .vale-dashboard-tools{display:grid;grid-template-columns:minmax(0,1fr) 44px;width:100%;gap:8px}.vale-personal-kanban .vale-dashboard-tools input{grid-column:1/2;min-width:0}.vale-personal-kanban .vale-dashboard-tools [data-action="refreshVales"]{grid-column:2;width:44px;padding:0;font-size:0}.vale-personal-kanban .vale-dashboard-tools [data-action="refreshVales"]::after{content:"↻";font-size:20px}.vale-personal-kanban .vale-dashboard-tools [data-action="scan"]{display:none}.vale-personal-kanban .vale-dashboard-tools [data-action="toggleRegistroManualPersonal"]{grid-column:1/-1;width:100%}
+      .vale-personal-mobile-tabs{display:flex;gap:6px;overflow-x:auto;padding:1px 1px 7px;scrollbar-width:none}.vale-personal-mobile-tabs::-webkit-scrollbar{display:none}.vale-personal-mobile-tab{flex:0 0 auto;min-width:96px;min-height:44px;padding:7px 10px;border-radius:12px;background:var(--panel);color:var(--muted);border:1px solid var(--border);font-size:10px}.vale-personal-mobile-tab.active{background:linear-gradient(135deg,#1687ff,#0862df);border-color:#0862df;color:#fff;box-shadow:0 7px 18px rgba(11,114,246,.22)}.vale-personal-mobile-tab b{display:block;margin-top:2px;font-size:11px}
+      .vale-personal-board{display:block!important}.vale-personal-board .provider-stage{display:none;min-height:0;padding:4px;border:0;background:transparent}.vale-personal-board .provider-stage.active{display:block}.vale-personal-board .provider-stage-head{display:none}.vale-personal-stage-list{gap:9px}.vale-personal-card{padding:13px!important}
+      .vale-personal-mobile-navigation{position:fixed;z-index:9000;left:0;right:0;bottom:0;display:grid;gap:7px;padding:7px 12px calc(7px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--panel) 96%,transparent);border-top:1px solid var(--border);box-shadow:0 -12px 30px rgba(15,23,42,.13);backdrop-filter:blur(14px)}
+      .vale-personal-mobile-scan{width:100%;min-height:46px;border-radius:12px;background:linear-gradient(135deg,#1687ff,#0862df);border-color:#0862df;color:#fff;box-shadow:0 8px 20px rgba(11,114,246,.24)}
+      .vale-personal-nav-row{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.vale-personal-nav-row button{position:relative;min-width:0;min-height:50px;padding:5px 2px;border:0;background:transparent;color:var(--muted);box-shadow:none}.vale-personal-nav-row .provider-nav-icon{display:grid;place-items:center;width:22px;height:22px;margin:0 auto}.vale-personal-nav-row .provider-nav-icon svg{display:block;width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.vale-personal-nav-row small{display:block;margin-top:3px;font-size:9px;font-weight:800;white-space:nowrap}.vale-personal-nav-row button.active{color:var(--vale-personal-blue)}.vale-personal-nav-count{position:absolute;top:2px;left:calc(50% + 8px);display:grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#f59e0b;color:#fff;font-size:9px;font-weight:900;box-shadow:0 0 0 2px var(--panel)}
+    }
+
     /* Administracion de usuarios y permisos: adaptacion para telefono */
     .roles-screen,.roles-screen *,.users-screen,.users-screen *{box-sizing:border-box}
     .roles-screen{min-width:0;max-width:100%;overflow:hidden}
@@ -3370,7 +3476,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v212</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v213</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3395,7 +3501,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v212";
+  const APP_VERSION = "v213";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3929,6 +4035,10 @@ const PIN_SESSION_KEY = "adminPinOkTs";
     let qSearch = $("#qSearch");
     let dashboardSearchTerm = "";
     let dashboardPendingOnly = false;
+    let providerDashboardMobileStatus = "programados";
+    let visitorDashboardMobileStatus = "programados";
+    let valePersonalMobileStatus = "pendientes";
+    let valeActivoMobileStatus = "pendientes";
     const valeSearchTerms = { personal:"", activos:"" };
     const netDot = $("#netDot");
     const netText = $("#netText");
@@ -4623,6 +4733,12 @@ function rememberModuleReturn(view = currentView){
 function rememberModuleReturnForVisita(v = {}){
   moduleReturnView = isVisitante(v) ? "dashboard_visitantes" : "dashboard_proveedores";
   return moduleReturnView;
+}
+
+function renderVisitaReturnDashboard(){
+  if(moduleReturnView === "dashboard_visitantes") return renderDashboardHoy("visitantes");
+  if(moduleReturnView === "dashboard_proveedores") return renderDashboardHoy("proveedores");
+  return renderModuleHome();
 }
 
 function renderModuleHome(){
@@ -5593,6 +5709,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v213</b><span>Nuevo diseño responsivo para los dashboards de Proveedores, Visitantes, Vales de Personal y Vales de Activo, con tarjetas compactas, navegación móvil, filtros por estado y distribución optimizada para teléfono, tablet y computadora.</span></div>
           <div class="help-release"><b>v212</b><span>Después de crear un vale de personal se puede autorizar inmediatamente mediante el modal flotante de PIN o dejarlo pendiente, y en ambos casos se abre el QR para compartirlo. Se evita el autollenado del correo en la búsqueda y se unifica Compartir QR con el botón verde e ícono de WhatsApp.</span></div>
           <div class="help-release"><b>v211</b><span>Se limita y compacta la caché local de vales de personal para evitar errores de almacenamiento, conservando los vales actuales y futuros sin eliminar información de Firebase.</span></div>
           <div class="help-release"><b>v210</b><span>Se corrige el registro de entrada mediante botón y QR para proveedores y visitantes, conservando las validaciones, permisos y formularios existentes.</span></div>
@@ -8247,7 +8364,7 @@ function renderRegisterForm(){
       const dashboardTitle = dashboardTipo === "visitantes" ? "Visitantes" : "Proveedores";
       const modernDashboard = true;
       const dashboardHeroIcon = dashboardTipo === "visitantes" ? "👥" : "🚚";
-      const dashboardHeroTitle = dashboardTipo === "visitantes" ? "Dashboard de visitantes" : "Dashboard de proveedores";
+      const dashboardHeroTitle = dashboardTipo === "visitantes" ? "Dashboard de visitantes" : "Proveedores";
       const dashboardHeroText = dashboardTipo === "visitantes"
         ? "Registro, seguimiento y permanencia de visitantes en planta."
         : "Control de citas, llegadas y permanencia en planta.";
@@ -8285,8 +8402,15 @@ function renderRegisterForm(){
         </button>
       ` : "";
 
-      const col = (title, dotClass, items) => `
-        <div class="col ${modernDashboard ? "provider-stage" : ""}">
+      const dashboardMobileStatus = dashboardTipo === "proveedores" ? providerDashboardMobileStatus : visitorDashboardMobileStatus;
+      const col = (title, dotClass, items, stageKey="") => `
+        <div class="col ${modernDashboard ? "provider-stage" : ""} ${dashboardMobileStatus === stageKey ? "active" : ""}" data-stage="${esc(stageKey)}">
+          ${modernDashboard ? `
+            <div class="provider-stage-head"><span class="provider-stage-dot" aria-hidden="true"></span><span>${esc(title)}</span><span class="provider-stage-count">${items.length}</span></div>
+            <div class="provider-stage-list">
+              ${items.length ? items.map(card).join("") : `<div class="provider-empty"><span class="provider-empty-icon" aria-hidden="true">${stageKey === "programados" ? "▣" : stageKey === "llegados" ? "▤" : stageKey === "dentro" ? "⌂" : stageKey === "despachados" ? "□" : "✓"}</span><strong>Sin registros</strong><span>${stageKey === "programados" ? "No hay citas programadas en este alcance." : "Los registros aparecerán aquí al avanzar en el proceso."}</span></div>`}
+            </div>
+          ` : `
           
 <div class="card">
   <div class="title">
@@ -8299,6 +8423,7 @@ function renderRegisterForm(){
 
           <br>
           ${items.length ? items.map(card).join("") : `<div style="color:var(--muted);font-size:12px;">Sin registros</div>`}
+          `}
         </div>
       `;
 
@@ -8325,6 +8450,87 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
         let docColor="bad";
         if(v.ocNo && v.facturaNo) docColor="ok";
         else if(v.ocNo || v.facturaNo) docColor="warn";
+        if(dashboardTipo === "visitantes"){
+          const statusMeta = {
+            [Status.PROGRAMADO]: ["Programado","programado"],
+            [Status.LLEGADO]: ["Llegó","llegado"],
+            [Status.DENTRO]: ["Dentro","dentro"],
+            [Status.FINALIZADO]: ["Finalizado","finalizado"],
+            [Status.PENDIENTE_AUTORIZACION]: ["","pendiente"]
+          }[v.status] || [String(v.status || "Registro"),""];
+          const visitorName = getVisitanteResumen(v) || nombreAcceso;
+          const initials = visitorName.split(/\s+/).filter(Boolean).slice(0,2).map(part=>part.charAt(0)).join("").toUpperCase() || "VI";
+          const horaCita = typeof v.fechaHoraTs === "number" ? new Date(v.fechaHoraTs).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}) : "Sin hora";
+          const createdDate = typeof v.createdTs === "number" ? new Date(v.createdTs) : v.createdAt?.toDate ? v.createdAt.toDate() : typeof v.createdAt?.seconds === "number" ? new Date(v.createdAt.seconds * 1000) : v.createdAt ? new Date(v.createdAt) : null;
+          const createdTime = createdDate && !Number.isNaN(createdDate.getTime()) ? createdDate.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}) : "";
+          const creatorName = creadorCitaNombre(v);
+          return `
+            <article class="tarjeta history-card provider-visit-card provider-kanban-card visitor-kanban-card status-${esc(statusMeta[1])} ${v.visitaEspecial ? "visita-especial" : ""}" data-action="ficha" data-id="${esc(v.id)}" tabindex="0" aria-label="Abrir detalle de ${esc(visitorName)}">
+              <div class="provider-card-top">
+                <span class="provider-avatar" aria-hidden="true">${esc(initials)}</span>
+                <span class="provider-card-name"><strong>${esc(visitorName)}</strong><small>${esc(empresaAcceso || "Visitante")}</small></span>
+                ${statusMeta[0] ? `<span class="provider-state-chip">${esc(statusMeta[0])}</span>` : ""}
+              </div>
+              <div class="provider-card-ops">
+                <span title="Hora de cita">◷ &nbsp;<b>${esc(horaCita)}</b></span>
+                <span title="Persona o área visitada">⌖ &nbsp;${esc(v.visitaA || v.area || "Recepción")}</span>
+              </div>
+              ${createdTime || (creatorName && creatorName !== "-") ? `<div class="provider-card-created">Creada${createdTime ? ` ${esc(createdTime)}` : ""}${creatorName && creatorName !== "-" ? ` · ${esc(creatorName)}` : ""}</div>` : ""}
+              <div class="provider-card-secondary">
+                ${v.motivo ? `<span class="provider-mini-pill">${esc(v.motivo)}</span>` : ""}
+                ${v.visitaEspecial ? `<span class="provider-mini-pill success">Visita especial</span>` : ""}
+                ${v.gafeteNo ? `<span class="provider-mini-pill">Gafete ${esc(v.gafeteNo)}</span>` : ""}
+                ${v.status === Status.LLEGADO ? liveTimePill("Espera", v.llegadaTs, 0, true) : ""}
+                ${v.status === Status.DENTRO ? liveTimePill("Dentro", v.entradaTs, 0, false) : ""}
+                ${v.incidenciasSalida ? `<span class="provider-mini-pill alert">Incidencia</span>` : ""}
+                <span class="provider-card-actions"><button class="secondary" data-action="ficha" data-id="${esc(v.id)}" data-no-sb="true" aria-label="Ver detalle" title="Ver detalle">◉</button></span>
+              </div>
+              ${v.status === Status.LLEGADO && hasPerm("registrar_entrada") ? `<button class="ok" data-action="entrada" data-id="${esc(v.id)}" data-no-sb="true" style="margin-top:9px;width:100%">Dar acceso</button>` : ""}
+              ${v.status === Status.PENDIENTE_AUTORIZACION && [ROLES.ADMIN,ROLES.RECEPCIONISTA].includes(currentUser?.role) ? `<div class="row" style="margin-top:9px"><button class="ok" data-action="autorizarVisita" data-id="${esc(v.id)}" data-no-sb="true">Autorizar</button><button class="bad" data-action="rechazarVisita" data-id="${esc(v.id)}" data-no-sb="true">Rechazar</button></div>` : ""}
+            </article>`;
+        }
+        if(dashboardTipo === "proveedores"){
+          const statusMeta = {
+            [Status.PROGRAMADO]: ["Programado","programado"],
+            [Status.LLEGADO]: ["Llegó","llegado"],
+            [Status.DENTRO]: ["Dentro","dentro"],
+            [Status.DESPACHADO]: ["Despachado","despachado"],
+            [Status.FINALIZADO]: ["Finalizado","finalizado"],
+            [Status.PENDIENTE_AUTORIZACION]: ["Pendiente","pendiente"]
+          }[v.status] || [String(v.status || "Registro"),""];
+          const initials = nombreAcceso.split(/\s+/).filter(Boolean).slice(0,2).map(part=>part.charAt(0)).join("").toUpperCase() || "PR";
+          const horaCita = typeof v.fechaHoraTs === "number" ? new Date(v.fechaHoraTs).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}) : "Sin hora";
+          const docsLabel = v.ocNo && v.facturaNo ? "Docs completos" : v.ocNo || v.facturaNo ? "Docs parciales" : "Docs pendientes";
+          const createdDate = typeof v.createdTs === "number" ? new Date(v.createdTs) : v.createdAt?.toDate ? v.createdAt.toDate() : typeof v.createdAt?.seconds === "number" ? new Date(v.createdAt.seconds * 1000) : v.createdAt ? new Date(v.createdAt) : null;
+          const createdTime = createdDate && !Number.isNaN(createdDate.getTime()) ? createdDate.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}) : "";
+          const creatorName = creadorCitaNombre(v);
+          const dictamenLabel = dict === "pendiente" ? "Dictamen pendiente" : `Dictamen ${dictLabel.toLowerCase()}`;
+          return `
+            <article class="tarjeta history-card provider-visit-card provider-kanban-card status-${esc(statusMeta[1])} ${qrVencido ? "qr-vencido" : ""}" data-action="ficha" data-id="${esc(v.id)}" tabindex="0" aria-label="Abrir detalle de ${esc(nombreAcceso)}">
+              ${qrVencido ? `<div class="qr-banda-inactivo">QR inactivo por retraso</div>` : ""}
+              <div class="provider-card-top">
+                <span class="provider-avatar" aria-hidden="true">${esc(initials)}</span>
+                <span class="provider-card-name"><strong>${esc(nombreAcceso)}</strong><small>${esc(empresaAcceso || tipoLabel)}</small></span>
+                <span class="provider-state-chip">${esc(statusMeta[0])}</span>
+              </div>
+              <div class="provider-card-ops">
+                <span title="Hora de cita">◷ &nbsp;<b>${esc(horaCita)}</b></span>
+                <span title="Área de destino">⌖ &nbsp;${esc(v.area || "Área no indicada")}</span>
+              </div>
+              ${createdTime || (creatorName && creatorName !== "-") ? `<div class="provider-card-created" title="${esc(`Cita creada: ${fechaCreacionCita(v)} · ${creatorName}`)}">Creada${createdTime ? ` ${esc(createdTime)}` : ""}${creatorName && creatorName !== "-" ? ` · ${esc(creatorName)}` : ""}</div>` : ""}
+              ${v.status === Status.DENTRO ? `<div class="provider-card-secondary">${liveTimePill("Dentro", v.entradaTs, 0, false)}</div>` : ""}
+              <div class="provider-card-secondary">
+                ${v.ocNo ? `<span class="provider-mini-pill" title="Orden de compra">▧ OC ${esc(v.ocNo)}</span>` : ""}
+                <span class="provider-mini-pill ${docColor === "ok" ? "" : "alert"}">${docColor === "ok" ? "✓" : "!"} ${esc(docsLabel)}</span>
+                <span class="provider-mini-pill ${dict === "pendiente" ? "alert" : dict === "aprobado" ? "success" : ""}">${dict === "aprobado" ? "✓" : dict === "pendiente" ? "◷" : "!"} ${esc(dictamenLabel)}</span>
+                ${showInc ? `<span class="provider-mini-pill alert">! ${esc(incLabel)}</span>` : ""}
+                ${v.materialRecibir ? `<span class="provider-mini-pill" title="Material">${esc(v.materialRecibir)}</span>` : ""}
+                <span class="provider-card-actions"><button class="secondary" data-action="ficha" data-id="${esc(v.id)}" data-no-sb="true" aria-label="Ver detalle" title="Ver detalle">◉</button></span>
+              </div>
+              ${v.status === Status.PENDIENTE_AUTORIZACION && currentUser?.role === ROLES.COMPRAS ? `<div class="row" style="margin-top:9px"><button class="ok" data-action="autorizarVisita" data-id="${esc(v.id)}" data-no-sb="true">Autorizar</button><button class="bad" data-action="rechazarVisita" data-id="${esc(v.id)}" data-no-sb="true">Rechazar</button></div>` : ""}
+              ${qrVencido && currentUser?.role === ROLES.ADMIN ? `<button class="secondary" data-action="reactivar" data-id="${esc(v.id)}" data-no-sb="true" style="margin-top:9px;width:100%">Reactivar</button>` : ""}
+            </article>`;
+        }
         return `
           <div class="tarjeta history-card ${modernDashboard ? "provider-visit-card" : ""} tipo-${esc(tipo)} ${v.visitaEspecial ? "visita-especial" : ""} ${qrVencido ? "qr-vencido" : ""}" data-action="ficha" data-id="${esc(v.id)}">
             ${qrVencido ? `<div class="qr-banda-inactivo">QR inactivo por retraso</div>` : ""}
@@ -8415,17 +8621,22 @@ ${incLabel ? `
           </div>
         </div>
       ` : `
-        <div class="grid ${showDespachados ? "cols-5" : "cols-4"}">
-          ${col("Programados","info",programados)}
-          ${col("Llegaron","warn",llegados)}
-          ${col("Dentro","ok",dentro)}
-          ${showDespachados ? col("Despachados","brand",despachados) : ""}
-          ${col("Finalizados","muted",finalizados)}
+        <div class="provider-mobile-tabs" role="tablist" aria-label="Estado de ${dashboardTipo}">
+          ${[["programados","Programados",programados.length],["llegados","Llegaron",llegados.length],["dentro","Dentro",dentro.length],...(showDespachados ? [["despachados","Despachados",despachados.length]] : []),["finalizados","Finalizados",finalizados.length]].map(([key,label,count])=>`<button class="provider-mobile-tab ${dashboardMobileStatus === key ? "active" : ""}" data-action="${dashboardTipo === "proveedores" ? "providerMobileStage" : "visitorMobileStage"}" data-stage="${key}" data-no-sb="true" role="tab" aria-selected="${dashboardMobileStatus === key}">${label}<b>${count}</b></button>`).join("")}
+        </div>
+        <div class="provider-kanban-scroll">
+        <div class="grid ${showDespachados ? "cols-5" : "cols-4"} provider-kanban-board">
+          ${col("Programados","info",programados,"programados")}
+          ${col("Llegaron","warn",llegados,"llegados")}
+          ${col("Dentro","ok",dentro,"dentro")}
+          ${showDespachados ? col("Despachados","brand",despachados,"despachados") : ""}
+          ${col("Finalizados","muted",finalizados,"finalizados")}
+        </div>
         </div>
       `;
 
       appEl.innerHTML = `
-        <section class="${modernDashboard ? "provider-dashboard-modern" : ""}">
+        <section class="${modernDashboard ? "provider-dashboard-modern" : ""} provider-kanban-dashboard ${dashboardTipo === "visitantes" ? "visitor-kanban-dashboard" : ""}">
         ${modernDashboard ? `
           <div class="provider-dashboard-hero">
             <div class="provider-dashboard-hero-copy">
@@ -8435,10 +8646,24 @@ ${incLabel ? `
                 <p>${dashboardHeroText}</p>
               </div>
             </div>
-            <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${new Date().toLocaleDateString()}</div>
+            <div class="provider-dashboard-date"><span aria-hidden="true">▣</span>${new Date().toLocaleDateString("es-MX",{day:"numeric",month:"short",year:"numeric"})}</div>
           </div>
         ` : ""}
-        <div class="dashboard-toolbar">
+        ${modernDashboard ? `
+        <div class="dashboard-toolbar provider-summary-tools">
+          <div class="provider-summary" aria-label="Resumen de ${dashboardTipo}">
+            <div class="provider-summary-item"><span class="provider-summary-icon" aria-hidden="true">▣</span><span class="provider-summary-copy"><strong>${filtered.length}</strong><span>Citas hoy</span></span></div>
+            <div class="provider-summary-item warn"><span class="provider-summary-icon" aria-hidden="true">◷</span><span class="provider-summary-copy"><strong>${pendingAuth.length}</strong><span>Por autorizar</span></span></div>
+            <div class="provider-summary-item ok"><span class="provider-summary-icon" aria-hidden="true">✓</span><span class="provider-summary-copy"><strong>${dentro.length}</strong><span>Dentro</span></span></div>
+          </div>
+          <div class="provider-toolbar-actions">
+            <label class="provider-search-wrap"><span aria-hidden="true">⌕</span><input id="dashSearch" type="search" autocomplete="off" placeholder="${esc(searchPlaceholder)}" value="${esc(dashboardSearchTerm)}" aria-label="Buscar ${dashboardTipo}"></label>
+            <button class="secondary provider-icon-button" data-action="sync" data-no-sb="true" aria-label="Actualizar" title="Actualizar">↻</button>
+            ${hasPerm("escanear_qr") ? `<button class="provider-scan-button" data-action="scan" data-from="${esc(currentView)}" aria-label="Escanear QR"><span aria-hidden="true">▦</span> Escanear QR</button>` : ""}
+            <button class="dashboard-pending-pill ${dashboardPendingOnly ? "active" : ""}" data-action="togglePendingAuth" data-no-sb="true" aria-pressed="${dashboardPendingOnly ? "true" : "false"}"><span class="dot warn"></span> Pendientes: <b>${pendingAuth.length}</b></button>
+          </div>
+        </div>
+        ` : `<div class="dashboard-toolbar">
           <div class="pill">
             <span class="dot brand"></span> ${esc(dashboardTitle)}: <b style="color:var(--text);">${new Date().toLocaleDateString()}</b>
           </div>
@@ -8455,9 +8680,17 @@ ${incLabel ? `
            style="max-width:190px; margin-left:auto;" />
           <button class="secondary" data-action="sync" data-no-sb="true">Actualizar</button>
           ${scanBtn}
-        </div>
+        </div>`}
 
         ${dashboardContent}
+        ${modernDashboard ? `<div class="provider-mobile-navigation" aria-label="Navegación de ${dashboardTipo}">
+          ${hasPerm("escanear_qr") ? `<button class="provider-mobile-scan" data-action="scan" data-from="${esc(currentView)}" aria-label="Escanear QR"><span aria-hidden="true">▦</span> Escanear QR</button>` : ""}
+          <div class="provider-mobile-nav-row">
+            <button data-action="home" aria-label="Ir al menú principal"><span class="provider-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8"></path><path d="M5.5 9.5V21h13V9.5"></path><path d="M9.5 21v-7h5v7"></path></svg></span><small>Inicio</small></button>
+            <button class="active" data-action="sync" data-no-sb="true" aria-label="Actualizar ${dashboardTipo}"><span class="provider-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 7v5h-5"></path><path d="M4 17v-5h5"></path><path d="M6.1 8.2A7 7 0 0 1 18.7 7L20 12"></path><path d="M17.9 15.8A7 7 0 0 1 5.3 17L4 12"></path></svg></span><small>Actualizar</small></button>
+            <button class="${dashboardPendingOnly ? "pending-active" : ""}" data-action="togglePendingAuth" data-no-sb="true" aria-label="Mostrar pendientes por autorizar: ${pendingAuth.length}" aria-pressed="${dashboardPendingOnly ? "true" : "false"}"><span class="provider-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-7 7v4l-2 3h18l-2-3v-4a7 7 0 0 0-7-7Z"></path><path d="M9.5 20h5"></path></svg></span><span class="provider-nav-count">${pendingAuth.length}</span><small>Por autorizar</small></button>
+          </div>
+        </div>` : ""}
         </section>
       `;
     
@@ -8989,31 +9222,29 @@ async function renderValesActivos(refresh=true){
   );
   const { generados, pendientes, fuera, regresoCancelado } = getValeCounts(list);
 
-  const col = (title, dotClass, items) => `
-    <div class="col provider-stage">
-      <div class="card">
-        <div class="title">
-          <span class="dot ${dotClass}" style="margin-right:8px;"></span>
-          ${esc(title)}
-        </div>
-        <div class="big">${items.length}</div>
+  const col = (title, dotClass, items, stageKey) => `
+    <div class="col provider-stage ${valeActivoMobileStatus === stageKey ? "active" : ""}" data-stage="${esc(stageKey)}">
+      <div class="provider-stage-head"><span class="provider-stage-dot" aria-hidden="true"></span><span>${esc(title)}</span><span class="provider-stage-count">${items.length}</span></div>
+      <div class="vale-personal-stage-list">
+        ${items.length ? items.map(renderValeActivoCard).join("") : `<div class="provider-empty"><span class="provider-empty-icon" aria-hidden="true">${stageKey === "pendientes" ? "◷" : stageKey === "inicio" ? "▶" : stageKey === "fuera" ? "↗" : "✓"}</span><strong>Sin vales</strong><span>No hay activos en este estado.</span></div>`}
       </div>
-      <br>
-      ${items.length ? items.map(renderValeActivoCard).join("") : `<div style="color:var(--muted);font-size:12px;">Sin vales</div>`}
     </div>
   `;
 
   const valesContent = `
-    <div class="grid vales-grid">
-      ${col("Pend x autorizar","warn",pendientes)}
-      ${col("Inicio","info",generados)}
-      ${col("Fuera","bad",fuera)}
-      ${col("Regreso","ok",regresoCancelado)}
+    <div class="vale-personal-mobile-tabs" role="tablist" aria-label="Estado de vales de activo">
+      ${[["pendientes","Por autorizar",pendientes.length],["inicio","Inicio",generados.length],["fuera","Fuera",fuera.length],["regreso","Regreso / Finalizado",regresoCancelado.length]].map(([key,label,count])=>`<button class="vale-personal-mobile-tab ${valeActivoMobileStatus === key ? "active" : ""}" data-action="valeActivoMobileStage" data-stage="${key}" data-no-sb="true" role="tab" aria-selected="${valeActivoMobileStatus === key}">${label}<b>${count}</b></button>`).join("")}
+    </div>
+    <div class="grid vales-grid vale-personal-board">
+      ${col("Pendientes por autorizar","warn",pendientes,"pendientes")}
+      ${col("Inicio","info",generados,"inicio")}
+      ${col("Fuera","bad",fuera,"fuera")}
+      ${col("Regreso / Finalizado","ok",regresoCancelado,"regreso")}
     </div>
   `;
 
   appEl.innerHTML = `
-    <section class="provider-dashboard-modern vale-dashboard-modern">
+    <section class="provider-dashboard-modern vale-dashboard-modern vale-personal-kanban vale-activo-kanban">
       <div class="provider-dashboard-hero">
         <div class="provider-dashboard-hero-copy">
           <div class="provider-dashboard-hero-icon" aria-hidden="true">📦</div>
@@ -9036,6 +9267,14 @@ async function renderValesActivos(refresh=true){
       </div>
 
       ${valesContent}
+      <div class="vale-personal-mobile-navigation" aria-label="Navegación de vales de activo">
+        ${hasPerm("escanear_qr") ? `<button class="vale-personal-mobile-scan" data-action="scan" data-from="vales_activos" aria-label="Escanear QR"><span aria-hidden="true">▦</span> Escanear QR</button>` : ""}
+        <div class="vale-personal-nav-row">
+          <button data-action="home" aria-label="Ir al menú principal"><span class="provider-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8"></path><path d="M5.5 9.5V21h13V9.5"></path><path d="M9.5 21v-7h5v7"></path></svg></span><small>Inicio</small></button>
+          <button class="active" data-action="refreshVales" data-tipo="activos" data-no-sb="true" aria-label="Actualizar vales de activo"><span class="provider-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 7v5h-5"></path><path d="M4 17v-5h5"></path><path d="M6.1 8.2A7 7 0 0 1 18.7 7L20 12"></path><path d="M17.9 15.8A7 7 0 0 1 5.3 17L4 12"></path></svg></span><small>Actualizar</small></button>
+          <button class="${valeActivoMobileStatus === "pendientes" ? "active" : ""}" data-action="valeActivoMobileStage" data-stage="pendientes" data-no-sb="true" aria-label="Mostrar pendientes por autorizar: ${pendientes.length}"><span class="provider-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-7 7v4l-2 3h18l-2-3v-4a7 7 0 0 0-7-7Z"></path><path d="M9.5 20h5"></path></svg></span><span class="vale-personal-nav-count">${pendientes.length}</span><small>Por autorizar</small></button>
+        </div>
+      </div>
     </section>
 
     ${renderValeActivoModal()}
@@ -9046,16 +9285,24 @@ function renderValeActivoCard(v){
   const fecha = v.fecha ? new Date(v.fecha + "T00:00:00").toLocaleDateString() : "-";
   const autorizadoPor = v.autorizadoPorNombre || "";
   const autorizador = v.autorizadorNombre || v.autorizadorEmail || "";
+  const activoNombre = v.nombre || v.descripcion || "Activo sin descripción";
+  const iniciales = activoNombre.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x.charAt(0)).join("").toUpperCase() || "AC";
+  const estadoTone = v.status === ValeStatus.PENDIENTE ? "is-warn" : v.status === ValeStatus.FUERA ? "is-bad" : v.status === ValeStatus.REGRESO_CANCELADO ? "is-ok" : "";
   return `
-    <div class="tarjeta history-card provider-visit-card tipo-proveedor" data-action="verValeQR" data-id="${esc(v.id)}">
-      <strong>Folio ${esc(v.folio || v.id)}</strong>
-      <small>${esc(v.descripcion || "Activo sin descripción")}</small>
-      <div class="meta">
-        <span class="pill"><span class="dot ${valeStatusDot(v.status)}"></span>${esc(valeStatusLabel(v.status))}</span>
-        <span class="pill"><span class="dot info"></span>${esc(v.departamento || "Departamento")}</span>
-        <span class="pill"><span class="dot warn"></span>${esc(fecha)}</span>
-        ${v.nombre ? `<span class="pill"><span class="dot brand"></span>${esc(v.nombre)}</span>` : ""}
-        ${autorizador ? `<span class="pill"><span class="dot warn"></span>Autoriza: ${esc(autorizador)}</span>` : ""}
+    <div class="tarjeta history-card provider-visit-card vale-personal-card vale-activo-card tipo-proveedor" data-action="verValeQR" data-id="${esc(v.id)}">
+      <div class="vale-personal-card-head">
+        <span class="vale-personal-avatar" aria-hidden="true">${esc(iniciales)}</span>
+        <span class="vale-personal-identity"><strong>${esc(activoNombre)}</strong><small>${esc(v.descripcion || v.tipoActivo || "Activo")}</small></span>
+        <span class="vale-personal-status ${estadoTone}">${esc(valeStatusLabel(v.status))}</span>
+      </div>
+      <div class="vale-personal-folio">Folio ${esc(v.folio || v.id)}</div>
+      <div class="vale-personal-facts">
+        <div class="vale-personal-fact"><small>Departamento</small><b>${esc(v.departamento || "Sin departamento")}</b></div>
+        <div class="vale-personal-fact"><small>Fecha</small><b>${esc(fecha)}</b></div>
+        <div class="vale-personal-fact"><small>Tipo / Serie</small><b>${esc([v.tipoActivo,v.noSerie].filter(Boolean).join(" · ") || "Sin identificar")}</b></div>
+        <div class="vale-personal-fact"><small>Autoriza</small><b>${esc(autorizador || "Pendiente de asignar")}</b></div>
+      </div>
+      <div class="meta vale-card-details">
         ${autorizadoPor ? `<span class="pill"><span class="dot ok"></span>Autorizado por: ${esc(autorizadoPor)}</span>` : ""}
         ${v.autorizacionEmergencia ? `<span class="pill" style="border-color:rgba(239,68,68,.6);"><span class="dot bad"></span>Autorización de emergencia: ${esc(v.autorizacionEmergenciaMotivo || "Sin detalle")}</span>` : ""}
         ${v.autorizacionPorRespaldo ? `<span class="pill"><span class="dot info"></span>Autorización respaldo</span>` : ""}
@@ -9801,31 +10048,29 @@ async function renderValesPersonal(refresh=true){
   );
   const { generados, pendientes, fuera, regresoCancelado } = getValeCounts(list);
 
-  const col = (title, dotClass, items) => `
-    <div class="col provider-stage">
-      <div class="card">
-        <div class="title">
-          <span class="dot ${dotClass}" style="margin-right:8px;"></span>
-          ${esc(title)}
-        </div>
-        <div class="big">${items.length}</div>
+  const col = (title, dotClass, items, stageKey) => `
+    <div class="col provider-stage ${valePersonalMobileStatus === stageKey ? "active" : ""}" data-stage="${esc(stageKey)}">
+      <div class="provider-stage-head"><span class="provider-stage-dot" aria-hidden="true"></span><span>${esc(title)}</span><span class="provider-stage-count">${items.length}</span></div>
+      <div class="vale-personal-stage-list">
+        ${items.length ? items.map(renderValePersonalCard).join("") : `<div class="provider-empty"><span class="provider-empty-icon" aria-hidden="true">${stageKey === "pendientes" ? "◷" : stageKey === "inicio" ? "▶" : stageKey === "fuera" ? "↗" : "✓"}</span><strong>Sin vales</strong><span>No hay registros en este estado.</span></div>`}
       </div>
-      <br>
-      ${items.length ? items.map(renderValePersonalCard).join("") : `<div style="color:var(--muted);font-size:12px;">Sin vales</div>`}
     </div>
   `;
 
   const valesContent = `
-    <div class="grid vales-grid">
-      ${col("Pend x autorizar","warn",pendientes)}
-      ${col("Inicio","info",generados)}
-      ${col("Fuera","bad",fuera)}
-      ${col("Regreso / Finalizado","ok",regresoCancelado)}
+    <div class="vale-personal-mobile-tabs" role="tablist" aria-label="Estado de vales de personal">
+      ${[["pendientes","Por autorizar",pendientes.length],["inicio","Inicio",generados.length],["fuera","Fuera",fuera.length],["regreso","Regreso / Finalizado",regresoCancelado.length]].map(([key,label,count])=>`<button class="vale-personal-mobile-tab ${valePersonalMobileStatus === key ? "active" : ""}" data-action="valePersonalMobileStage" data-stage="${key}" data-no-sb="true" role="tab" aria-selected="${valePersonalMobileStatus === key}">${label}<b>${count}</b></button>`).join("")}
+    </div>
+    <div class="grid vales-grid vale-personal-board">
+      ${col("Pendientes por autorizar","warn",pendientes,"pendientes")}
+      ${col("Inicio","info",generados,"inicio")}
+      ${col("Fuera","bad",fuera,"fuera")}
+      ${col("Regreso / Finalizado","ok",regresoCancelado,"regreso")}
     </div>
   `;
 
   appEl.innerHTML = `
-    <section class="provider-dashboard-modern vale-dashboard-modern">
+    <section class="provider-dashboard-modern vale-dashboard-modern vale-personal-kanban">
       <div class="provider-dashboard-hero">
         <div class="provider-dashboard-hero-copy">
           <div class="provider-dashboard-hero-icon" aria-hidden="true">👤</div>
@@ -9849,6 +10094,14 @@ async function renderValesPersonal(refresh=true){
       </div>
 
       ${valesContent}
+      <div class="vale-personal-mobile-navigation" aria-label="Navegación de vales de personal">
+        ${hasPerm("escanear_qr") ? `<button class="vale-personal-mobile-scan" data-action="scan" data-from="vales_personal" aria-label="Escanear QR"><span aria-hidden="true">▦</span> Escanear QR</button>` : ""}
+        <div class="vale-personal-nav-row">
+          <button data-action="home" aria-label="Ir al menú principal"><span class="provider-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8"></path><path d="M5.5 9.5V21h13V9.5"></path><path d="M9.5 21v-7h5v7"></path></svg></span><small>Inicio</small></button>
+          <button class="active" data-action="refreshVales" data-tipo="personal" data-no-sb="true" aria-label="Actualizar vales de personal"><span class="provider-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 7v5h-5"></path><path d="M4 17v-5h5"></path><path d="M6.1 8.2A7 7 0 0 1 18.7 7L20 12"></path><path d="M17.9 15.8A7 7 0 0 1 5.3 17L4 12"></path></svg></span><small>Actualizar</small></button>
+          <button class="${valePersonalMobileStatus === "pendientes" ? "active" : ""}" data-action="valePersonalMobileStage" data-stage="pendientes" data-no-sb="true" aria-label="Mostrar pendientes por autorizar: ${pendientes.length}"><span class="provider-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-7 7v4l-2 3h18l-2-3v-4a7 7 0 0 0-7-7Z"></path><path d="M9.5 20h5"></path></svg></span><span class="vale-personal-nav-count">${pendientes.length}</span><small>Por autorizar</small></button>
+        </div>
+      </div>
     </section>
 
     ${renderValePersonalModal()}
@@ -9875,23 +10128,31 @@ function renderValePersonalCard(v){
   const autorizadoMin = parseTiempoAutorizadoMin(v.tiempoAutorizado);
   const excedenteMin = excedido && usadoMin !== null && autorizadoMin !== null ? Math.max(0, usadoMin-autorizadoMin) : 0;
   const limiteTxt = autorizadoMin === null ? esc(v.tiempoAutorizado || "-") : formatMinutes(autorizadoMin);
+  const nombreColaborador = v.nombreColaborador || "Colaborador";
+  const iniciales = nombreColaborador.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x.charAt(0)).join("").toUpperCase() || "VP";
+  const estadoTexto = esSalidaSinRegreso && v.status === ValeStatus.REGRESO_CANCELADO ? "Finalizado" : valeStatusLabel(v.status);
+  const estadoTone = v.status === ValeStatus.PENDIENTE ? "is-warn" : v.status === ValeStatus.FUERA ? "is-bad" : v.status === ValeStatus.REGRESO_CANCELADO ? "is-ok" : "";
+  const tiempoPrincipal = esEntrada ? (entradaMin !== null ? formatMinutes(entradaMin) : "-") : `${tiempoTxt}${excedido ? " excedido" : ""}`;
   return `
-    <div class="tarjeta history-card provider-visit-card tipo-visitante ${excedido ? "vale-card-excedido" : ""}" data-action="verValePersonalQR" data-id="${esc(v.id)}">
+    <div class="tarjeta history-card provider-visit-card vale-personal-card tipo-visitante ${excedido ? "vale-card-excedido" : ""}" data-action="verValePersonalQR" data-id="${esc(v.id)}">
       ${excedido ? `<div class="vale-overdue-banner">Tiempo excedido<small>Excedido por ${esc(String(excedenteMin))} min</small></div>` : ""}
-      <strong>${esc(v.nombreColaborador || "Colaborador")}</strong>
-      <small>Nómina: ${esc(v.nomina || "-")} • ${esc(v.departamento || "Departamento")}</small>
-      <div class="meta">
-        ${esFuturo ? `<span class="pill"><span class="dot info"></span>Programado: ${esc(valePassDate(v.fecha))}</span>` : ""}
-        <span class="pill"><span class="dot ${valeStatusDot(v.status)}"></span>${esc(esSalidaSinRegreso && v.status === ValeStatus.REGRESO_CANCELADO ? "Finalizado" : valeStatusLabel(v.status))}</span>
+      <div class="vale-personal-card-head">
+        <span class="vale-personal-avatar" aria-hidden="true">${esc(iniciales)}</span>
+        <span class="vale-personal-identity"><strong>${esc(nombreColaborador)}</strong><small>Nómina ${esc(v.nomina || "-")} · ${esc(v.departamento || "Departamento")}</small></span>
+        <span class="vale-personal-status ${estadoTone}">${esc(estadoTexto)}</span>
+      </div>
+      <div class="vale-personal-folio">${esc(v.folio || v.id || "Sin folio")}${esFuturo ? ` · ${esc(valePassDate(v.fecha))}` : ""}</div>
+      <div class="vale-personal-facts">
+        <div class="vale-personal-fact"><small>Movimiento</small><b>${esc(v.tipoPermiso || "Permiso")}</b></div>
+        <div class="vale-personal-fact"><small>Tiempo autorizado</small><b>${limiteTxt}</b></div>
+        <div class="vale-personal-fact"><small>${esEntrada ? "Llegada vs 8:15" : "Tiempo registrado"}</small><b>${esc(tiempoPrincipal)}</b></div>
+        <div class="vale-personal-fact"><small>Autoriza</small><b>${esc(autorizador || "Pendiente de asignar")}</b></div>
+      </div>
+      <div class="meta vale-card-details">
+        ${esFuturo ? `<span class="pill"><span class="dot info"></span>Programado</span>` : ""}
         ${esSalidaSinRegreso ? `<span class="pill"><span class="dot ${v.status === ValeStatus.REGRESO_CANCELADO ? "ok" : "warn"}"></span>Salida sin regreso${v.status === ValeStatus.REGRESO_CANCELADO ? " · finalizada" : ""}</span>` : ""}
         ${esSinHorarioRegreso ? `<span class="pill"><span class="dot ${v.status === ValeStatus.REGRESO_CANCELADO ? "ok" : "info"}"></span>Regreso sin horario límite${v.status === ValeStatus.FUERA ? " · tiempo en medición" : v.status === ValeStatus.REGRESO_CANCELADO ? " · regreso registrado" : ""}</span>` : ""}
-        <span class="pill"><span class="dot info"></span>${esc(v.tipoPermiso || "Permiso")}</span>
         ${esSalidaImss ? `<span class="pill"><span class="dot ${imssEstado === "habilitado" || imssEstado === "regreso" ? "ok" : imssEstado === "anticipado" ? "warn" : "bad"}"></span>Salida programada: ${esc(formatHoraTs(imssWindow.salidaTs))} · ${imssEstado === "anticipado" ? "Aún no habilitado" : imssEstado === "habilitado" ? "QR habilitado" : imssEstado === "regreso" ? "Esperando regreso" : "Ventana vencida"}</span>` : ""}
-        <span class="pill"><span class="dot warn"></span>Autorizado: ${limiteTxt}</span>
-        ${autorizador ? `<span class="pill"><span class="dot warn"></span>Autoriza: ${esc(autorizador)}</span>` : ""}
-        ${esEntrada
-          ? `<span class="pill"><span class="dot ${entradaMin !== null ? "ok" : "info"}"></span>Llegada vs 8:15: ${entradaMin !== null ? esc(formatMinutes(entradaMin)) : "-"}</span>`
-          : `<span class="pill"><span class="dot ${excedido ? "bad" : "ok"}"></span>Tiempo: ${esc(tiempoTxt)}${excedido ? " excedido" : ""}</span>`}
         ${autorizadoPor ? `<span class="pill"><span class="dot ok"></span>Autorizado por: ${esc(autorizadoPor)}</span>` : ""}
         ${esEntrada ? `<span class="pill"><span class="dot info"></span>Entrada posterior a 8:15</span>` : ""}
       </div>
@@ -15987,7 +16248,7 @@ if(!esVisitante && existeCitaEnHorario(fechaHora, area)){
       <button class="secondary" id="btnGuardarQR" type="button">Guardar pase</button>
       <button class="secondary" id="btnCompartirQR" type="button">Compartir QR</button>
       <button class="secondary" data-action="print">Guardar / Imprimir</button>
-      <button class="secondary" data-action="home">Volver</button>
+      <button class="secondary" data-action="returnDashboard">Volver</button>
     </div>
   `;
 
@@ -16348,13 +16609,13 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
       if(v?.status === "pendiente_autorizacion"){
         rememberModuleReturnForVisita(v);
         toast("Pendiente de autorización","Esta solicitud aún no está autorizada. No liberar acceso.", "warn", 4200);
-        return renderModuleHome();
+        return renderVisitaReturnDashboard();
       }
 
       if(!v || !v.qrActivo){
         toast("QR inválido","QR no encontrado o desactivado.","bad",3600);
         if(v) rememberModuleReturnForVisita(v);
-        return renderModuleHome();
+        return renderVisitaReturnDashboard();
       }
 
       if(v.status === Status.PROGRAMADO){
@@ -16381,7 +16642,7 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
     "bad", 4200
    );
   rememberModuleReturnForVisita(v);
-  return renderModuleHome();
+  return renderVisitaReturnDashboard();
 }
 
   // ✅ llegada NORMAL
@@ -16395,7 +16656,7 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
 
   toast("Llegada registrada","Se movió a 'Llegaron'.","ok",2200);
   rememberModuleReturnForVisita(v);
-  return renderModuleHome();
+  return renderVisitaReturnDashboard();
 }
       
 // 🟢 LLEGADO → ENTRADA (GUARDIA)
@@ -16473,12 +16734,12 @@ async function renderAdminProveedores(){
     function renderFicha(id){
       cleanup();
       const v = visitas.find(x => x.id == id);
-      if(!v) return renderModuleHome();
+      if(!v) return renderVisitaReturnDashboard();
       if(!requirePerm("ver_ficha","Tu rol no puede ver fichas.")) return;
       rememberModuleReturnForVisita(v);
       if(!canSeeVisita(v)){
         toast("Acceso denegado","Tu rol solo puede ver citas de visitantes.","bad",2600);
-        return renderModuleHome();
+        return renderVisitaReturnDashboard();
       }
       currentView = "ficha";
 
@@ -16558,7 +16819,7 @@ ${incLabel ? `
 
             <div class="row">
               <button class="secondary" data-action="verQR" data-id="${esc(v.id)}">Ver QR</button>
-              <button class="secondary" data-action="home">Volver</button>
+               <button class="secondary" data-action="returnDashboard">Volver</button>
             </div>
           </div>
 
@@ -16667,13 +16928,13 @@ ${incLabel ? `
   // ✅ FIX #1: evitar crash si no existe la cita en memoria
   if(!v){
     toast("No encontrado","No se encontró la cita en memoria. Sincroniza o regresa al dashboard.","warn", 3600);
-    return renderModuleHome();
+    return renderVisitaReturnDashboard();
   }
 
   // ✅ Validación defensiva: fechaHoraTs debe existir para calcular retraso
   if(typeof v.fechaHoraTs !== "number"){
     toast("Datos incompletos","Esta cita no tiene fechaHoraTs válida. Requiere revisión por ADMIN.","warn", 4200);
-    return renderModuleHome();
+    return renderVisitaReturnDashboard();
   }
 
   if(normalizarQrVisitanteRetrasado(v)) saveVisitasLocal();
@@ -16698,7 +16959,7 @@ ${incLabel ? `
       4200
     );
   }
-  return renderModuleHome();
+  return renderVisitaReturnDashboard();
 }
 
   // BLOQUEO Bloqueo por retraso > 15 min (y desactivar QR)
@@ -16723,7 +16984,7 @@ ${incLabel ? `
       "bad",
       4200
     );
-    return renderModuleHome();
+    return renderVisitaReturnDashboard();
   }
 
   // ✅ Si pasa validaciones, render normal del form (tu UI original)
@@ -16766,13 +17027,13 @@ ${incLabel ? `
   // ✅ Evita crash si no existe la cita en memoria
   if(!v){
     toast("No encontrado","No se encontró la cita en memoria. Sincroniza o regresa al dashboard.","warn", 3600);
-    return renderModuleHome();
+    return renderVisitaReturnDashboard();
   }
 
   // ✅ Validación defensiva: se necesita fechaHoraTs para calcular retraso
   if(typeof v.fechaHoraTs !== "number"){
     toast("Datos incompletos","Esta cita no tiene fechaHoraTs válida. Requiere revisión por ADMIN.","warn", 4200);
-    return renderModuleHome();
+    return renderVisitaReturnDashboard();
   }
 
   if(normalizarQrVisitanteRetrasado(v)) saveVisitasLocal();
@@ -16786,7 +17047,7 @@ ${incLabel ? `
       "bad",
       4200
     );
-    return renderModuleHome();
+    return renderVisitaReturnDashboard();
   }
 
   // BLOQUEO Bloqueo por retraso > 15 min (y desactivar QR)
@@ -16811,7 +17072,7 @@ ${incLabel ? `
       "bad",
       4200
     );
-    return renderModuleHome();
+    return renderVisitaReturnDashboard();
   }
 
   // ✅ Si pasa validaciones, render normal del form (tu UI original)
@@ -16925,7 +17186,7 @@ ${incLabel ? `
   if(!requirePerm("despachar","Solo CALIDAD o ADMIN pueden despachar.")) return;
 
   const v = visitas.find(x => x.id == id);
-  if(!v) return renderModuleHome();
+  if(!v) return renderVisitaReturnDashboard();
   rememberModuleReturnForVisita(v);
   if(isVisitante(v)){
     toast("Flujo de visitante","Los visitantes no usan despachado; registra salida para finalizar.","warn",3200);
@@ -16990,7 +17251,7 @@ ${incLabel ? `
     2200
   );
 
-  renderModuleHome();
+  renderVisitaReturnDashboard();
 }
     
 function renderSalida(id){
@@ -16998,7 +17259,7 @@ function renderSalida(id){
       currentView = "salida";
       cleanup();
       const v = visitas.find(x => x.id == id);
-      if(!v) return renderModuleHome();
+      if(!v) return renderVisitaReturnDashboard();
       rememberModuleReturnForVisita(v);
 
       appEl.innerHTML = `
@@ -17024,7 +17285,7 @@ async function confirmarEntrada(id) {
   const v = visitas.find(x => x.id == id);
   if (!v) {
     toast("No encontrado", "La cita no existe.", "bad");
-    return renderModuleHome();
+    return renderVisitaReturnDashboard();
     }
   rememberModuleReturnForVisita(v);
 
@@ -17067,7 +17328,7 @@ async function confirmarEntrada(id) {
   }
 
   toast("Entrada registrada", `${getTipoVisitaLabel(v)} marcado como DENTRO.`, "ok", 2200);
-  renderModuleHome();
+  renderVisitaReturnDashboard();
 }
 
     async function programarEncuestaRecepcion(v){
@@ -17123,7 +17384,7 @@ async function confirmarEntrada(id) {
 
     async function confirmarSalida(id){
       const v = visitas.find(x => x.id == id);
-      if(!v) return renderModuleHome();
+      if(!v) return renderVisitaReturnDashboard();
       rememberModuleReturnForVisita(v);
 
       v.incidenciasSalida = (document.getElementById("incidenciasSalida")?.value || "").trim();
@@ -17143,7 +17404,7 @@ async function confirmarEntrada(id) {
       }
       toast("Salida registrada", v.incidenciasSalida ? "Finalizado con incidencias." : "Finalizado (sin incidencias).", "ok", 2200);
       if(mostrarEncuesta) await mostrarEncuestaRecepcion(v);
-      renderModuleHome();
+      renderVisitaReturnDashboard();
     }
 
    async function reactivarQR(id){
@@ -17177,7 +17438,7 @@ async function confirmarEntrada(id) {
   }
 
   toast("QR reactivado","El QR volvió a estar activo.","ok",2200);
-  renderModuleHome();
+  renderVisitaReturnDashboard();
 }
 
     async function eliminarVisita(id){
@@ -17206,7 +17467,7 @@ async function confirmarEntrada(id) {
       visitas = visitas.filter(v => v.id !== id);
       saveVisitasLocal();
 
-      renderModuleHome();
+      renderVisitaReturnDashboard();
     }
 
     async function limpiarFinalizadosHoy(){
@@ -17234,7 +17495,7 @@ async function confirmarEntrada(id) {
         visitas = visitas.filter(v => !(v.status === Status.FINALIZADO && typeof v.fechaHoraTs==="number" && isSameDay(v.fechaHoraTs, today)));
         saveVisitasLocal();
         toast("Limpieza", `Se borraron ${antes - visitas.length} finalizados.`, "ok", 2200);
-        renderModuleHome();
+        renderVisitaReturnDashboard();
       });
     }
 
@@ -17686,6 +17947,11 @@ function renderProveedores(lista){
           dashboardPendingOnly = false;
           renderHome();
           break;
+        case "returnDashboard":
+          lockView = false;
+          dashboardPendingOnly = false;
+          renderVisitaReturnDashboard();
+          break;
         case "limpiarNuevaCita":
           document.querySelectorAll(".nueva-cita-card input, .nueva-cita-card textarea, .nueva-cita-card select").forEach(input => {
             if(input.id === "tipoVisita") return;
@@ -17697,6 +17963,24 @@ function renderProveedores(lista){
           });
           break;
         case "togglePendingAuth": dashboardPendingOnly = !dashboardPendingOnly; renderActiveDashboard(); break;
+        case "providerMobileStage":
+          providerDashboardMobileStatus = el.dataset.stage || "programados";
+          dashboardPendingOnly = false;
+          renderDashboardHoy("proveedores");
+          break;
+        case "visitorMobileStage":
+          visitorDashboardMobileStatus = el.dataset.stage || "programados";
+          dashboardPendingOnly = false;
+          renderDashboardHoy("visitantes");
+          break;
+        case "valePersonalMobileStage":
+          valePersonalMobileStatus = el.dataset.stage || "pendientes";
+          await renderValesPersonal(false);
+          break;
+        case "valeActivoMobileStage":
+          valeActivoMobileStatus = el.dataset.stage || "pendientes";
+          await renderValesActivos(false);
+          break;
         case "autorizarVisita": await resolverAutorizacionVisita(id, true); break;
         case "rechazarVisita": await resolverAutorizacionVisita(id, false); break;
         case "historial": await renderHistorial(); break;
@@ -18090,6 +18374,13 @@ document.addEventListener("input", (e) => {
     updateNet();
     if(isDashboardView()) renderActiveDashboard();
   }, 600);
+});
+
+document.addEventListener("keydown", (e) => {
+  const providerCard = e.target.closest?.(".provider-kanban-card[data-action='ficha']");
+  if(!providerCard || (e.key !== "Enter" && e.key !== " ")) return;
+  e.preventDefault();
+  providerCard.click();
 });
 
 window.addEventListener("online", () => {
