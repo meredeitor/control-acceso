@@ -3477,7 +3477,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v215</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v216</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3502,7 +3502,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v215";
+  const APP_VERSION = "v216";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -4041,6 +4041,25 @@ const PIN_SESSION_KEY = "adminPinOkTs";
     let valePersonalMobileStatus = "pendientes";
     let valeActivoMobileStatus = "pendientes";
     const valeSearchTerms = { personal:"", activos:"" };
+
+    function limpiarCorreoAutocompletadoEnBuscadoresVales(){
+      const email = String(currentUser?.email || "").trim().toLowerCase();
+      if(!email) return;
+      [
+        ["valeSearchPersonal", "personal"],
+        ["valeSearchActivos", "activos"]
+      ].forEach(([id, tipo]) => {
+        const input = document.getElementById(id);
+        if(!input || document.activeElement === input) return;
+        if(String(input.value || "").trim().toLowerCase() !== email) return;
+        input.value = "";
+        valeSearchTerms[tipo] = "";
+      });
+    }
+
+    function vigilarAutocompletadoEnBuscadoresVales(){
+      [0, 120, 500, 1500].forEach(delay => setTimeout(limpiarCorreoAutocompletadoEnBuscadoresVales, delay));
+    }
     const netDot = $("#netDot");
     const netText = $("#netText");
     const actionsBar = $("#actionsBar");
@@ -5710,6 +5729,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v216</b><span>El PIN de seguridad deja de ser interpretado como contraseña por el navegador y se evita que el correo autocompletado invada los buscadores de vales.</span></div>
           <div class="help-release"><b>v215</b><span>Autorización inmediata de vales de personal basada en el permiso configurado para el rol, con PIN, registro del responsable y bloqueo de autoautorización.</span></div>
           <div class="help-release"><b>v214</b><span>Mejora de legibilidad para proveedores con QR inactivo por retraso: encabezado sin traslapes, textos blancos y etiquetas con mayor contraste en temas claro y oscuro.</span></div>
           <div class="help-release"><b>v213</b><span>Nuevo diseño responsivo para los dashboards de Proveedores, Visitantes, Vales de Personal y Vales de Activo, con tarjetas compactas, navegación móvil, filtros por estado y distribución optimizada para teléfono, tablet y computadora.</span></div>
@@ -6314,19 +6334,25 @@ function requestPinModal(actionLabel="esta acción"){
         <div class="modal-body">
           <p style="margin-top:0;color:var(--muted);">Ingresa tu PIN para ${esc(actionLabel)}.</p>
           <label for="securityPinInput">PIN</label>
-          <input id="securityPinInput" type="password" inputmode="numeric" autocomplete="off" maxlength="12" aria-label="PIN de seguridad">
+          <input id="securityPinInput" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" name="caborca_security_pin_code" maxlength="12" aria-label="PIN de seguridad" data-lpignore="true" data-1p-ignore="true" style="-webkit-text-security:disc;">
           <div class="divider"></div>
-          <div class="row"><button id="securityPinAccept">Continuar</button><button id="securityPinCancel" class="secondary">Cancelar</button></div>
+          <div class="row"><button type="button" id="securityPinAccept">Continuar</button><button type="button" id="securityPinCancel" class="secondary">Cancelar</button></div>
         </div>
       </div>`;
     document.body.appendChild(overlay);
     const input = overlay.querySelector("#securityPinInput");
+    input.value = "";
+    input.addEventListener("input", () => {
+      if(/\D/.test(input.value)) input.value = "";
+      limpiarCorreoAutocompletadoEnBuscadoresVales();
+    });
     const finish = value => { overlay.remove(); resolve(value); };
     overlay.querySelector("#securityPinAccept").addEventListener("click",()=>finish(input.value.trim()));
     overlay.querySelector("#securityPinCancel").addEventListener("click",()=>finish(""));
     overlay.addEventListener("click",event=>{ if(event.target===overlay) finish(""); });
     input.addEventListener("keydown",event=>{ if(event.key==="Enter") finish(input.value.trim()); else if(event.key==="Escape") finish(""); });
-    requestAnimationFrame(()=>input.focus());
+    vigilarAutocompletadoEnBuscadoresVales();
+    requestAnimationFrame(()=>{ input.value = ""; input.focus(); });
   });
 }
 
@@ -9277,7 +9303,7 @@ async function renderValesActivos(refresh=true){
           <span class="pill vale-total-pill">Total: <b style="color:var(--text);margin-left:6px;">${allList.length}</b></span>
         </div>
         <div class="vale-dashboard-tools">
-          <input id="valeSearchActivos" type="search" name="buscar_vales_activos" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" value="${esc(valeSearchTerms.activos)}" placeholder="Buscar folio, activo, serie..." aria-label="Buscar vales de activo">
+          <input id="valeSearchActivos" type="search" name="buscar_vales_activos_no_login" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" value="${esc(valeSearchTerms.activos)}" placeholder="Buscar folio, activo, serie..." aria-label="Buscar vales de activo">
           <button class="secondary" data-action="refreshVales" data-tipo="activos">Actualizar</button>
           ${hasPerm("escanear_qr") ? `<button class="secondary" data-action="scan" data-from="vales_activos">Escanear QR</button>` : ""}
         </div>
@@ -9296,6 +9322,7 @@ async function renderValesActivos(refresh=true){
 
     ${renderValeActivoModal()}
   `;
+  vigilarAutocompletadoEnBuscadoresVales();
 }
 
 function renderValeActivoCard(v){
@@ -10103,7 +10130,7 @@ async function renderValesPersonal(refresh=true){
           <span class="pill vale-total-pill">Total: <b style="color:var(--text);margin-left:6px;">${allList.length}</b></span>
         </div>
         <div class="vale-dashboard-tools">
-          <input id="valeSearchPersonal" type="search" name="buscar_vales_personal" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" value="${esc(valeSearchTerms.personal)}" placeholder="Buscar nombre, nómina, folio..." aria-label="Buscar vales de personal">
+          <input id="valeSearchPersonal" type="search" name="buscar_vales_personal_no_login" autocomplete="off" autocapitalize="none" spellcheck="false" data-lpignore="true" data-1p-ignore="true" value="${esc(valeSearchTerms.personal)}" placeholder="Buscar nombre, nómina, folio..." aria-label="Buscar vales de personal">
           <button class="secondary" data-action="refreshVales" data-tipo="personal">Actualizar</button>
           ${(hasPerm("registrar_salida_personal") || hasPerm("registrar_regreso_personal")) ? `<button class="${registroManualPersonalActivo() ? "danger" : "secondary"}" data-action="toggleRegistroManualPersonal">${registroManualPersonalActivo() ? "Ocultar registro manual" : "Habilitar registro manual"}</button>` : ""}
           ${hasPerm("escanear_qr") ? `<button class="secondary" data-action="scan" data-from="vales_personal">Escanear QR</button>` : ""}
@@ -10123,6 +10150,7 @@ async function renderValesPersonal(refresh=true){
 
     ${renderValePersonalModal()}
   `;
+  vigilarAutocompletadoEnBuscadoresVales();
 }
 
 function renderValePersonalCard(v){
