@@ -3477,7 +3477,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v214</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v215</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3502,7 +3502,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v214";
+  const APP_VERSION = "v215";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5710,6 +5710,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v215</b><span>Autorización inmediata de vales de personal basada en el permiso configurado para el rol, con PIN, registro del responsable y bloqueo de autoautorización.</span></div>
           <div class="help-release"><b>v214</b><span>Mejora de legibilidad para proveedores con QR inactivo por retraso: encabezado sin traslapes, textos blancos y etiquetas con mayor contraste en temas claro y oscuro.</span></div>
           <div class="help-release"><b>v213</b><span>Nuevo diseño responsivo para los dashboards de Proveedores, Visitantes, Vales de Personal y Vales de Activo, con tarjetas compactas, navegación móvil, filtros por estado y distribución optimizada para teléfono, tablet y computadora.</span></div>
           <div class="help-release"><b>v212</b><span>Después de crear un vale de personal se puede autorizar inmediatamente mediante el modal flotante de PIN o dejarlo pendiente, y en ambos casos se abre el QR para compartirlo. Se evita el autollenado del correo en la búsqueda y se unifica Compartir QR con el botón verde e ícono de WhatsApp.</span></div>
@@ -9197,14 +9198,28 @@ function renderValePersonalAutorizadorOptions(){
 function canCurrentUserAuthorizeValePersonal(v={}){
   if(!hasPerm("autorizar_vale_personal")) return false;
   if(!canRoleAuthorizeValePersonal(currentUser?.role)) return false;
-  if(!v.autorizadorUid && !v.autorizadorEmail) return true;
+  return !isValePersonalDelUsuarioActual(v);
+}
 
+function normalizarIdentidadValePersonal(value){
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toLowerCase();
+}
+
+function isValePersonalDelUsuarioActual(v={}){
   const currentUid = String(currentUser?.uid || "");
-  const currentEmail = String(currentUser?.email || "").toLowerCase();
-  return (
-    (v.autorizadorUid && String(v.autorizadorUid) === currentUid) ||
-    (v.autorizadorEmail && String(v.autorizadorEmail).toLowerCase() === currentEmail)
-  );
+  if(currentUid && v.colaboradorUid && String(v.colaboradorUid) === currentUid) return true;
+
+  const nominaUsuario = normalizarIdentidadValePersonal(currentUser?.nomina);
+  const nominaVale = normalizarIdentidadValePersonal(v.nomina);
+  if(nominaUsuario && nominaVale && nominaUsuario === nominaVale) return true;
+
+  const nombreUsuario = normalizarIdentidadValePersonal(currentUser?.nombre);
+  const nombreVale = normalizarIdentidadValePersonal(v.nombreColaborador);
+  return !!nombreUsuario && !!nombreVale && nombreUsuario === nombreVale;
 }
 
 async function renderValesActivos(refresh=true){
@@ -12690,6 +12705,11 @@ function createValePersonalFromModal(){
 
   const modal = document.getElementById("valePersonalModal");
   const id = modal?.dataset?.draftId || globalThis.crypto?.randomUUID?.() || `VP-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
+  const esValePropio = normalizarIdentidadValePersonal(nombreColaborador) === normalizarIdentidadValePersonal(currentUser?.nombre) || (
+    normalizarIdentidadValePersonal(nomina) &&
+    normalizarIdentidadValePersonal(currentUser?.nomina) &&
+    normalizarIdentidadValePersonal(nomina) === normalizarIdentidadValePersonal(currentUser?.nomina)
+  );
   return {
     id,
     folio: `${esPermisoImss ? "IMSS" : "VP"}-${new Date().getFullYear()}-${String(valesPersonal.length + 1).padStart(4,"0")}`,
@@ -12697,6 +12717,7 @@ function createValePersonalFromModal(){
     nombreColaborador,
     nomina,
     departamento,
+    colaboradorUid: esValePropio ? (currentUser?.uid || "") : "",
     tipoPermiso,
     tiempoAutorizado,
     observaciones,
@@ -12734,7 +12755,7 @@ function solicitarAutorizacionInmediataVale(v={}){
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="autorizarAhoraTitle" style="max-width:520px;">
         <div class="modal-head"><div><h2 id="autorizarAhoraTitle" style="margin:0;">Vale generado correctamente</h2><small>${esc(v.folio || v.id || "")}</small></div></div>
         <div class="modal-body">
-          <p style="margin-top:0;">Eres el autorizador asignado para el vale de <b>${esc(v.nombreColaborador || "este colaborador")}</b>.</p>
+          <p style="margin-top:0;">Tu rol tiene permiso para autorizar el vale de <b>${esc(v.nombreColaborador || "este colaborador")}</b>.</p>
           <p style="color:var(--muted);">¿Deseas autorizarlo ahora? La autorización solicitará tu PIN y quedará registrada a tu nombre.</p>
           <div class="divider"></div>
           <div class="row" style="justify-content:flex-end;">
@@ -12756,7 +12777,8 @@ async function guardarValePersonal(){
   if(!hasPerm("crear_vale_personal") && !hasPerm("crear_permiso_imss")) return toast("No permitido","Tu rol no puede crear este permiso.","warn");
   const v = createValePersonalFromModal();
   if(!v) return;
-  const ofreceAutorizacionInmediata = currentUser?.role === ROLES.JEFE && canCurrentUserAuthorizeValePersonal(v);
+  // El diálogo depende del permiso del rol y nunca permite autoautorizarse.
+  const ofreceAutorizacionInmediata = !isPermisoImss(v) && canCurrentUserAuthorizeValePersonal(v);
   if(ofreceAutorizacionInmediata) v.qrActivo = false;
   const recentDuplicate = valesPersonal.find(existing =>
     valePersonalDuplicateSignature(existing) === valePersonalDuplicateSignature(v) &&
@@ -12989,9 +13011,18 @@ async function autorizarValePersonal(id, { renderAfter=true, freshPin=false }={}
   const v = valesPersonal.find(x => String(x.id) === String(id));
   if(!v){ toast("No encontrado","No se encontró el vale.","warn"); return false; }
   if(!canCurrentUserAuthorizeValePersonal(v)){
+    if(isValePersonalDelUsuarioActual(v)){
+      toast(
+        "Autoautorización no permitida",
+        "Puedes crear tu propio vale, pero debe autorizarlo otra persona cuyo rol tenga el permiso Autorizar vales de personal.",
+        "warn",
+        5200
+      );
+      return false;
+    }
     toast(
       "No permitido",
-      `Este vale debe autorizarlo ${v.autorizadorNombre || v.autorizadorEmail || "el jefe asignado"}.`,
+      "Tu rol no tiene permiso para autorizar vales de personal.",
       "warn",
       4200
     );
@@ -18424,6 +18455,7 @@ window.addEventListener("offline",updateNet);
         user: prof.email,
         role: prof.role,
         nombre: prof.nombre || prof.email,
+        nomina: prof.nomina || prof.noNomina || prof.numeroNomina || "",
         createdTs: prof.createdTs || 0,
         solicitadoTs: prof.solicitadoTs || 0,
         passwordChangedTs: prof.passwordChangedTs || 0,

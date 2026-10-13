@@ -478,14 +478,10 @@ service cloud.firestore {
 
       allow update: if isAuth()
         && (
-          isAdmin()
-          || (!isJefeCompras() && canAuthorizeValePersonal())
-          || (
-            isJefeCompras()
-            && (
-              resource.data.autorizadorUid == myUid()
-              || resource.data.autorizadorEmail == myEmail()
-            )
+          (
+            canAuthorizeValePersonal()
+            && (!('colaboradorUid' in resource.data) || resource.data.colaboradorUid != myUid())
+            && resource.data.nombreColaborador != userDoc(myUid()).data.nombre
           )
           || isGuardia()
           || (
@@ -529,6 +525,10 @@ service cloud.firestore {
           || (
             canManageVales()
             && resource.data.createdByUid == myUid()
+            && !(
+              resource.data.status == "pendiente_autorizacion"
+              && request.resource.data.status == "generado"
+            )
           )
         );
 
