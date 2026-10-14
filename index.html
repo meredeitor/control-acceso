@@ -3477,7 +3477,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v216</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v217</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3502,7 +3502,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v216";
+  const APP_VERSION = "v217";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5729,6 +5729,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v217</b><span>El escáner general procesa únicamente la primera detección de cada apertura, evitando consultas duplicadas a Firebase y mensajes repetidos al leer vales.</span></div>
           <div class="help-release"><b>v216</b><span>El PIN de seguridad deja de ser interpretado como contraseña por el navegador y se evita que el correo autocompletado invada los buscadores de vales.</span></div>
           <div class="help-release"><b>v215</b><span>Autorización inmediata de vales de personal basada en el permiso configurado para el rol, con PIN, registro del responsable y bloqueo de autoautorización.</span></div>
           <div class="help-release"><b>v214</b><span>Mejora de legibilidad para proveedores con QR inactivo por retraso: encabezado sin traslapes, textos blancos y etiquetas con mayor contraste en temas claro y oscuro.</span></div>
@@ -16491,10 +16492,13 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
         return renderHome();
       }
 
+      let scanHandled = false;
       qrScanner.start(
         { facingMode: "environment" },
         { fps: 10, qrbox: 250 },
         async (decodedText) => {
+          if(scanHandled) return;
+          scanHandled = true;
           stopScanner();
           await abrirFichaDesdeQR(String(decodedText).trim());
         },
