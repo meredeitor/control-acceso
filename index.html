@@ -3477,7 +3477,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v217</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v218</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3502,7 +3502,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v217";
+  const APP_VERSION = "v218";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5729,6 +5729,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v218</b><span>Rondinero conserva un caché local compacto, excluye fotografías históricas y puede iniciar en modo en línea cuando Firebase confirma el recorrido aunque el almacenamiento del dispositivo esté restringido.</span></div>
           <div class="help-release"><b>v217</b><span>El escáner general procesa únicamente la primera detección de cada apertura, evitando consultas duplicadas a Firebase y mensajes repetidos al leer vales.</span></div>
           <div class="help-release"><b>v216</b><span>El PIN de seguridad deja de ser interpretado como contraseña por el navegador y se evita que el correo autocompletado invada los buscadores de vales.</span></div>
           <div class="help-release"><b>v215</b><span>Autorización inmediata de vales de personal basada en el permiso configurado para el rol, con PIN, registro del responsable y bloqueo de autoautorización.</span></div>
@@ -7007,17 +7008,62 @@ function fmt(ts){
       }catch{ return []; }
     }
 
+    function rondineroLocalSnapshot(stripActivePhotos=false){
+      const activos = rondineroRondines.filter(r => r?.status === "en_curso");
+      const historicos = rondineroRondines
+        .filter(r => r?.status !== "en_curso")
+        .sort((a,b) => Number(b.updatedTs || b.createdTs || 0) - Number(a.updatedTs || a.createdTs || 0))
+        .slice(0, 25);
+      const rondines = [...activos, ...historicos];
+      const idsActivos = new Set(activos.map(r => String(r.id)));
+      const idsCache = new Set(rondines.map(r => String(r.id)));
+      const eventosActivos = rondineroEventos
+        .filter(ev => idsActivos.has(String(ev.rondinId || "")))
+        .sort((a,b) => Number(b.updatedTs || b.createdTs || b.ts || 0) - Number(a.updatedTs || a.createdTs || a.ts || 0))
+        .map(ev => {
+          const conservarFoto = !stripActivePhotos;
+          return conservarFoto ? ev : { ...ev, fotoDataUrl:"", fotoLocalOmitida:!!ev.fotoDataUrl };
+        });
+      const eventosHistoricos = rondineroEventos
+        .filter(ev => idsCache.has(String(ev.rondinId || "")) && !idsActivos.has(String(ev.rondinId || "")))
+        .sort((a,b) => Number(b.updatedTs || b.createdTs || b.ts || 0) - Number(a.updatedTs || a.createdTs || a.ts || 0))
+        .slice(0, 100)
+        .map(ev => ({ ...ev, fotoDataUrl:"", fotoLocalOmitida:!!ev.fotoDataUrl }));
+      const eventos = [...eventosActivos, ...eventosHistoricos];
+      return { rondines, eventos };
+    }
+
+    function writeRondineroLocal(snapshot){
+      localStorage.setItem(LS_RONDINERO_PUNTOS_KEY, JSON.stringify(rondineroPuntos));
+      localStorage.setItem(LS_RONDINERO_RUTAS_KEY, JSON.stringify(rondineroRutas));
+      localStorage.setItem(LS_RONDINERO_RONDINES_KEY, JSON.stringify(snapshot.rondines));
+      localStorage.setItem(LS_RONDINERO_EVENTOS_KEY, JSON.stringify(snapshot.eventos));
+    }
+
     function saveRondineroLocal(){
       try{
-        localStorage.setItem(LS_RONDINERO_PUNTOS_KEY, JSON.stringify(rondineroPuntos));
-        localStorage.setItem(LS_RONDINERO_RUTAS_KEY, JSON.stringify(rondineroRutas));
-        localStorage.setItem(LS_RONDINERO_RONDINES_KEY, JSON.stringify(rondineroRondines));
-        localStorage.setItem(LS_RONDINERO_EVENTOS_KEY, JSON.stringify(rondineroEventos));
+        writeRondineroLocal(rondineroLocalSnapshot(false));
         return true;
       }catch(e){
-        console.warn(e);
-        toast("Almacenamiento", "No se pudo guardar Rondinero localmente.", "warn", 3600);
-        return false;
+        console.warn("Rondinero: caché local lleno; se intentará compactar.", e);
+        try{
+          localStorage.removeItem(LS_RONDINERO_RONDINES_KEY);
+          localStorage.removeItem(LS_RONDINERO_EVENTOS_KEY);
+          writeRondineroLocal(rondineroLocalSnapshot(false));
+          toast("Almacenamiento optimizado", "Se liberó historial local de Rondinero. Las evidencias permanecen en Firebase.", "info", 4200);
+          return true;
+        }catch(compactError){
+          console.warn("Rondinero: el dispositivo rechazó incluso el caché mínimo.", compactError);
+          try{
+            writeRondineroLocal(rondineroLocalSnapshot(true));
+            toast("Caché mínimo", "El dispositivo no conservó fotografías localmente; se respaldarán en Firebase mientras haya conexión.", "warn", 5200);
+            return true;
+          }catch(minimalError){
+            console.warn("Rondinero: almacenamiento local no disponible.", minimalError);
+            toast("Almacenamiento restringido", navigator.onLine ? "Se intentará continuar usando Firebase." : "Libera espacio o habilita el almacenamiento del navegador para trabajar sin conexión.", "warn", 5200);
+            return false;
+          }
+        }
       }
     }
 
@@ -12045,15 +12091,28 @@ async function iniciarRondinero(){
     updatedTs: Date.now()
     };
     rondineroRondines.unshift(rondin);
-    if(!saveRondineroLocal()){
-      rondineroRondines = rondineroRondines.filter(r => r.id !== rondin.id);
-      toast("No se pudo iniciar","El dispositivo no permitió guardar el recorrido.","bad",4600);
-      return;
+    const guardadoLocal = saveRondineroLocal();
+    let confirmadoEnFirebase = false;
+    if(!guardadoLocal){
+      if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
+        try{
+          await cloudUpsertRondineroRondin(rondin);
+          confirmadoEnFirebase = true;
+          toast("Rondín en línea", "Firebase confirmó el recorrido. Mantén conexión mientras este dispositivo tenga el almacenamiento restringido.", "warn", 6200);
+        }catch(e){
+          console.warn("No se pudo iniciar Rondinero en Firebase:", e);
+        }
+      }
+      if(!confirmadoEnFirebase){
+        rondineroRondines = rondineroRondines.filter(r => r.id !== rondin.id);
+        toast("No se pudo iniciar", navigator.onLine ? "Firebase tampoco confirmó el recorrido. Revisa la conexión e intenta nuevamente." : "Sin almacenamiento local no se puede iniciar el recorrido sin conexión.", "bad", 5200);
+        return;
+      }
     }
     toast("Rondinero","Rondín iniciado. Ya puedes escanear el primer punto.","ok",3200);
     await renderRondinero();
 
-    if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
+    if(!confirmadoEnFirebase && navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
       cloudUpsertRondineroRondin(rondin).catch(e => {
         console.warn(e);
         toast("Sincronización pendiente","El rondín inició en este dispositivo. Firebase se reintentará al registrar el siguiente punto.","warn",6200);
