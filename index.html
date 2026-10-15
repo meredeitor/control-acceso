@@ -3480,7 +3480,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v221</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v222</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3505,7 +3505,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v221";
+  const APP_VERSION = "v222";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5732,6 +5732,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v222</b><span>Las visitas pueden crearse y editarse después de las 5:00 p. m.; el límite de agenda se conserva exclusivamente para las citas de proveedores.</span></div>
           <div class="help-release"><b>v221</b><span>Las pestañas móviles de Proveedores y Visitantes se distribuyen uniformemente en el ancho de la pantalla, sin desplazamiento horizontal.</span></div>
           <div class="help-release"><b>v220</b><span>Las cuatro pestañas móviles de Vales se distribuyen uniformemente en la pantalla y el último estado se muestra como Finalizado.</span></div>
           <div class="help-release"><b>v219</b><span>Los dashboards muestran KPI operativos en el orden Citas/Vales de hoy, Dentro/Fuera y Finalizados; los pendientes permanecen disponibles en sus columnas y accesos.</span></div>
@@ -13458,7 +13459,7 @@ const esVisitante = isVisitante(v);
     return;
   }
 
-  if(!horarioCitaPermitido(fechaHora)){
+  if(!esVisitante && !horarioCitaPermitido(fechaHora)){
     toast("Horario no permitido","No se pueden generar citas a las 5:00 pm o después.","warn");
     return;
   }
@@ -16158,7 +16159,7 @@ async function recargarProveedoresNuevaCita(){
     return null;
   }
 
-  if(!horarioCitaPermitido(fechaHora)){
+  if(!esVisitante && !horarioCitaPermitido(fechaHora)){
     toast("Horario no permitido","No se pueden generar citas a las 5:00 pm o después.","warn");
     return null;
   }
