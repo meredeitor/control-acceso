@@ -106,7 +106,16 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if isAuth();
-      allow create: if isAuth() && uid == myUid();
+      allow create: if isAuth()
+        && (isAdmin() || (uid == myUid() && !isKioskoAnon()))
+        && request.resource.data.uid == uid
+        && request.resource.data.uid is string
+        && request.resource.data.uid.size() > 0
+        && request.resource.data.email is string
+        && request.resource.data.email.size() > 0
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() > 0
+        && request.resource.data.role is string;
       allow update: if (
           isAdmin()
           && request.resource.data.role is string
@@ -117,7 +126,11 @@ service cloud.firestore {
             "pinHash",
             "pinEnabled",
             "pinUpdatedTs",
-            "pinUpdatedAt"
+             "pinUpdatedAt",
+             "profileLastAction",
+             "profileLastActionTs",
+             "profileLastActionByUid",
+             "profileLastActionByEmail"
           ])
           && request.resource.data.pinHash is string
           && request.resource.data.pinHash.size() == 64
@@ -129,13 +142,26 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             "passwordChangedTs",
             "passwordChangedAt",
-            "passwordChangeRequired"
+             "passwordChangeRequired",
+             "profileLastAction",
+             "profileLastActionTs",
+             "profileLastActionByUid",
+             "profileLastActionByEmail"
           ])
           && request.resource.data.passwordChangedTs is int
           && request.resource.data.passwordChangedAt is timestamp
           && request.resource.data.passwordChangeRequired == false
         );
-      allow delete: if false;
+      allow delete: if isAdmin()
+        && (
+          !resource.data.keys().hasAll(["uid", "email", "nombre"])
+          || !(resource.data.uid is string)
+          || resource.data.uid.size() == 0
+          || !(resource.data.email is string)
+          || resource.data.email.size() == 0
+          || !(resource.data.nombre is string)
+          || resource.data.nombre.size() == 0
+        );
     }
 
     match /proveedores/{id} {

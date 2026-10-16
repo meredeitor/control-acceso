@@ -3480,7 +3480,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v222</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v223</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3505,7 +3505,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v222";
+  const APP_VERSION = "v223";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -4414,6 +4414,7 @@ async function saveRolePermsConfig(role, perms){
     }
 
     if(Object.keys(update).length > 0){
+      Object.assign(update, userProfileAudit("normalizar_perfil_admin"));
       await updateDoc(doc(db, COL_USERS, docSnap.id), update);
       actualizados++;
     }
@@ -5732,6 +5733,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v223</b><span>Prevención reforzada de vales de personal duplicados y administración segura de perfiles incompletos, evitando que las sesiones anónimas de kiosco creen usuarios vacíos.</span></div>
           <div class="help-release"><b>v222</b><span>Las visitas pueden crearse y editarse después de las 5:00 p. m.; el límite de agenda se conserva exclusivamente para las citas de proveedores.</span></div>
           <div class="help-release"><b>v221</b><span>Las pestañas móviles de Proveedores y Visitantes se distribuyen uniformemente en el ancho de la pantalla, sin desplazamiento horizontal.</span></div>
           <div class="help-release"><b>v220</b><span>Las cuatro pestañas móviles de Vales se distribuyen uniformemente en la pantalla y el último estado se muestra como Finalizado.</span></div>
@@ -7356,21 +7358,49 @@ function fmt(ts){
     // -------------------------
     // Firebase: user profile
     // -------------------------
+    function userProfileIsComplete(profile={}, uid=""){
+      const resolvedUid = String(uid || profile.uid || profile.id || "").trim();
+      const email = String(profile.email || "").trim();
+      const nombre = String(profile.nombre || profile.name || profile.displayName || "").trim();
+      return !!resolvedUid && !!email && !!nombre;
+    }
+
+    function userProfileAudit(action, actor={}){
+      const uid = String(actor.uid || currentUser?.uid || auth.currentUser?.uid || "").trim();
+      const email = String(actor.email || currentUser?.email || auth.currentUser?.email || "").trim();
+      return {
+        profileLastAction: String(action || "actualizar_perfil"),
+        profileLastActionTs: Date.now(),
+        profileLastActionByUid: uid,
+        profileLastActionByEmail: email
+      };
+    }
+
     async function ensureUserProfile(user){
+      if(!user?.uid) throw new Error("No se recibió un UID válido para el perfil.");
+      if(user.isAnonymous) throw new Error("Una sesión anónima de kiosco no puede crear perfiles en users.");
+      const email = String(user.email || "").trim();
+      const nombre = String(user.displayName || email).trim();
+      if(!email || !nombre) throw new Error("La cuenta no tiene correo o nombre suficiente para crear su perfil.");
       const ref = doc(db, COL_USERS, user.uid);
       const snap = await getDoc(ref);
       if(!snap.exists()){
         await setDoc(ref, {
           uid: user.uid,
-          email: user.email || "",
+          email,
+          nombre,
           role: ROLES.PENDIENTE,      // ✅ rol por defecto
           createdTs: Date.now(),
-          createdAt: serverTimestamp()
-        }, { merge: true });
-        return { uid:user.uid, email:user.email||"", nombre:user.email||"", role: ROLES.PENDIENTE };
+          createdAt: serverTimestamp(),
+          ...userProfileAudit("crear_perfil_inicio_sesion", user)
+        });
+        return { uid:user.uid, email, nombre, role: ROLES.PENDIENTE };
       }
       const data = snap.data() || {};
-      return { uid:user.uid, email:user.email||"", nombre:data.nombre || user.displayName || user.email || "", role: data.role || ROLES.PENDIENTE };
+      if(!userProfileIsComplete(data, user.uid)){
+        throw new Error("El perfil existe, pero está incompleto. Solicita al administrador repararlo.");
+      }
+      return { ...data, uid:user.uid, email:data.email || email, nombre:data.nombre || nombre, role: data.role || ROLES.PENDIENTE };
     }
 
     // -------------------------
@@ -7566,12 +7596,32 @@ async function pushRecentToCloud(){
 
 function valePersonalDuplicateSignature(v={}){
   const clean = value => String(value || "").trim().toLowerCase().replace(/\s+/g," ");
+  const nomina = clean(v.nomina).replace(/^0+(?=\d)/,"");
+  const colaborador = nomina || clean(v.nombreColaborador);
+  const salidaProgramada = Number(v.salidaProgramadaTs || 0);
+  const horario = salidaProgramada > 0
+    ? new Date(salidaProgramada).toISOString().slice(0,16)
+    : "";
   return [
     clean(v.fecha),
-    clean(v.nomina).replace(/^0+(?=\d)/,""),
-    clean(v.nombreColaborador),
-    clean(v.tipoPermiso)
+    colaborador,
+    clean(v.tipoPermiso),
+    clean(v.tiempoAutorizado),
+    horario
   ].join("|");
+}
+
+function valePersonalActivoParaDuplicado(v={}){
+  return [ValeStatus.PENDIENTE, ValeStatus.GENERADO, ValeStatus.FUERA].includes(v.status);
+}
+
+function encontrarValePersonalActivoEquivalente(list=[], candidate={}){
+  const candidateKey = valePersonalDuplicateSignature(candidate);
+  return list.find(existing =>
+    String(existing.id || "") !== String(candidate.id || "") &&
+    valePersonalActivoParaDuplicado(existing) &&
+    valePersonalDuplicateSignature(existing) === candidateKey
+  ) || null;
 }
 
 function valePersonalProgressScore(v={}){
@@ -7597,25 +7647,12 @@ function detectarDuplicadosValesPersonal(list=[]){
   const duplicates = [];
   const clusters = [];
   groups.forEach(items => {
-    const ordered = [...items].sort((a,b)=>Number(a.createdTs||0)-Number(b.createdTs||0));
-    let cluster = [];
-    const flush = () => {
-      if(cluster.length < 2){ cluster=[]; return; }
-      const ranked = [...cluster].sort((a,b)=>valePersonalProgressScore(b)-valePersonalProgressScore(a) || Number(a.createdTs||0)-Number(b.createdTs||0));
-      const keep = ranked[0];
-      const remove = ranked.slice(1);
-      clusters.push({ keep, remove });
-      duplicates.push(...remove);
-      cluster = [];
-    };
-    ordered.forEach(item => {
-      const previous = cluster[cluster.length-1];
-      const previousTs = Number(previous?.createdTs || 0);
-      const itemTs = Number(item.createdTs || 0);
-      if(previous && previousTs > 0 && itemTs > 0 && itemTs-previousTs > 30*60*1000) flush();
-      cluster.push(item);
-    });
-    flush();
+    if(items.length < 2) return;
+    const ranked = [...items].sort((a,b)=>valePersonalProgressScore(b)-valePersonalProgressScore(a) || Number(a.createdTs||0)-Number(b.createdTs||0));
+    const keep = ranked[0];
+    const remove = ranked.slice(1);
+    clusters.push({ keep, remove });
+    duplicates.push(...remove);
   });
   return { clusters, duplicates };
 }
@@ -7633,7 +7670,7 @@ async function limpiarDuplicadosValesPersonal(){
     return toast("No se pudo revisar","Firebase no respondió. No se eliminó ningún vale.","bad",4800);
   }
   const { clusters, duplicates } = detectarDuplicadosValesPersonal(cloud);
-  if(!duplicates.length) return toast("Sin duplicados","No se encontraron permisos repetidos para la misma fecha, nómina, persona y tipo dentro de una ventana de 30 minutos.","ok",5200);
+  if(!duplicates.length) return toast("Sin duplicados","No se encontraron permisos equivalentes con la misma fecha, nómina, movimiento, tiempo autorizado y horario programado.","ok",5200);
 
   const preview = clusters.slice(0,8).map(group => {
     const v = group.keep;
@@ -8171,7 +8208,8 @@ if (btnLogin) {
           role: ROLES.PENDIENTE,
           aprobado: false,
           solicitadoTs: Date.now(),
-          createdAt: serverTimestamp()
+          createdAt: serverTimestamp(),
+          ...userProfileAudit("crear_perfil_registro", cred.user)
         });
 
         toast("Registro enviado","Cuenta pendiente de aprobación","ok",3000);
@@ -12886,14 +12924,24 @@ async function guardarValePersonal(){
   // El diálogo depende del permiso del rol y nunca permite autoautorizarse.
   const ofreceAutorizacionInmediata = !isPermisoImss(v) && canCurrentUserAuthorizeValePersonal(v);
   if(ofreceAutorizacionInmediata) v.qrActivo = false;
-  const recentDuplicate = valesPersonal.find(existing =>
-    valePersonalDuplicateSignature(existing) === valePersonalDuplicateSignature(v) &&
-    Math.abs(Number(existing.createdTs||0)-Number(v.createdTs||0)) <= 2*60*1000
-  );
-  if(recentDuplicate){
-    toast("Vale ya generado",`Ya existe el vale ${recentDuplicate.folio || recentDuplicate.id}. Se abrirá el registro existente.`,"warn",4200);
+  let existingDuplicate = encontrarValePersonalActivoEquivalente(valesPersonal, v);
+  if(!existingDuplicate && navigator.onLine){
+    try{
+      const cloudByNomina = await cloudFetchValesPersonalByNomina(v.nomina);
+      existingDuplicate = encontrarValePersonalActivoEquivalente(cloudByNomina, v);
+      if(existingDuplicate){
+        valesPersonal = mergeById(valesPersonal, cloudByNomina);
+        saveValesPersonalLocal();
+      }
+    }catch(error){
+      console.warn("No se pudo verificar duplicados en Firebase:", error);
+      toast("Verificación parcial","Firebase no respondió; se revisaron únicamente los vales disponibles en este dispositivo.","warn",4200);
+    }
+  }
+  if(existingDuplicate){
+    toast("Vale ya existente",`Ya existe el vale activo ${existingDuplicate.folio || existingDuplicate.id} con los mismos datos. Se abrirá el registro existente.`,"warn",5200);
     closeValePersonalModal();
-    return renderValePersonalQR(recentDuplicate.id);
+    return renderValePersonalQR(existingDuplicate.id);
   }
   const saveButton = document.querySelector('[data-action="guardarValePersonal"]');
   guardandoValePersonal = true;
@@ -14606,6 +14654,7 @@ async function importarPersonasVisitaActuales(){
     // Admin usuarios screen
     // -------------------------
     let _adminUsersCache = [];
+    let _adminIncompleteUsersCache = [];
     let _editingUserUid = null;
 
     async function renderMiPin(){
@@ -14698,7 +14747,12 @@ async function importarPersonasVisitaActuales(){
         await reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(auth.currentUser.email, actual));
         await updatePassword(auth.currentUser, nueva);
         const changedTs = Date.now();
-        await updateDoc(doc(db, COL_USERS, currentUser.uid), {passwordChangedTs:changedTs,passwordChangedAt:serverTimestamp(),passwordChangeRequired:false});
+        await updateDoc(doc(db, COL_USERS, currentUser.uid), {
+          passwordChangedTs:changedTs,
+          passwordChangedAt:serverTimestamp(),
+          passwordChangeRequired:false,
+          ...userProfileAudit("cambiar_contrasena")
+        });
         currentUser.passwordChangedTs = changedTs;
         currentUser.passwordChangeRequired = false;
         localStorage.setItem(LS_USER, JSON.stringify(currentUser));
@@ -14743,12 +14797,17 @@ async function importarPersonasVisitaActuales(){
       try{
         const pinHash = await hashPin(pin);
         const userRef = doc(db, COL_USERS, currentUser.uid);
-        await setDoc(userRef, {
+        const currentProfile = await getDocFromServer(userRef);
+        if(!currentProfile.exists() || !userProfileIsComplete(currentProfile.data(), currentUser.uid)){
+          throw new Error("El perfil está incompleto. Un administrador debe repararlo antes de guardar el PIN.");
+        }
+        await updateDoc(userRef, {
           pinHash,
           pinEnabled: true,
           pinUpdatedTs: Date.now(),
-          pinUpdatedAt: serverTimestamp()
-        }, { merge:true });
+          pinUpdatedAt: serverTimestamp(),
+          ...userProfileAudit("actualizar_pin")
+        });
 
         const saved = await getDocFromServer(userRef);
         if(!saved.exists() || saved.data()?.pinHash !== pinHash){
@@ -14932,6 +14991,7 @@ async function saveRolePermissionsFromScreenWithPerms(role, perms){
           <div style="height:10px;"></div>
 
           <div id="adminUsersWrap" class="users-table-scroll"></div>
+          <div id="adminIncompleteUsersWrap"></div>
         </div>
         ${renderUserModal()}
         ${renderBulkUsersModal()}
@@ -14952,12 +15012,17 @@ async function saveRolePermissionsFromScreenWithPerms(role, perms){
         );
         const snap = await getDocs(q);
         const arr = [];
+        const incomplete = [];
         snap.forEach(d => {
           const data = { id: d.id, uid: d.id, ...d.data() };
-          if(!data.eliminado) arr.push(data);
+          if(data.eliminado) return;
+          if(userProfileIsComplete(data, d.id)) arr.push(data);
+          else incomplete.push(data);
         });
         _adminUsersCache = arr;
+        _adminIncompleteUsersCache = incomplete;
         paintAdminUsers(arr);
+        paintIncompleteUsers(incomplete);
       }catch(e){
         console.error(e);
         wrap.innerHTML = `<div style="color:var(--muted);font-size:12px;">Error cargando usuarios (Rules/Permisos).</div>`;
@@ -14976,6 +15041,42 @@ async function saveRolePermissionsFromScreenWithPerms(role, perms){
         String(u.uid||u.id||"").toLowerCase().includes(term)
       );
       paintAdminUsers(filtered);
+    }
+
+    function paintIncompleteUsers(list=[]){
+      const wrap = document.getElementById("adminIncompleteUsersWrap");
+      if(!wrap) return;
+      if(!list.length){
+        wrap.innerHTML = "";
+        return;
+      }
+      wrap.innerHTML = `
+        <div class="divider"></div>
+        <div class="card" style="border-color:rgba(245,158,11,.42);background:rgba(245,158,11,.06);box-shadow:none;">
+          <div class="row" style="justify-content:space-between;align-items:flex-start;">
+            <div>
+              <h3 style="margin:0 0 4px;">Perfiles incompletos <span class="pill warn">${list.length}</span></h3>
+              <p class="muted" style="margin:0;">No aparecen en el listado normal. Revisa cada documento antes de repararlo o eliminarlo de Firestore.</p>
+            </div>
+          </div>
+          <div class="users-table-scroll" style="margin-top:12px;">
+            <table class="table">
+              <thead><tr><th>UID / documento</th><th>Nombre</th><th>Correo</th><th>Última acción</th><th>Acciones</th></tr></thead>
+              <tbody>
+                ${list.map(u=>`<tr>
+                  <td><code>${esc(u.uid || u.id || "-")}</code></td>
+                  <td>${esc(u.nombre || "-")}</td>
+                  <td>${esc(u.email || "-")}</td>
+                  <td>${esc(u.profileLastAction || "Origen no registrado")}</td>
+                  <td><div class="row" style="gap:8px;flex-wrap:nowrap;">
+                    <button class="secondary" data-action="repairIncompleteUser" data-uid="${esc(u.uid || u.id)}">Reparar</button>
+                    <button class="secondary danger" data-action="deleteIncompleteUser" data-uid="${esc(u.uid || u.id)}">Eliminar documento</button>
+                  </div></td>
+                </tr>`).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
     }
 
     function paintAdminUsers(list){
@@ -15251,7 +15352,8 @@ async function createBulkUsers(){
           aprobadoTs: approved ? Date.now() : null,
           aprobadoPor: approved ? (currentUser?.uid || "") : "",
           createdByUid: currentUser?.uid || "", createdByEmail: currentUser?.email || "",
-          createdAt: serverTimestamp(), updatedTs: Date.now()
+          createdAt: serverTimestamp(), updatedTs: Date.now(),
+          ...userProfileAudit(recoveredExistingAccount ? "reparar_perfil_alta_masiva" : "crear_perfil_alta_masiva")
         });
         const verifiedProfile = await getDocFromServer(profileRef);
         if(!verifiedProfile.exists() || String(verifiedProfile.data()?.email || "").toLowerCase() !== user.email){
@@ -15384,7 +15486,7 @@ function renderRondineroGuardiaQR(uid){
 
 function openUserModal(uid){
   if(!requirePerm("admin_roles")) return;
-  const u = _adminUsersCache.find(x => String(x.uid || x.id) === String(uid));
+  const u = [..._adminUsersCache, ..._adminIncompleteUsersCache].find(x => String(x.uid || x.id) === String(uid));
   if(!u) return toast("No encontrado","No se encontró el usuario.","warn");
   _editingUserUid = String(uid);
   const set = (id, value) => { const el = document.getElementById(id); if(el) el.value = value || ""; };
@@ -15414,10 +15516,11 @@ async function saveUserModal(){
   if(!(await requireAdminPin("editar usuario"))) return;
   const role = document.getElementById("editUserRole")?.value || ROLES.PENDIENTE;
   const aprobadoManual = !!document.getElementById("editUserAprobado")?.checked;
-  const existingUser = _adminUsersCache.find(x => String(x.uid || x.id) === String(_editingUserUid));
+  const existingUser = [..._adminUsersCache, ..._adminIncompleteUsersCache].find(x => String(x.uid || x.id) === String(_editingUserUid));
   const aprobado = role === ROLES.PENDIENTE ? false : aprobadoManual;
   const wasPending = (existingUser?.role || ROLES.PENDIENTE) === ROLES.PENDIENTE && existingUser?.aprobado !== true;
   const payload = {
+    uid: String(_editingUserUid),
     nombre: document.getElementById("editUserNombre")?.value.trim() || "",
     email: document.getElementById("editUserEmail")?.value.trim() || "",
     area: document.getElementById("editUserArea")?.value.trim() || "",
@@ -15428,8 +15531,13 @@ async function saveUserModal(){
     puedeAutorizarValeActivo: !!document.getElementById("editUserAutorizaValeActivo")?.checked,
     ignorarPendiente: role === ROLES.PENDIENTE,
     updatedTs: Date.now(),
-    updatedByUid: currentUser?.uid || ""
+    updatedByUid: currentUser?.uid || "",
+    ...userProfileAudit(userProfileIsComplete(existingUser, _editingUserUid) ? "editar_perfil_admin" : "reparar_perfil_admin")
   };
+  if(!userProfileIsComplete({ uid:_editingUserUid, nombre:payload.nombre, email:payload.email }, _editingUserUid)){
+    toast("Perfil incompleto","Para guardar o reparar el perfil se requieren UID, nombre y correo.","warn",4200);
+    return;
+  }
   if(aprobado && (!existingUser?.aprobado || wasPending)){
     payload.aprobadoTs = Date.now();
     payload.aprobadoPor = currentUser.uid;
@@ -15458,7 +15566,8 @@ async function toggleAutorizaValeActivo(uid, enabled){
       autorizacionValeActivoUpdatedTs: Date.now(),
       autorizacionValeActivoUpdatedByUid: currentUser?.uid || "",
       autorizacionValeActivoUpdatedByEmail: currentUser?.email || "",
-      updatedTs: Date.now()
+      updatedTs: Date.now(),
+      ...userProfileAudit(enabled ? "habilitar_autorizacion_activo" : "retirar_autorizacion_activo")
     });
     valeActivoAutorizadoresCache = [];
     valeActivoAutorizadoresTs = 0;
@@ -15487,11 +15596,26 @@ async function deleteUser(uid){
     eliminadoPor: currentUser?.uid || "",
     aprobado: false,
     role: ROLES.PENDIENTE,
-    updatedTs: Date.now()
+    updatedTs: Date.now(),
+    ...userProfileAudit("desactivar_perfil_admin")
   });
   toast("Usuario eliminado","Se ocultó de la lista y quedó desactivado en la app.","ok",2600);
   await loadAdminUsers();
   updatePendingBadge(true);
+}
+
+async function deleteIncompleteUser(uid){
+  if(!requirePerm("admin_roles","Solo ADMIN puede limpiar perfiles incompletos.")) return;
+  const u = _adminIncompleteUsersCache.find(x => String(x.uid || x.id) === String(uid));
+  if(!u) return toast("No encontrado","El documento ya no está en la lista de perfiles incompletos.","warn");
+  if(userProfileIsComplete(u, uid)) return toast("Protegido","El perfil ya contiene nombre y correo; no se puede eliminar desde esta limpieza.","warn",4200);
+  if(String(uid) === String(currentUser?.uid || "")) return toast("No permitido","No puedes eliminar el documento de tu sesión actual.","warn");
+  if(!(await requireAdminPin("eliminar un documento incompleto de usuarios"))) return;
+  const details = `UID: ${uid}\nNombre: ${u.nombre || "(vacío)"}\nCorreo: ${u.email || "(vacío)"}\nOrigen: ${u.profileLastAction || "no registrado"}`;
+  if(!confirm(`ELIMINAR DOCUMENTO INCOMPLETO\n\n${details}\n\nEsto elimina únicamente el documento de Firestore. No elimina una cuenta de Firebase Authentication. ¿Continuar?`)) return;
+  await deleteDoc(doc(db, COL_USERS, String(uid)));
+  toast("Documento eliminado","Se eliminó el perfil incompleto de Firestore.","ok",3600);
+  await loadAdminUsers();
 }
     // -------------------------
     // Portal proveedor (simple)
@@ -18369,6 +18493,12 @@ function renderProveedores(lista){
         case "openUserModal":
           openUserModal(el.dataset.uid);
           break;
+        case "repairIncompleteUser":
+          openUserModal(el.dataset.uid);
+          break;
+        case "deleteIncompleteUser":
+          await deleteIncompleteUser(el.dataset.uid);
+          break;
 
         case "rondineroGuardiaQR":
           renderRondineroGuardiaQR(el.dataset.uid);
@@ -18556,7 +18686,21 @@ window.addEventListener("offline",updateNet);
         return;
       }
 
-      const prof = await ensureUserProfile(user);
+      if(user.isAnonymous){
+        console.info("Sesión anónima de kiosco detectada en la app principal; se cerrará sin crear un perfil.");
+        await signOut(auth).catch(error => console.warn("No se pudo cerrar la sesión anónima:", error));
+        return;
+      }
+
+      let prof;
+      try{
+        prof = await ensureUserProfile(user);
+      }catch(error){
+        console.error("Perfil de usuario inválido:", error);
+        await signOut(auth).catch(()=>{});
+        toast("Perfil incompleto", error?.message || "El perfil no puede utilizarse hasta que un administrador lo repare.", "bad", 6000);
+        return;
+      }
       setAuthShell(false);
       currentUser = {
         uid: prof.uid,
