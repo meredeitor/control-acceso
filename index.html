@@ -3480,7 +3480,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v223</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v224</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3505,7 +3505,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v223";
+  const APP_VERSION = "v224";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3613,12 +3613,39 @@ document.getElementById("appVersion").textContent = APP_VERSION;
   const COL_USERS = "users";
   const COL_RESUMEN_DIARIO = "resumen_diario";
   const COL_APP_CONFIG = "app_config";
+  const QR_EARLY_BLOCK_MIN = 15; // Proveedores: habilitar 15 min antes
   const QR_LATE_BLOCK_MIN = 15; // Proveedores
   const VISITOR_QR_LATE_BLOCK_MIN = 60; // Visitantes: 1 hora
 
   function qrLateBlockMin(v = {}){
     const tipo = String(v.tipoVisita || v.tipoAcceso || "proveedor").toLowerCase();
     return tipo === "visitante" ? Number.POSITIVE_INFINITY : QR_LATE_BLOCK_MIN;
+  }
+
+  function accesoProveedorAntesDeTiempo(v = {}, nowTs = Date.now()){
+    if(isVisitante(v) || typeof v.fechaHoraTs !== "number") return false;
+    return nowTs < (v.fechaHoraTs - QR_EARLY_BLOCK_MIN * 60 * 1000);
+  }
+
+  function horaHabilitacionProveedor(v = {}){
+    if(typeof v.fechaHoraTs !== "number") return "la hora indicada";
+    return new Date(v.fechaHoraTs - QR_EARLY_BLOCK_MIN * 60 * 1000).toLocaleTimeString("es-MX", {
+      hour:"2-digit",
+      minute:"2-digit"
+    });
+  }
+
+  function bloquearAccesoProveedorAntesDeTiempo(v = {}, nowTs = Date.now()){
+    if(!accesoProveedorAntesDeTiempo(v, nowTs)) return false;
+    toast(
+      "Cita aún no habilitada",
+      `El acceso estará disponible 15 minutos antes, a las ${horaHabilitacionProveedor(v)}.`,
+      "warn",
+      4600
+    );
+    rememberModuleReturnForVisita(v);
+    renderVisitaReturnDashboard();
+    return true;
   }
 
   function normalizarQrVisitanteRetrasado(v={}){
@@ -5733,6 +5760,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v224</b><span>Las citas de proveedores habilitan su acceso únicamente 15 minutos antes de la hora programada y conservan el bloqueo por retraso 15 minutos después, tanto por QR como desde el dashboard.</span></div>
           <div class="help-release"><b>v223</b><span>Prevención reforzada de vales de personal duplicados y administración segura de perfiles incompletos, evitando que las sesiones anónimas de kiosco creen usuarios vacíos.</span></div>
           <div class="help-release"><b>v222</b><span>Las visitas pueden crearse y editarse después de las 5:00 p. m.; el límite de agenda se conserva exclusivamente para las citas de proveedores.</span></div>
           <div class="help-release"><b>v221</b><span>Las pestañas móviles de Proveedores y Visitantes se distribuyen uniformemente en el ancho de la pantalla, sin desplazamiento horizontal.</span></div>
@@ -16888,6 +16916,9 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
   const now = Date.now();
   const diffMin = Math.round((now - v.fechaHoraTs) / 60000);
 
+  // Proveedores: la cita se habilita únicamente 15 minutos antes.
+  if(bloquearAccesoProveedorAntesDeTiempo(v, now)) return;
+
   // BLOQUEO BLOQUEO DURO POR RETRASO > 15 MIN
  if(diffMin > qrLateBlockMin(v) && !qrRetrasoAutorizado(v)){
   v.qrActivo = false;
@@ -17175,6 +17206,10 @@ ${incLabel ? `
               <button class="secondary" data-action="reactivar" data-id="${esc(v.id)}">Reactivar QR</button>
             ` : ""}
 
+            ${!isVisitante(v) && currentUser?.role === ROLES.ADMIN && [Status.LLEGADO,Status.DENTRO,Status.DESPACHADO,Status.FINALIZADO].includes(v.status) ? `
+              <button class="secondary" data-action="retrocederProveedor" data-id="${esc(v.id)}">Retroceder estado</button>
+            ` : ""}
+
             ${hasPerm("eliminar") ? `
               <button class="secondary danger" data-action="eliminar" data-id="${esc(v.id)}">Eliminar</button>
             ` : ""}
@@ -17303,6 +17338,9 @@ ${incLabel ? `
   }
 
   if(normalizarQrVisitanteRetrasado(v)) saveVisitasLocal();
+
+  // Proveedores: evita registrar entrada desde el dashboard antes de la ventana permitida.
+  if(bloquearAccesoProveedorAntesDeTiempo(v)) return;
 
   // ⛔ QR DESACTIVADO → TOAST OBLIGATORIO AL INTENTAR REGISTRAR ENTRADA
   // (Esto es lo que pediste: aunque el botón exista, al click aquí se bloquea con toast)
@@ -17555,6 +17593,9 @@ async function confirmarEntrada(id) {
     }
   rememberModuleReturnForVisita(v);
 
+  // Validación final para impedir que una pantalla abierta previamente omita el candado.
+  if(bloquearAccesoProveedorAntesDeTiempo(v)) return;
+
   // Validar campos obligatorios
   const guardia = document.getElementById("guardia")?.value.trim();
   const gafeteNo = document.getElementById("gafeteNo")?.value.trim();
@@ -17704,6 +17745,92 @@ async function confirmarEntrada(id) {
   }
 
   toast("QR reactivado","El QR volvió a estar activo.","ok",2200);
+  renderVisitaReturnDashboard();
+}
+
+function proveedorEstadoAnterior(status){
+  return {
+    [Status.LLEGADO]: Status.PROGRAMADO,
+    [Status.DENTRO]: Status.LLEGADO,
+    [Status.DESPACHADO]: Status.DENTRO,
+    [Status.FINALIZADO]: Status.DESPACHADO
+  }[status] || "";
+}
+
+function proveedorEstadoNombre(status){
+  return {
+    [Status.PROGRAMADO]: "Programado",
+    [Status.LLEGADO]: "Llegó",
+    [Status.DENTRO]: "Dentro",
+    [Status.DESPACHADO]: "Despachado",
+    [Status.FINALIZADO]: "Finalizado"
+  }[status] || status || "-";
+}
+
+async function retrocederEstadoProveedor(id){
+  if(currentUser?.role !== ROLES.ADMIN) return toast("No permitido","Solo ADMIN puede retroceder estados de proveedores.","warn");
+  const v = visitas.find(x => String(x.id) === String(id));
+  if(!v) return toast("No encontrado","No se encontró la cita del proveedor.","warn");
+  if(isVisitante(v)) return toast("No permitido","Esta acción está disponible únicamente para proveedores.","warn");
+  const estadoAnterior = v.status;
+  const estadoNuevo = proveedorEstadoAnterior(estadoAnterior);
+  if(!estadoNuevo) return toast("Sin estado anterior","El proveedor ya se encuentra en Programado.","warn");
+  const motivo = String(prompt(`Motivo obligatorio para retroceder de ${proveedorEstadoNombre(estadoAnterior)} a ${proveedorEstadoNombre(estadoNuevo)}:`) || "").trim();
+  if(!motivo) return toast("Motivo requerido","No se realizó ningún cambio.","warn");
+  if(!(await requireAdminPin(`retroceder el proveedor de ${proveedorEstadoNombre(estadoAnterior)} a ${proveedorEstadoNombre(estadoNuevo)}`))) return;
+  if(!confirm(`¿Retroceder este proveedor de ${proveedorEstadoNombre(estadoAnterior)} a ${proveedorEstadoNombre(estadoNuevo)}?\n\nMotivo: ${motivo}`)) return;
+
+  const respaldo = {
+    llegadaTs:v.llegadaTs || null,
+    entradaTs:v.entradaTs || null,
+    salidaTs:v.salidaTs || null,
+    guardNombre:v.guardNombre || "",
+    gafeteNo:v.gafeteNo || "",
+    dictamen:v.dictamen ? JSON.parse(JSON.stringify(v.dictamen)) : null,
+    incidenciasSalida:v.incidenciasSalida || "",
+    salidaPor:v.salidaPor || "",
+    qrActivo:v.qrActivo !== false
+  };
+  const ts = Date.now();
+  registrarCambio(v,"status",estadoAnterior,estadoNuevo,"retroceso_admin");
+  if(!Array.isArray(v.retrocesosEstado)) v.retrocesosEstado = [];
+  v.retrocesosEstado.push({
+    ts,
+    desde:estadoAnterior,
+    hacia:estadoNuevo,
+    motivo,
+    usuarioUid:currentUser?.uid || "",
+    usuarioEmail:currentUser?.email || "",
+    usuarioNombre:currentUser?.nombre || "",
+    respaldo
+  });
+
+  if(estadoAnterior === Status.LLEGADO){
+    delete v.llegadaTs;
+  }else if(estadoAnterior === Status.DENTRO){
+    delete v.entradaTs;
+    delete v.guardNombre;
+    delete v.gafeteNo;
+  }else if(estadoAnterior === Status.DESPACHADO){
+    delete v.dictamen;
+  }else if(estadoAnterior === Status.FINALIZADO){
+    delete v.salidaTs;
+    delete v.incidenciasSalida;
+    delete v.salidaPor;
+  }
+
+  v.status = estadoNuevo;
+  v.qrActivo = true;
+  delete v.qrDesactivadoMotivo;
+  delete v.qrDesactivadoMin;
+  delete v.qrDesactivadoTs;
+  v.updatedTs = ts;
+  await saveVisitas();
+  if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
+    await cloudUpsertVisita(v);
+  }
+  toast("Estado retrocedido",`${proveedorEstadoNombre(estadoAnterior)} → ${proveedorEstadoNombre(estadoNuevo)}.`,"ok",3600);
+  rememberModuleReturnForVisita(v);
   renderVisitaReturnDashboard();
 }
 
@@ -18451,6 +18578,10 @@ function renderProveedores(lista){
 
         case "reactivar":
           await reactivarQR(id);
+          break;
+
+        case "retrocederProveedor":
+          await retrocederEstadoProveedor(id);
           break;
 
         case "eliminar": {
