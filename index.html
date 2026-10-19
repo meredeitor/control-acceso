@@ -3480,7 +3480,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v225</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v226</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3505,7 +3505,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v225";
+  const APP_VERSION = "v226";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5760,6 +5760,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v226</b><span>El escáner detiene los reintentos automáticos en cascada y presenta una recuperación controlada con botones Reintentar y Volver; una demora al sincronizar tampoco bloquea el flujo leído.</span></div>
           <div class="help-release"><b>v225</b><span>El escáner compartido de Proveedores y Visitantes muestra el avance de validación, consulta ambas colecciones simultáneamente y recupera la cámara si Firebase tarda o no responde.</span></div>
           <div class="help-release"><b>v224</b><span>Las citas de proveedores habilitan su acceso únicamente 15 minutos antes de la hora programada y conservan el bloqueo por retraso 15 minutos después, tanto por QR como desde el dashboard.</span></div>
           <div class="help-release"><b>v223</b><span>Prevención reforzada de vales de personal duplicados y administración segura de perfiles incompletos, evitando que las sesiones anónimas de kiosco creen usuarios vacíos.</span></div>
@@ -16694,6 +16695,22 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
     }
     function cleanup(){ stopScanner(); }
 
+    function renderScannerRecovery(title, message){
+      cleanup();
+      currentView = "scanner_error";
+      appEl.innerHTML = `
+        <div class="card" style="max-width:620px;margin:0 auto;">
+          <h2 style="margin:0 0 8px;">${esc(title || "No se pudo validar el QR")}</h2>
+          <p style="margin:0;color:var(--muted);">${esc(message || "Revisa la conexión e intenta nuevamente.")}</p>
+          <div class="divider"></div>
+          <div class="row">
+            <button class="ok" data-action="scan" data-from="${esc(moduleReturnView || "dashboard_proveedores")}">Reintentar cámara</button>
+            <button class="secondary" data-action="returnDashboard">Volver</button>
+          </div>
+        </div>
+      `;
+    }
+
     function renderScanner(fromView = ""){
       if(!requirePerm("escanear_qr","Solo GUARDIA o ADMIN pueden escanear QR.")) return;
       rememberModuleReturn(fromView || currentView);
@@ -16737,8 +16754,10 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
             await abrirFichaDesdeQR(String(decodedText).trim());
           }catch(error){
             console.warn("No se pudo procesar el QR:", error);
-            toast("No se pudo procesar el QR","La cámara se abrirá nuevamente para reintentar.","warn",4600);
-            renderScanner(moduleReturnView || "dashboard_proveedores");
+            renderScannerRecovery(
+              "No se pudo procesar el QR",
+              "El intento se detuvo para evitar lecturas repetidas. Retira el QR de la cámara y pulsa Reintentar."
+            );
           }
         },
         () => {}
@@ -16918,8 +16937,10 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
           }
         }catch(e){
           console.warn("No se pudo buscar QR en nube:", e);
-          toast("No se pudo validar el QR","Firebase tardó demasiado o no respondió. La cámara se abrirá nuevamente.","warn",5200);
-          return renderScanner(moduleReturnView || "dashboard_proveedores");
+          return renderScannerRecovery(
+            "No se pudo validar el QR",
+            "Firebase tardó demasiado o no respondió. Revisa la conexión, retira el QR de la cámara y pulsa Reintentar."
+          );
         }
       }
 
@@ -16961,7 +16982,10 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
   v.updatedTs = Date.now();
   await saveVisitas();
   if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE){
-    await cloudUpsertVisita(v);
+    await cloudUpsertVisita(v).catch(error => {
+      console.warn("No se pudo sincronizar el bloqueo del QR:", error);
+      toast("Pendiente de sincronizar","El bloqueo se guardó localmente y se sincronizará al actualizar.","warn",3800);
+    });
   }
 
   toast("Acceso bloqueado",
@@ -16978,7 +17002,10 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
   v.updatedTs = now;
   await saveVisitas();
   if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE){
-    await cloudUpsertVisita(v);
+    await cloudUpsertVisita(v).catch(error => {
+      console.warn("No se pudo sincronizar la llegada:", error);
+      toast("Llegada guardada localmente","La actualización en Firebase quedó pendiente; no necesitas volver a escanear.","warn",4200);
+    });
   }
 
   toast("Llegada registrada","Se movió a 'Llegaron'.","ok",2200);
