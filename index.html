@@ -3480,7 +3480,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   <div class="topbar">
     <div class="title brand-lockup" aria-label="Caborca Access Control">
       <span class="brand-shield" aria-hidden="true"></span>
-      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v226</span></span></div>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v227</span></span></div>
     </div>
     <div class="actions" id="actionsBar">
  <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
@@ -3505,7 +3505,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v226";
+  const APP_VERSION = "v227";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5760,6 +5760,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v227</b><span>Se restaura la búsqueda estable y secuencial del lector QR para Proveedores y Visitantes, conservando el candado de horario, la sincronización protegida y la recuperación sin mensajes repetidos.</span></div>
           <div class="help-release"><b>v226</b><span>El escáner detiene los reintentos automáticos en cascada y presenta una recuperación controlada con botones Reintentar y Volver; una demora al sincronizar tampoco bloquea el flujo leído.</span></div>
           <div class="help-release"><b>v225</b><span>El escáner compartido de Proveedores y Visitantes muestra el avance de validación, consulta ambas colecciones simultáneamente y recupera la cámara si Firebase tarda o no responde.</span></div>
           <div class="help-release"><b>v224</b><span>Las citas de proveedores habilitan su acceso únicamente 15 minutos antes de la hora programada y conservan el bloqueo por retraso 15 minutos después, tanto por QR como desde el dashboard.</span></div>
@@ -16906,29 +16907,14 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
       let v = visitas.find(x => String(x.id) === qrText);
       if(!v && navigator.onLine){
         try{
-          toast("QR detectado","Consultando Proveedores y Visitantes…","info",2200);
-          let timeoutId = null;
-          const consultas = Promise.allSettled([
-            getDoc(doc(db, COL_VISITANTES, qrText)),
-            getDoc(doc(db, COL_VISITAS, qrText))
-          ]);
-          const resultados = await Promise.race([
-            consultas,
-            new Promise((_, reject) => {
-              timeoutId = setTimeout(() => reject(new Error("Tiempo de consulta agotado")), 9000);
-            })
-          ]).finally(() => clearTimeout(timeoutId));
-          const visitanteResult = resultados[0];
-          const proveedorResult = resultados[1];
-          const visitanteSnap = visitanteResult.status === "fulfilled" ? visitanteResult.value : null;
-          const proveedorSnap = proveedorResult.status === "fulfilled" ? proveedorResult.value : null;
-          const snap = visitanteSnap?.exists() ? visitanteSnap : (proveedorSnap?.exists() ? proveedorSnap : null);
-          if(!snap && resultados.some(r => r.status === "rejected")){
-            throw new Error("Firebase no pudo completar todas las consultas");
-          }
-          if(snap?.exists()){
+          toast("QR detectado","Consultando el registro…","info",2200);
+          const visitanteSnap = await getDoc(doc(db, COL_VISITANTES, qrText));
+          const snap = visitanteSnap.exists()
+            ? visitanteSnap
+            : await getDoc(doc(db, COL_VISITAS, qrText));
+          if(snap.exists()){
             v = { id: snap.id, ...snap.data() };
-            if(visitanteSnap?.exists()){
+            if(visitanteSnap.exists()){
               v.tipoVisita = "visitante";
               v.tipoAcceso = "visitante";
             }
@@ -16939,7 +16925,7 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
           console.warn("No se pudo buscar QR en nube:", e);
           return renderScannerRecovery(
             "No se pudo validar el QR",
-            "Firebase tardó demasiado o no respondió. Revisa la conexión, retira el QR de la cámara y pulsa Reintentar."
+            "No fue posible consultar el registro. Revisa la conexión, retira el QR de la cámara y pulsa Reintentar."
           );
         }
       }
