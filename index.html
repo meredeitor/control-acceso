@@ -3505,7 +3505,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v223";
+  const APP_VERSION = "v228";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3613,6 +3613,7 @@ document.getElementById("appVersion").textContent = APP_VERSION;
   const COL_USERS = "users";
   const COL_RESUMEN_DIARIO = "resumen_diario";
   const COL_APP_CONFIG = "app_config";
+  const QR_EARLY_BLOCK_MIN = 15; // Proveedores: habilitar 15 min antes
   const QR_LATE_BLOCK_MIN = 15; // Proveedores
   const VISITOR_QR_LATE_BLOCK_MIN = 60; // Visitantes: 1 hora
 
@@ -4447,6 +4448,10 @@ function capArea(area){
   return AREA_CAPACITY[area] || 1; // default: 1
 }
 
+function citaConsumeCapacidad(v = {}){
+  return v.status !== Status.CANCELADO;
+}
+
 
 const SLOT_MINUTES = 30;      // bloques visuales
 const MIN_DIFF_MINUTES = 0;  // regla de negocio
@@ -4558,6 +4563,7 @@ function slotOcupado(area, slotHora, citasHoy){
 
   // Cuenta cuántas citas existen en ese horario PARA ESA ÁREA (misma ventana de 30 min)
   const ocupadas = citasHoy.filter(v => {
+    if(!citaConsumeCapacidad(v)) return false;
     if(v.area !== area) return false;
     if(typeof v.fechaHoraTs !== "number") return false;
     return Math.abs(v.fechaHoraTs - slotTs.getTime()) < slotWindowMs;
@@ -8360,6 +8366,16 @@ function renderRegisterForm(){
       const limiteTs = v.fechaHoraTs + (qrLateBlockMin(v) * 60 * 1000);
       return typeof v.qrReactivadoTs === "number" && v.qrReactivadoTs >= limiteTs;
     }
+    function bloquearProveedorAntesDeVentana(v, nowTs = Date.now()){
+      if(!v || isVisitante(v) || typeof v.fechaHoraTs !== "number") return false;
+      const habilitadoTs = v.fechaHoraTs - (QR_EARLY_BLOCK_MIN * 60 * 1000);
+      if(nowTs >= habilitadoTs) return false;
+      const hora = new Date(habilitadoTs).toLocaleTimeString("es-MX", { hour:"2-digit", minute:"2-digit" });
+      toast("Cita aún no habilitada",`El acceso estará disponible 15 minutos antes, a las ${hora}.`,"warn",4600);
+      rememberModuleReturnForVisita(v);
+      renderVisitaReturnDashboard();
+      return true;
+    }
     function qrInactivoPorImpuntualidad(v){
       if(!v || v.status !== Status.PROGRAMADO) return false;
       if(isVisitante(v)) return false;
@@ -8906,10 +8922,10 @@ function existeCitaEnHorarioExcluding(fechaHoraISO, area, excludeId){
 
   const ocupadas = visitas.filter(v =>
     String(v.id) !== String(excludeId) &&
+    citaConsumeCapacidad(v) &&
     v.area === area &&
     typeof v.fechaHoraTs === "number" &&
-    Math.abs(v.fechaHoraTs - ts) < slotWindowMs &&
-    v.status !== Status.CANCELADO
+    Math.abs(v.fechaHoraTs - ts) < slotWindowMs
   ).length;
 
   return ocupadas >= cap;
@@ -15668,6 +15684,7 @@ async function deleteIncompleteUser(uid){
   const slotWindowMs = SLOT_MINUTES * 60 * 1000;
 
   const ocupadas = visitas.filter(v =>
+    citaConsumeCapacidad(v) &&
     v.area === area &&
     typeof v.fechaHoraTs === "number" &&
     Math.abs(v.fechaHoraTs - ts) < slotWindowMs
@@ -15695,7 +15712,7 @@ function renderAgendaVisual(dateISO = ""){
   const citasDia = visitas.filter(v =>
     typeof v.fechaHoraTs === "number" &&
     isSameDay(v.fechaHoraTs, targetDate) &&
-    v.status !== Status.CANCELADO
+    citaConsumeCapacidad(v)
   );
   const slots = generarSlots();
   const slotWindowMs = SLOT_MINUTES * 60 * 1000;
@@ -16888,6 +16905,9 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
   const now = Date.now();
   const diffMin = Math.round((now - v.fechaHoraTs) / 60000);
 
+  // Proveedores: impedir el acceso antes de la ventana autorizada.
+  if(bloquearProveedorAntesDeVentana(v, now)) return;
+
   // BLOQUEO BLOQUEO DURO POR RETRASO > 15 MIN
  if(diffMin > qrLateBlockMin(v) && !qrRetrasoAutorizado(v)){
   v.qrActivo = false;
@@ -17303,6 +17323,9 @@ ${incLabel ? `
   }
 
   if(normalizarQrVisitanteRetrasado(v)) saveVisitasLocal();
+
+  // Evita que el botón del dashboard omita la misma ventana de horario.
+  if(bloquearProveedorAntesDeVentana(v)) return;
 
   // ⛔ QR DESACTIVADO → TOAST OBLIGATORIO AL INTENTAR REGISTRAR ENTRADA
   // (Esto es lo que pediste: aunque el botón exista, al click aquí se bloquea con toast)
