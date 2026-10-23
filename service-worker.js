@@ -1,4 +1,4 @@
-const CACHE_NAME = "caborca-access-control-v228-20261021";
+const CACHE_NAME = "caborca-access-control-v229-20261023";
 const NAVIGATION_TIMEOUT_MS = 8000;
 
 // Archivos base que siempre quieres offline
