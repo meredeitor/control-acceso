@@ -3505,7 +3505,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v229";
+  const APP_VERSION = "v230";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5739,6 +5739,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v230</b><span>El Reporte para Nóminas separa minutos de entrada y salida a cobrar, excluye permisos IMSS sin horario límite, pendientes sin regreso y duplicados, y aparta duraciones anómalas para revisión antes de totalizarlas.</span></div>
           <div class="help-release"><b>v229</b><span>Los permisos de Servicio Médico separan Salida a consulta IMSS, con hora programada y regreso sin horario límite, de Entrada posterior a las 8:15, que oculta la hora de salida y calcula el retraso real. Los vales normales de entrada conservan el mismo cálculo automático desde las 8:15 a. m.</span></div>
           <div class="help-release"><b>v223</b><span>Prevención reforzada de vales de personal duplicados y administración segura de perfiles incompletos, evitando que las sesiones anónimas de kiosco creen usuarios vacíos.</span></div>
           <div class="help-release"><b>v222</b><span>Las visitas pueden crearse y editarse después de las 5:00 p. m.; el límite de agenda se conserva exclusivamente para las citas de proveedores.</span></div>
@@ -10543,12 +10544,65 @@ let reporteNominasFiltros = {
 };
 
 function calcValeNominas(v={}){
-  const tiempoRealMin = calcValePersonalTiempo(v);
+  const esEntrada = isValePersonalEntrada(v);
+  const esSalidaImss = isPermisoImss(v) && !esEntrada;
+  const sinLimite = isValePersonalSinHorarioRegreso(v) || isValePersonalSalidaSinRegreso(v) || esSalidaImss;
+  const tiempoRealMin = esEntrada ? calcEntrada815Min(v) : calcValePersonalTiempo(v);
   const tiempoAutorizadoMin = parseTiempoAutorizadoMin(v.tiempoAutorizado);
-  const tiempoExcedenteMin = tiempoRealMin !== null && tiempoAutorizadoMin !== null
-    ? Math.max(0, tiempoRealMin - tiempoAutorizadoMin)
-    : 0;
-  return { tiempoRealMin:tiempoRealMin ?? 0, tiempoAutorizadoMin:tiempoAutorizadoMin ?? 0, tiempoExcedenteMin };
+  const inicioTs = Number(v.salidaTs || 0);
+  const finTs = Number(v.regresoTs || v.salidaSinRegresoFinalizadaTs || 0);
+  const cruzaFecha = inicioTs && finTs && new Date(inicioTs).toDateString() !== new Date(finTs).toDateString();
+  const duracionAtipica = !esEntrada && Number(tiempoRealMin || 0) > 12 * 60;
+  let clasificacion = "informativo";
+  let motivoCalculo = "Permiso sin tiempo límite; no genera descuento automático.";
+  let retrasoEntradaMin = 0;
+  let tiempoExcedenteMin = 0;
+  let tiempoComputableMin = 0;
+
+  if(esEntrada){
+    clasificacion = "retardo";
+    motivoCalculo = "Retardo calculado desde las 8:15 a. m.";
+    retrasoEntradaMin = tiempoRealMin ?? 0;
+    tiempoComputableMin = retrasoEntradaMin;
+  }else if(sinLimite){
+    motivoCalculo = esSalidaImss
+      ? "Salida a consulta IMSS; duración informativa sin horario límite."
+      : isValePersonalSalidaSinRegreso(v)
+        ? "Salida sin regreso; registro informativo."
+        : "Salida sin horario estimado de regreso; duración informativa.";
+  }else if(cruzaFecha || duracionAtipica){
+    clasificacion = "revision";
+    motivoCalculo = cruzaFecha
+      ? "El regreso fue registrado en una fecha diferente; requiere revisión."
+      : "La duración supera 12 horas; requiere revisión.";
+  }else if(tiempoAutorizadoMin !== null && tiempoRealMin !== null){
+    clasificacion = "excedente";
+    motivoCalculo = "Excedente de una salida con duración autorizada.";
+    tiempoExcedenteMin = Math.max(0, tiempoRealMin - tiempoAutorizadoMin);
+    tiempoComputableMin = tiempoExcedenteMin;
+  }else{
+    clasificacion = "revision";
+    motivoCalculo = "No se pudo determinar una duración autorizada válida.";
+  }
+
+  return {
+    tiempoRealMin:tiempoRealMin ?? 0,
+    tiempoAutorizadoMin:tiempoAutorizadoMin ?? 0,
+    tiempoExcedenteMin,
+    retrasoEntradaMin,
+    tiempoComputableMin,
+    clasificacion,
+    motivoCalculo
+  };
+}
+
+function valesUnicosReporteNominas(list=[]){
+  const { duplicates } = detectarDuplicadosValesPersonal(list);
+  const duplicateIds = new Set(duplicates.map(v=>String(v.id || "")));
+  return {
+    list: list.filter(v=>!duplicateIds.has(String(v.id || ""))),
+    duplicadosOmitidos: duplicateIds.size
+  };
 }
 
 async function renderReporteNominas(refresh=true){
@@ -10571,34 +10625,48 @@ async function renderReporteNominas(refresh=true){
   const desdeTs = reporteNominasFiltros.desde ? new Date(`${reporteNominasFiltros.desde}T00:00:00`).getTime() : 0;
   const hastaTs = reporteNominasFiltros.hasta ? new Date(`${reporteNominasFiltros.hasta}T23:59:59`).getTime() : Number.MAX_SAFE_INTEGER;
   const buscar = reporteNominasFiltros.buscar.trim().toLowerCase();
-  const departamentos = Array.from(new Set(reporteNominasCache.map(v=>String(v.departamento||"").trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
-  const detalle = reporteNominasCache.filter(v => {
+  const { list:reporteSinDuplicados, duplicadosOmitidos } = valesUnicosReporteNominas(reporteNominasCache);
+  const departamentos = Array.from(new Set(reporteSinDuplicados.map(v=>String(v.departamento||"").trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  const coincideFiltros = v => {
     const fechaTs = v.fecha ? new Date(`${v.fecha}T12:00:00`).getTime() : 0;
     const ts = Number(fechaTs || v.regresoTs || v.llegadaTs || v.createdTs || 0);
-    const terminado = Boolean(v.regresoTs || v.llegadaTs) && !v.canceladoTs;
     const text = [v.nomina,v.nombreColaborador,v.folio].join(" ").toLowerCase();
-    return terminado && ts >= desdeTs && ts <= hastaTs && (!buscar || text.includes(buscar)) && (!reporteNominasFiltros.departamento || v.departamento === reporteNominasFiltros.departamento);
-  }).map(v => ({ ...v, ...calcValeNominas(v) })).sort((a,b)=>Number(b.regresoTs||b.llegadaTs||0)-Number(a.regresoTs||a.llegadaTs||0));
+    return ts >= desdeTs && ts <= hastaTs && (!buscar || text.includes(buscar)) && (!reporteNominasFiltros.departamento || v.departamento === reporteNominasFiltros.departamento);
+  };
+  const filtrados = reporteSinDuplicados.filter(coincideFiltros);
+  const detalle = filtrados.filter(v => {
+    const terminado = Boolean(v.regresoTs || v.llegadaTs || v.salidaSinRegresoFinalizadaTs) && !v.canceladoTs;
+    return terminado;
+  }).map(v => ({ ...v, ...calcValeNominas(v) })).sort((a,b)=>Number(b.regresoTs||b.llegadaTs||b.salidaSinRegresoFinalizadaTs||0)-Number(a.regresoTs||a.llegadaTs||a.salidaSinRegresoFinalizadaTs||0));
+  const pendientesSinRegreso = filtrados.filter(v => v.status === ValeStatus.FUERA && v.salidaTs && !v.regresoTs);
 
   const grouped = new Map();
   detalle.forEach(v => {
     const key = String(v.nomina || v.nombreColaborador || "SIN-NOMINA").trim().toLowerCase();
-    if(!grouped.has(key)) grouped.set(key, { nomina:v.nomina||"-", nombre:v.nombreColaborador||"-", departamento:v.departamento||"-", permisos:0, tiempoAutorizadoMin:0, tiempoRealMin:0, tiempoExcedenteMin:0 });
+    if(!grouped.has(key)) grouped.set(key, { nomina:v.nomina||"-", nombre:v.nombreColaborador||"-", departamento:v.departamento||"-", permisos:0, tiempoAutorizadoMin:0, tiempoRealMin:0, tiempoExcedenteMin:0, retrasoEntradaMin:0, tiempoComputableMin:0, informativos:0, revision:0 });
     const row = grouped.get(key);
     row.permisos += 1;
     row.tiempoAutorizadoMin += v.tiempoAutorizadoMin;
     row.tiempoRealMin += v.tiempoRealMin;
     row.tiempoExcedenteMin += v.tiempoExcedenteMin;
+    row.retrasoEntradaMin += v.retrasoEntradaMin;
+    row.tiempoComputableMin += v.tiempoComputableMin;
+    if(v.clasificacion === "informativo") row.informativos += 1;
+    if(v.clasificacion === "revision") row.revision += 1;
   });
-  const resumen = Array.from(grouped.values()).sort((a,b)=>b.tiempoExcedenteMin-a.tiempoExcedenteMin || a.nombre.localeCompare(b.nombre));
+  const resumen = Array.from(grouped.values()).sort((a,b)=>b.tiempoComputableMin-a.tiempoComputableMin || a.nombre.localeCompare(b.nombre));
   const totalExcedente = resumen.reduce((sum,r)=>sum+r.tiempoExcedenteMin,0);
-  window.__reporteNominas = { resumen, detalle, filtros:{...reporteNominasFiltros} };
+  const totalRetardo = resumen.reduce((sum,r)=>sum+r.retrasoEntradaMin,0);
+  const totalComputable = totalExcedente + totalRetardo;
+  const requierenRevision = detalle.filter(v=>v.clasificacion === "revision").length;
+  const informativos = detalle.filter(v=>v.clasificacion === "informativo").length;
+  window.__reporteNominas = { resumen, detalle, pendientesSinRegreso, duplicadosOmitidos, filtros:{...reporteNominasFiltros} };
 
   appEl.innerHTML = `
     <section class="provider-dashboard-modern">
       <div class="provider-dashboard-hero">
-        <div class="provider-dashboard-hero-copy"><div class="provider-dashboard-hero-icon" aria-hidden="true">🧾</div><div><h2>Reporte para Nóminas</h2><p>Permisos finalizados y minutos excedentes por colaborador. Este reporte no calcula importes monetarios.</p></div></div>
-        <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${esc(String(totalExcedente))} min excedentes</div>
+        <div class="provider-dashboard-hero-copy"><div class="provider-dashboard-hero-icon" aria-hidden="true">🧾</div><div><h2>Reporte para Nóminas</h2><p>Separa retardos, excedentes, permisos informativos y registros que requieren revisión. No calcula importes monetarios.</p></div></div>
+        <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${esc(String(totalComputable))} min a cobrar</div>
       </div>
       <div class="dashboard-toolbar" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;">
         <input id="rnDesde" type="date" value="${esc(reporteNominasFiltros.desde)}" aria-label="Desde">
@@ -10610,22 +10678,26 @@ async function renderReporteNominas(refresh=true){
         <button class="ok" data-action="exportarReporteNominas">Exportar Excel</button>
       </div>
       <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
-        <div class="card"><div class="big">${resumen.length}</div><small>Colaboradores</small></div>
-        <div class="card"><div class="big">${detalle.length}</div><small>Permisos finalizados</small></div>
-        <div class="card"><div class="big">${totalExcedente}</div><small>Minutos excedentes</small></div>
+        <div class="card"><div class="big">${totalExcedente}</div><small>Excedente de salidas</small></div>
+        <div class="card"><div class="big">${totalRetardo}</div><small>Retardo de entradas</small></div>
+        <div class="card"><div class="big">${informativos}</div><small>Permisos informativos</small></div>
+        <div class="card"><div class="big">${requierenRevision}</div><small>Requieren revisión</small></div>
+        <div class="card"><div class="big">${pendientesSinRegreso.length}</div><small>Pendientes sin regreso</small></div>
+        <div class="card"><div class="big">${duplicadosOmitidos}</div><small>Duplicados omitidos</small></div>
       </div>
       <div class="card">
         <h3 style="margin-top:0;">Resumen por colaborador</h3>
-        <div class="users-table-scroll"><table class="table"><thead><tr><th>Nómina</th><th>Colaborador</th><th>Departamento</th><th>Permisos</th><th>Tiempo autorizado</th><th>Tiempo real</th><th>Tiempo excedente</th></tr></thead><tbody>
-          ${resumen.length ? resumen.map(r=>`<tr><td><b>${esc(r.nomina)}</b></td><td>${esc(r.nombre)}</td><td>${esc(r.departamento)}</td><td>${r.permisos}</td><td>${r.tiempoAutorizadoMin} min</td><td>${r.tiempoRealMin} min</td><td><span class="pill"><span class="dot ${r.tiempoExcedenteMin>0?"bad":"ok"}"></span><b>${r.tiempoExcedenteMin} min</b></span></td></tr>`).join("") : `<tr><td colspan="7">Sin permisos finalizados en el periodo.</td></tr>`}
+        <div class="users-table-scroll"><table class="table"><thead><tr><th>Nómina</th><th>Colaborador</th><th>Departamento</th><th>Permisos</th><th>Entrada a cobrar</th><th>Salida a cobrar</th><th>Total a cobrar</th><th>Informativos</th><th>Revisión</th></tr></thead><tbody>
+          ${resumen.length ? resumen.map(r=>`<tr><td><b>${esc(r.nomina)}</b></td><td>${esc(r.nombre)}</td><td>${esc(r.departamento)}</td><td>${r.permisos}</td><td>${r.retrasoEntradaMin} min</td><td>${r.tiempoExcedenteMin} min</td><td><span class="pill"><span class="dot ${r.tiempoComputableMin>0?"bad":"ok"}"></span><b>${r.tiempoComputableMin} min</b></span></td><td>${r.informativos}</td><td>${r.revision}</td></tr>`).join("") : `<tr><td colspan="9">Sin permisos finalizados en el periodo.</td></tr>`}
         </tbody></table></div>
       </div>
       <div class="card">
         <h3 style="margin-top:0;">Detalle de permisos</h3>
-        <div class="users-table-scroll"><table class="table"><thead><tr><th>Fecha</th><th>Nómina</th><th>Colaborador</th><th>Folio</th><th>Tipo</th><th>Salida</th><th>Regreso</th><th>Autorizado</th><th>Real</th><th>Excedente</th><th>Autoriza</th></tr></thead><tbody>
-          ${detalle.length ? detalle.map(v=>`<tr><td>${esc(v.fecha||valeHistoryDateTime(v.createdTs))}</td><td>${esc(v.nomina||"-")}</td><td>${esc(v.nombreColaborador||"-")}</td><td>${esc(v.folio||v.id||"-")}</td><td>${esc(v.tipoPermiso||"-")}</td><td>${esc(valeHistoryDateTime(v.salidaTs))}</td><td>${esc(valeHistoryDateTime(v.regresoTs||v.llegadaTs))}</td><td>${v.tiempoAutorizadoMin} min</td><td>${v.tiempoRealMin} min</td><td><b>${v.tiempoExcedenteMin} min</b></td><td>${esc(v.autorizadoPorNombre||v.autorizadorNombre||v.autorizadoPor||"-")}</td></tr>`).join("") : `<tr><td colspan="11">Sin detalle para mostrar.</td></tr>`}
+        <div class="users-table-scroll"><table class="table"><thead><tr><th>Fecha</th><th>Nómina</th><th>Colaborador</th><th>Folio</th><th>Movimiento</th><th>Salida</th><th>Regreso/Entrada</th><th>Tiempo real</th><th>Clasificación</th><th>Min. a cobrar</th><th>Observación</th></tr></thead><tbody>
+          ${detalle.length ? detalle.map(v=>`<tr><td>${esc(v.fecha||valeHistoryDateTime(v.createdTs))}</td><td>${esc(v.nomina||"-")}</td><td>${esc(v.nombreColaborador||"-")}</td><td>${esc(v.folio||v.id||"-")}</td><td>${esc(valePersonalMovimientoLabel(v))}</td><td>${esc(valeHistoryDateTime(v.salidaTs))}</td><td>${esc(valeHistoryDateTime(v.regresoTs||v.llegadaTs||v.salidaSinRegresoFinalizadaTs))}</td><td>${v.tiempoRealMin} min</td><td><span class="pill"><span class="dot ${v.clasificacion==="revision"?"warn":v.tiempoComputableMin>0?"bad":"ok"}"></span>${esc(v.clasificacion)}</span></td><td><b>${v.tiempoComputableMin} min</b></td><td>${esc(v.motivoCalculo)}</td></tr>`).join("") : `<tr><td colspan="11">Sin detalle para mostrar.</td></tr>`}
         </tbody></table></div>
       </div>
+      ${pendientesSinRegreso.length ? `<div class="card"><h3 style="margin-top:0;">Pendientes sin regreso — no contabilizados</h3><div class="users-table-scroll"><table class="table"><thead><tr><th>Fecha</th><th>Nómina</th><th>Colaborador</th><th>Folio</th><th>Movimiento</th><th>Salida</th></tr></thead><tbody>${pendientesSinRegreso.map(v=>`<tr><td>${esc(v.fecha||"-")}</td><td>${esc(v.nomina||"-")}</td><td>${esc(v.nombreColaborador||"-")}</td><td>${esc(v.folio||v.id||"-")}</td><td>${esc(valePersonalMovimientoLabel(v))}</td><td>${esc(valeHistoryDateTime(v.salidaTs))}</td></tr>`).join("")}</tbody></table></div></div>` : ""}
     </section>`;
 }
 
@@ -10644,11 +10716,13 @@ function exportarReporteNominas(){
   const rep = window.__reporteNominas || { resumen:[], detalle:[], filtros:{} };
   if(!rep.detalle.length) return toast("Reporte de Nóminas", "No hay datos para exportar.", "warn", 2800);
   if(!window.XLSX) return toast("Excel", "La librería de Excel aún no está disponible.", "warn", 2800);
-  const resumenRows = rep.resumen.map(r=>({"No. nómina":r.nomina,"Colaborador":r.nombre,"Departamento":r.departamento,"Permisos":r.permisos,"Minutos autorizados":r.tiempoAutorizadoMin,"Minutos reales":r.tiempoRealMin,"Minutos excedentes":r.tiempoExcedenteMin}));
-  const detalleRows = rep.detalle.map(v=>({"Fecha":v.fecha||"","No. nómina":v.nomina||"","Colaborador":v.nombreColaborador||"","Departamento":v.departamento||"","Folio":v.folio||v.id||"","Tipo":v.tipoPermiso||"","Salida":valeHistoryDateTime(v.salidaTs),"Regreso":valeHistoryDateTime(v.regresoTs||v.llegadaTs),"Tiempo autorizado":v.tiempoAutorizado||"","Minutos autorizados":v.tiempoAutorizadoMin,"Minutos reales":v.tiempoRealMin,"Minutos excedentes":v.tiempoExcedenteMin,"Autorizó":v.autorizadoPorNombre||v.autorizadorNombre||v.autorizadoPor||""}));
+  const resumenRows = rep.resumen.map(r=>({"No. nómina":r.nomina,"Colaborador":r.nombre,"Departamento":r.departamento,"Permisos":r.permisos,"Entrada a cobrar (min)":r.retrasoEntradaMin,"Salida a cobrar (min)":r.tiempoExcedenteMin,"Total a cobrar (min)":r.tiempoComputableMin,"Informativos":r.informativos,"Requieren revisión":r.revision}));
+  const detalleRows = rep.detalle.map(v=>({"Fecha":v.fecha||"","No. nómina":v.nomina||"","Colaborador":v.nombreColaborador||"","Departamento":v.departamento||"","Folio":v.folio||v.id||"","Movimiento":valePersonalMovimientoLabel(v),"Salida":valeHistoryDateTime(v.salidaTs),"Regreso / Entrada":valeHistoryDateTime(v.regresoTs||v.llegadaTs||v.salidaSinRegresoFinalizadaTs),"Tiempo autorizado":v.tiempoAutorizado||"","Minutos reales":v.tiempoRealMin,"Clasificación":v.clasificacion,"Minutos a cobrar":v.tiempoComputableMin,"Observación":v.motivoCalculo,"Autorizó":v.autorizadoPorNombre||v.autorizadorNombre||v.autorizadoPor||""}));
+  const pendientesRows = (rep.pendientesSinRegreso||[]).map(v=>({"Fecha":v.fecha||"","No. nómina":v.nomina||"","Colaborador":v.nombreColaborador||"","Departamento":v.departamento||"","Folio":v.folio||v.id||"","Movimiento":valePersonalMovimientoLabel(v),"Salida":valeHistoryDateTime(v.salidaTs),"Observación":"Pendiente sin regreso; no contabilizado"}));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumenRows), "Resumen");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detalleRows), "Detalle");
+  if(pendientesRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pendientesRows), "Sin regreso");
   XLSX.writeFile(wb, `reporte_nominas_${rep.filtros.desde||"inicio"}_${rep.filtros.hasta||"hoy"}.xlsx`);
   toast("Reporte de Nóminas", "Archivo Excel generado.", "ok", 2400);
 }
