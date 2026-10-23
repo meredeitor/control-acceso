@@ -3147,6 +3147,22 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     .role-perm-checks label>span{min-width:0;overflow-wrap:anywhere;word-break:break-word}
     .users-screen{min-width:0;max-width:100%;overflow:hidden}
     .users-table-scroll{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .admin-users-table{width:100%;min-width:1040px;table-layout:fixed}
+    .admin-users-table th,.admin-users-table td{padding-left:10px;padding-right:10px}
+    .admin-users-table th:nth-child(1){width:120px}
+    .admin-users-table th:nth-child(2){width:70px}
+    .admin-users-table th:nth-child(3){width:210px}
+    .admin-users-table th:nth-child(4){width:125px}
+    .admin-users-table th:nth-child(5){width:100px}
+    .admin-users-table th:nth-child(6){width:115px}
+    .admin-users-table th:nth-child(7){width:75px}
+    .admin-users-table th:nth-child(8){width:125px}
+    .admin-users-table th:nth-child(9){width:130px}
+    .admin-users-table td:nth-child(3){font-size:13px;overflow-wrap:anywhere;word-break:break-word}
+    .user-action-buttons{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+    .user-icon-action{display:inline-grid;place-items:center;flex:0 0 38px;width:38px;height:38px;min-width:38px;padding:0;border-radius:11px}
+    .user-icon-action svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+    .user-icon-action.danger{color:#dc2626}
     .vale-history-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
     .vale-history-card{min-width:0;padding:16px;border:1px solid var(--border);border-radius:18px;background:var(--panel);box-shadow:0 10px 26px rgba(15,23,42,.07)}
     .vale-history-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
@@ -3505,7 +3521,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v230";
+  const APP_VERSION = "v231";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5739,6 +5755,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v231</b><span>Los perfiles de usuario incorporan número de nómina para impedir la autoautorización de vales de personal; la administración compacta sus acciones con iconos y simplifica la tabla ocultando Empresa.</span></div>
           <div class="help-release"><b>v230</b><span>El Reporte para Nóminas separa minutos de entrada y salida a cobrar, excluye permisos IMSS sin horario límite, pendientes sin regreso y duplicados, y aparta duraciones anómalas para revisión antes de totalizarlas.</span></div>
           <div class="help-release"><b>v229</b><span>Los permisos de Servicio Médico separan Salida a consulta IMSS, con hora programada y regreso sin horario límite, de Entrada posterior a las 8:15, que oculta la hora de salida y calcula el retraso real. Los vales normales de entrada conservan el mismo cálculo automático desde las 8:15 a. m.</span></div>
           <div class="help-release"><b>v223</b><span>Prevención reforzada de vales de personal duplicados y administración segura de perfiles incompletos, evitando que las sesiones anónimas de kiosco creen usuarios vacíos.</span></div>
@@ -9357,6 +9374,17 @@ function isValePersonalDelUsuarioActual(v={}){
   const nombreUsuario = normalizarIdentidadValePersonal(currentUser?.nombre);
   const nombreVale = normalizarIdentidadValePersonal(v.nombreColaborador);
   return !!nombreUsuario && !!nombreVale && nombreUsuario === nombreVale;
+}
+
+function validarAutoautorizacionValePersonal(v={}){
+  if(!isValePersonalDelUsuarioActual(v)) return true;
+  toast(
+    "Autoautorización no permitida",
+    "Puedes crear tu propio vale, pero debe autorizarlo otra persona cuyo rol tenga el permiso Autorizar vales de personal.",
+    "warn",
+    5200
+  );
+  return false;
 }
 
 async function renderValesActivos(refresh=true){
@@ -13297,6 +13325,7 @@ async function autorizarValePersonalEmergencia(id){
   if(currentUser?.role!==ROLES.RECEPCIONISTA)return toast("Acceso denegado","Esta función está reservada al rol Recepcionista.","bad",3600);
   const v=valesPersonal.find(x=>String(x.id)===String(id));
   if(!v||v.status!==ValeStatus.PENDIENTE)return toast("No disponible","El vale ya fue atendido o no existe.","warn",3200);
+  if(!validarAutoautorizacionValePersonal(v))return;
   if(isValePersonalEntrada(v)||isPermisoImss(v))return toast("No permitido","La autorización de emergencia sólo aplica a vales ordinarios de salida.","warn",4200);
   if(!navigator.onLine)return toast("Sin conexión","La autorización de emergencia debe confirmarse directamente en Firebase.","warn",4200);
   const motivo=await solicitarMotivoEmergencia(v);if(!motivo)return;
@@ -13312,16 +13341,8 @@ async function autorizarValePersonal(id, { renderAfter=true, freshPin=false }={}
   if(!requirePerm("autorizar_vale_personal","Tu rol no puede autorizar vales de personal.")) return false;
   const v = valesPersonal.find(x => String(x.id) === String(id));
   if(!v){ toast("No encontrado","No se encontró el vale.","warn"); return false; }
+  if(!validarAutoautorizacionValePersonal(v)) return false;
   if(!canCurrentUserAuthorizeValePersonal(v)){
-    if(isValePersonalDelUsuarioActual(v)){
-      toast(
-        "Autoautorización no permitida",
-        "Puedes crear tu propio vale, pero debe autorizarlo otra persona cuyo rol tenga el permiso Autorizar vales de personal.",
-        "warn",
-        5200
-      );
-      return false;
-    }
     toast(
       "No permitido",
       "Tu rol no tiene permiso para autorizar vales de personal.",
@@ -15183,6 +15204,7 @@ async function saveRolePermissionsFromScreenWithPerms(role, perms){
       const filtered = !term ? _adminUsersCache : _adminUsersCache.filter(u =>
         String(u.email||"").toLowerCase().includes(term) ||
         String(u.nombre||"").toLowerCase().includes(term) ||
+        String(u.nomina||u.noNomina||u.numeroNomina||"").toLowerCase().includes(term) ||
         String(u.area||"").toLowerCase().includes(term) ||
         String(u.empresa||"").toLowerCase().includes(term) ||
         String(u.role||"").toLowerCase().includes(term) ||
@@ -15232,13 +15254,13 @@ async function saveRolePermissionsFromScreenWithPerms(role, perms){
       if(!wrap) return;
 
       wrap.innerHTML = `
-<table class="table">
+<table class="table admin-users-table">
   <thead>
     <tr>
       <th>Nombre</th>
+      <th>Nómina</th>
       <th>Correo</th>
       <th>Área</th>
-      <th>Empresa</th>
       <th>Teléfono</th>
       <th>Rol</th>
       <th>Autoriza activo</th>
@@ -15251,9 +15273,9 @@ async function saveRolePermissionsFromScreenWithPerms(role, perms){
     ${list.map(u => `
       <tr>
         <td><b>${esc(u.nombre || "-")}</b></td>
+        <td>${esc(u.nomina || u.noNomina || u.numeroNomina || "Pendiente")}</td>
         <td>${esc(u.email || "-")}</td>
         <td>${esc(u.area || "-")}</td>
-        <td>${esc(u.empresa || "-")}</td>
         <td>${esc(u.telefono || "-")}</td>
 
         <td><b>${esc(u.role || ROLES.PENDIENTE)}</b></td>
@@ -15275,23 +15297,29 @@ async function saveRolePermissionsFromScreenWithPerms(role, perms){
         </td>
 
         <td>
-          <div class="row" style="gap:8px; flex-wrap:nowrap;">
-            <button class="secondary"
+          <div class="user-action-buttons">
+            <button class="secondary user-icon-action"
                   data-action="openUserModal"
-                  data-uid="${esc(u.uid)}">
-              Editar
+                  data-uid="${esc(u.uid)}"
+                  title="Editar usuario"
+                  aria-label="Editar usuario ${esc(u.nombre || u.email || "")}">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path></svg>
             </button>
             ${String(u.role || "") === ROLES.GUARDIA ? `
-              <button class="secondary"
+              <button class="secondary user-icon-action"
                     data-action="rondineroGuardiaQR"
-                    data-uid="${esc(u.uid)}">
-                QR Guardia
+                    data-uid="${esc(u.uid)}"
+                    title="Generar QR de guardia"
+                    aria-label="Generar QR de guardia para ${esc(u.nombre || u.email || "")}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3z"></path><path d="M14 14h3v3h-3zM18 14h3M21 17v4h-4M14 18v3"></path></svg>
               </button>
             ` : ""}
-            <button class="secondary danger"
+            <button class="secondary danger user-icon-action"
                     data-action="deleteUser"
-                    data-uid="${esc(u.uid)}">
-              Eliminar
+                    data-uid="${esc(u.uid)}"
+                    title="Eliminar usuario"
+                    aria-label="Eliminar usuario ${esc(u.nombre || u.email || "")}">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v5M14 11v5"></path></svg>
             </button>
           </div>
         </td>
@@ -15323,6 +15351,10 @@ function renderUserModal(){
             <div>
               <label>Correo</label>
               <input id="editUserEmail" type="email">
+            </div>
+            <div>
+              <label>Número de nómina</label>
+              <input id="editUserNomina" inputmode="numeric" autocomplete="off" placeholder="Ej. 1653">
             </div>
             <div>
               <label>Área</label>
@@ -15377,12 +15409,12 @@ function renderBulkUsersModal(){
         </div>
         <div class="modal-body">
           <div class="pill" style="display:block;white-space:normal;line-height:1.5;">
-            <b>Formato por fila:</b> Nombre; Correo; Contraseña temporal; Rol; Área; Empresa; Teléfono<br>
+            <b>Formato por fila:</b> Nombre; Correo; Contraseña temporal; Rol; Área; Empresa; Teléfono; Nómina<br>
             <small>Roles válidos: ${esc(roleCodes)}. Puedes pegar directamente desde Excel. Máximo 50 usuarios.</small>
           </div>
           <div style="height:10px;"></div>
           <label>Usuarios *</label>
-          <textarea id="bulkUsersInput" rows="12" spellcheck="false" placeholder="Ana López;ana@empresa.com;Temporal2026;anfitrion;Compras;Caborca;6621234567&#10;Luis Pérez;luis@empresa.com;Temporal2026;guardia;Seguridad;Caborca;6627654321"></textarea>
+          <textarea id="bulkUsersInput" rows="12" spellcheck="false" placeholder="Ana López;ana@empresa.com;Temporal2026;anfitrion;Compras;Caborca;6621234567;1653&#10;Luis Pérez;luis@empresa.com;Temporal2026;guardia;Seguridad;Caborca;6627654321;"></textarea>
           <label class="pill" style="width:max-content;margin-top:10px;">
             <input id="bulkUsersApproved" type="checkbox" checked style="width:auto;margin-right:8px;"> Crear usuarios aprobados
           </label>
@@ -15425,15 +15457,17 @@ function parseBulkUsers(text){
     const separator = line.includes("\t") ? "\t" : ";";
     const cols = line.split(separator).map(x => x.trim());
     if(index === 0 && /correo|email/i.test(cols[1] || "") && /nombre/i.test(cols[0] || "")) return;
-    const [nombre, emailRaw, password, roleRaw, area="", empresa="", telefono=""] = cols;
+    const [nombre, emailRaw, password, roleRaw, area="", empresa="", telefono="", nominaRaw=""] = cols;
     const email = String(emailRaw || "").toLowerCase();
     const role = String(roleRaw || "").toLowerCase();
+    const nomina = String(nominaRaw || "").trim();
     const rowNo = index + 1;
     if(!nombre) errors.push(`Fila ${rowNo}: falta nombre.`);
     else if(!/^\S+@\S+\.\S+$/.test(email)) errors.push(`Fila ${rowNo}: correo inválido.`);
     else if(String(password || "").length < 6) errors.push(`Fila ${rowNo}: la contraseña debe tener al menos 6 caracteres.`);
     else if(!ALL_ROLES.includes(role) || role === ROLES.PENDIENTE) errors.push(`Fila ${rowNo}: rol inválido (${roleRaw || "vacío"}).`);
-    else users.push({ rowNo, nombre, email, password, role, area, empresa, telefono });
+    else if(nomina && !/^\d+$/.test(nomina)) errors.push(`Fila ${rowNo}: la nómina debe contener sólo números.`);
+    else users.push({ rowNo, nombre, email, password, role, area, empresa, telefono, nomina });
   });
   const duplicateEmails = users.map(u => u.email).filter((email, i, arr) => arr.indexOf(email) !== i);
   if(duplicateEmails.length) errors.push(`Correos repetidos: ${[...new Set(duplicateEmails)].join(", ")}.`);
@@ -15496,6 +15530,7 @@ async function createBulkUsers(){
         await setDoc(profileRef, {
           uid: cred.user.uid, email: user.email, nombre: user.nombre,
           empresa: user.empresa || "", telefono: user.telefono || "", area: user.area || "",
+          nomina: user.nomina || "",
           role: user.role, aprobado: approved, solicitadoTs: Date.now(),
           aprobadoTs: approved ? Date.now() : null,
           aprobadoPor: approved ? (currentUser?.uid || "") : "",
@@ -15640,6 +15675,7 @@ function openUserModal(uid){
   const set = (id, value) => { const el = document.getElementById(id); if(el) el.value = value || ""; };
   set("editUserNombre", u.nombre || "");
   set("editUserEmail", u.email || "");
+  set("editUserNomina", u.nomina || u.noNomina || u.numeroNomina || "");
   set("editUserArea", u.area || "");
   set("editUserEmpresa", u.empresa || "");
   set("editUserTelefono", u.telefono || "");
@@ -15671,6 +15707,7 @@ async function saveUserModal(){
     uid: String(_editingUserUid),
     nombre: document.getElementById("editUserNombre")?.value.trim() || "",
     email: document.getElementById("editUserEmail")?.value.trim() || "",
+    nomina: document.getElementById("editUserNomina")?.value.trim() || "",
     area: document.getElementById("editUserArea")?.value.trim() || "",
     empresa: document.getElementById("editUserEmpresa")?.value.trim() || "",
     telefono: document.getElementById("editUserTelefono")?.value.trim() || "",
@@ -15686,6 +15723,10 @@ async function saveUserModal(){
     toast("Perfil incompleto","Para guardar o reparar el perfil se requieren UID, nombre y correo.","warn",4200);
     return;
   }
+  if(payload.nomina && !/^\d+$/.test(payload.nomina)){
+    toast("Nómina inválida","El número de nómina debe contener únicamente dígitos.","warn",4200);
+    return;
+  }
   if(aprobado && (!existingUser?.aprobado || wasPending)){
     payload.aprobadoTs = Date.now();
     payload.aprobadoPor = currentUser.uid;
@@ -15693,7 +15734,13 @@ async function saveUserModal(){
   await updateDoc(doc(db, COL_USERS, _editingUserUid), payload);
   valeActivoAutorizadoresCache = [];
   valeActivoAutorizadoresTs = 0;
-  if(String(_editingUserUid) === String(currentUser?.uid || "")) currentUser.puedeAutorizarValeActivo = payload.puedeAutorizarValeActivo;
+  valePersonalAutorizadoresCache = [];
+  valePersonalAutorizadoresTs = 0;
+  if(String(_editingUserUid) === String(currentUser?.uid || "")){
+    currentUser.puedeAutorizarValeActivo = payload.puedeAutorizarValeActivo;
+    currentUser.nomina = payload.nomina;
+    localStorage.setItem(LS_USER, JSON.stringify(currentUser));
+  }
   toast("Usuario actualizado", payload.nombre || payload.email || _editingUserUid, "ok", 2400);
   closeUserModal();
   await loadAdminUsers();
