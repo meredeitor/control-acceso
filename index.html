@@ -3521,7 +3521,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v231";
+  const APP_VERSION = "v232";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -4535,6 +4535,10 @@ function validarReagendaProveedor({ proveedorCodigo, proveedor, fechaHoraTs, exc
   if(!key || key === "nombre:") return true;
   const nowTs = Date.now();
   const hoy = new Date(nowTs);
+  const nuevaEsDeHoy = typeof fechaHoraTs === "number" && isSameDay(fechaHoraTs, hoy);
+  // La restricción evita reagendas repetidas durante el día actual, pero no debe
+  // bloquear una cita legítima programada para mañana o una fecha posterior.
+  if(!nuevaEsDeHoy) return true;
   const mismoProveedor = (v) => !isVisitante(v) && proveedorCitaKey(v) === key && (!excludeId || v.id !== excludeId);
   const esCitaDeHoy = (v) => typeof v.fechaHoraTs === "number" && isSameDay(v.fechaHoraTs, hoy);
   const vencidas = visitas.filter(v => mismoProveedor(v) && esCitaDeHoy(v) && citaVencidaSinLlegada(v, nowTs));
@@ -5755,6 +5759,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v232</b><span>La restricción de reagendas de proveedores mantiene el bloqueo para citas repetidas del día actual, pero permite programar normalmente una nueva cita para mañana o fechas posteriores.</span></div>
           <div class="help-release"><b>v231</b><span>Los perfiles de usuario incorporan número de nómina para impedir la autoautorización de vales de personal; la administración compacta sus acciones con iconos y simplifica la tabla ocultando Empresa.</span></div>
           <div class="help-release"><b>v230</b><span>El Reporte para Nóminas separa minutos de entrada y salida a cobrar, excluye permisos IMSS sin horario límite, pendientes sin regreso y duplicados, y aparta duraciones anómalas para revisión antes de totalizarlas.</span></div>
           <div class="help-release"><b>v229</b><span>Los permisos de Servicio Médico separan Salida a consulta IMSS, con hora programada y regreso sin horario límite, de Entrada posterior a las 8:15, que oculta la hora de salida y calcula el retraso real. Los vales normales de entrada conservan el mismo cálculo automático desde las 8:15 a. m.</span></div>
