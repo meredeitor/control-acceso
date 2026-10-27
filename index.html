@@ -3079,6 +3079,17 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     [data-theme="dark"] .provider-card-secondary .provider-mini-pill.alert{color:#ffd089}
     .provider-card-actions{margin-left:auto;display:flex;gap:4px}.provider-card-actions button{min-width:34px;width:34px;height:34px;padding:0;border-radius:9px;font-size:14px}
     .provider-kanban-card.qr-vencido{padding-top:58px!important;color:#fff}.provider-kanban-card.qr-vencido .qr-banda-inactivo{min-height:41px;display:grid;place-items:center;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.65);font-size:12px;letter-spacing:.9px}.provider-kanban-card.qr-vencido .provider-avatar{background:rgba(255,255,255,.92);color:#c60035}.provider-kanban-card.qr-vencido .provider-card-name strong,.provider-kanban-card.qr-vencido .provider-card-name small,.provider-kanban-card.qr-vencido .provider-card-ops,.provider-kanban-card.qr-vencido .provider-card-created{color:#fff!important}.provider-kanban-card.qr-vencido .provider-card-created{opacity:.9}.provider-kanban-card.qr-vencido .provider-state-chip{background:rgba(255,255,255,.92);color:#0862d9}.provider-kanban-card.qr-vencido .provider-card-secondary{border-top-color:rgba(255,255,255,.28)}.provider-kanban-card.qr-vencido .provider-mini-pill{background:rgba(255,255,255,.9);color:#243047}.provider-kanban-card.qr-vencido .provider-mini-pill.alert{background:#fff0d7;color:#9a4f00}.provider-kanban-card.qr-vencido .provider-mini-pill.success{background:#dcfce7;color:#11733a}.provider-kanban-card.qr-vencido .provider-card-actions button{background:rgba(255,255,255,.94);border-color:rgba(255,255,255,.75);color:#071b3d}.provider-kanban-card.qr-vencido>button[data-action="reactivar"]{background:rgba(255,255,255,.94);border-color:#fff;color:#071b3d;font-weight:900}
+    .kanban-details-toggle{display:inline-grid;place-items:center;flex:0 0 34px;width:34px;min-width:34px;height:34px;min-height:34px;padding:0;border-radius:9px;font-size:11px;font-weight:900}
+    .kanban-details-toggle svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+    .kanban-movement-details{width:100%;max-width:100%;min-width:0;margin-top:9px;padding:10px 11px;border:1px solid var(--border);border-radius:12px;background:color-mix(in srgb,var(--panel) 82%,var(--surface-soft,#eef4fb));cursor:default;overflow:hidden;box-sizing:border-box}
+    .kanban-movement-details[hidden]{display:none!important}
+    .kanban-movement-list{display:grid;gap:9px;width:100%;min-width:0;margin:0;padding:0;list-style:none}
+    .kanban-movement-item{position:relative;display:grid;grid-template-columns:11px minmax(0,1fr);gap:8px;width:100%;min-width:0;align-items:start;color:var(--text)}
+    .kanban-movement-item::before{content:"";width:9px;height:9px;margin-top:4px;border-radius:50%;background:#1687ff;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 18%,transparent)}
+    .kanban-movement-item>div{min-width:0}.kanban-movement-item strong{display:block;font-size:11px;line-height:1.25;overflow-wrap:break-word}
+    .kanban-movement-item small{display:block;margin-top:2px;color:var(--muted);font-size:10px;line-height:1.35;overflow-wrap:anywhere}
+    .provider-kanban-card.qr-vencido .kanban-movement-details{background:rgba(255,255,255,.94);border-color:rgba(255,255,255,.8);color:#071b3d}.provider-kanban-card.qr-vencido .kanban-movement-item{color:#071b3d}.provider-kanban-card.qr-vencido .kanban-movement-item small{color:#475569}.provider-kanban-card.qr-vencido .kanban-details-toggle{background:rgba(255,255,255,.94);border-color:#fff;color:#071b3d}
+    .vale-personal-card.vale-card-excedido .kanban-movement-details{background:rgba(255,255,255,.96);border-color:rgba(255,255,255,.85);color:#29101a}.vale-personal-card.vale-card-excedido .kanban-movement-item strong{color:#29101a!important}.vale-personal-card.vale-card-excedido .kanban-movement-item small{color:#5f4b54!important}.vale-personal-card.vale-card-excedido .kanban-details-toggle{background:rgba(255,255,255,.94);border-color:#fff;color:#29101a}
     .provider-empty{display:grid;place-items:center;text-align:center;gap:7px;min-height:250px;padding:20px;color:var(--muted);font-size:11px}.provider-empty-icon{display:grid;place-items:center;width:58px;height:58px;border-radius:18px;background:color-mix(in srgb,var(--provider-blue) 6%,var(--panel));color:#91a4c4;font-size:28px}.provider-empty strong{color:var(--text);font-size:13px}
     .provider-no-results{grid-column:1/-1;padding:30px;text-align:center;border:1px dashed var(--border);border-radius:16px;color:var(--muted)}
     .provider-mobile-navigation{display:none}
@@ -3094,6 +3105,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
       .provider-kanban-dashboard{padding-bottom:138px}.provider-toolbar-actions{margin-top:10px;display:grid;grid-template-columns:minmax(0,1fr) 44px}.provider-search-wrap{min-width:0;max-width:none}.provider-toolbar-actions .provider-scan-button,.provider-toolbar-actions .dashboard-pending-pill{display:none}
       .provider-mobile-tabs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:5px;overflow:visible;padding:1px 1px 7px}.provider-mobile-tabs::-webkit-scrollbar{display:none}.provider-mobile-tab{width:100%;min-width:0;min-height:44px;padding:7px 2px;border-radius:12px;background:var(--panel);color:var(--muted);border:1px solid var(--border);font-size:9px}.provider-mobile-tab.active{background:linear-gradient(135deg,#1687ff,#0862df);border-color:#0862df;color:#fff;box-shadow:0 7px 18px rgba(11,114,246,.22)}.provider-mobile-tab b{display:block;margin-top:2px;font-size:11px}
       .provider-kanban-scroll{overflow:visible}.provider-kanban-board{display:block;min-width:0}.provider-kanban-board .provider-stage{display:none;min-height:0;padding:4px;border:0;background:transparent;box-shadow:none}.provider-kanban-board .provider-stage.active{display:block}.provider-stage-head{display:none}.provider-stage-list{gap:9px}.provider-kanban-card{padding:13px!important}.provider-card-top{grid-template-columns:40px minmax(0,1fr)}.provider-avatar{width:40px;height:40px}.provider-card-name strong{font-size:14px!important}.provider-card-name small{font-size:11px}.provider-card-ops{font-size:11px}.provider-empty{min-height:220px}.provider-no-results{margin-top:8px}
+      .provider-kanban-card .provider-card-actions>button{box-sizing:border-box!important;flex:0 0 44px!important;width:44px!important;min-width:44px!important;max-width:44px!important;height:44px!important;min-height:44px!important;max-height:44px!important;padding:0!important;border-radius:12px!important}
       .provider-mobile-navigation{position:fixed;z-index:9000;left:0;right:0;bottom:0;display:grid;gap:7px;padding:7px 12px calc(7px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--panel) 96%,transparent);border-top:1px solid var(--border);box-shadow:0 -12px 30px rgba(15,23,42,.13);backdrop-filter:blur(14px)}
       .provider-mobile-scan{width:100%;min-height:46px;border-radius:12px;background:linear-gradient(135deg,#1687ff,#0862df);border-color:#0862df;color:#fff;box-shadow:0 8px 20px rgba(11,114,246,.24)}
       .provider-mobile-nav-row{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.provider-mobile-nav-row button{position:relative;min-width:0;min-height:50px;padding:5px 2px;border:0;background:transparent;color:var(--muted);box-shadow:none}.provider-mobile-nav-row button .provider-nav-icon{display:grid;place-items:center;width:22px;height:22px;margin:0 auto;color:currentColor}.provider-mobile-nav-row button .provider-nav-icon svg{display:block;width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.provider-mobile-nav-row button small{display:block;margin-top:3px;font-size:9px;font-weight:800;white-space:nowrap}.provider-mobile-nav-row button.active{color:var(--provider-blue)}.provider-mobile-nav-row .provider-nav-count{position:absolute;top:2px;left:calc(50% + 8px);display:grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#f59e0b;color:#fff;font-size:9px;font-weight:900;box-shadow:0 0 0 2px var(--panel)}.provider-mobile-nav-row button.pending-active{color:#b96805}.provider-mobile-nav-row button.pending-active .provider-nav-icon{background:rgba(245,158,11,.13);border-radius:8px}
@@ -3521,7 +3533,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v233";
+  const APP_VERSION = "v234";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5759,6 +5771,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v234</b><span>Las tarjetas de Proveedores, Visitantes, Vales de personal y Vales de activos incorporan un historial desplegable con la fecha, hora y responsable de cada movimiento. El botón compacto de reloj se integra con las acciones y conserva tamaño uniforme en celular.</span></div>
           <div class="help-release"><b>v233</b><span>Enfermería puede generar correctamente permisos IMSS de Entrada posterior a las 8:15, conservando el tipo Permiso IMSS y diferenciando errores de permisos y conexión al guardar en Firebase.</span></div>
           <div class="help-release"><b>v232</b><span>La restricción de reagendas de proveedores mantiene el bloqueo para citas repetidas del día actual, pero permite programar normalmente una nueva cita para mañana o fechas posteriores.</span></div>
           <div class="help-release"><b>v231</b><span>Los perfiles de usuario incorporan número de nómina para impedir la autoautorización de vales de personal; la administración compacta sus acciones con iconos y simplifica la tabla ocultando Empresa.</span></div>
@@ -8429,6 +8442,59 @@ function renderRegisterForm(){
       return String(v?.createdByEmail || v?.createdByUid || "-").trim() || "-";
     }
 
+    function kanbanTimestamp(value){
+      if(typeof value === "number" && Number.isFinite(value)) return value;
+      if(value?.toMillis) return Number(value.toMillis()) || 0;
+      if(typeof value?.seconds === "number") return value.seconds * 1000;
+      if(value){ const parsed = new Date(value).getTime(); return Number.isFinite(parsed) ? parsed : 0; }
+      return 0;
+    }
+
+    function kanbanDateTime(ts){
+      const n = kanbanTimestamp(ts);
+      return n ? new Date(n).toLocaleString("es-MX", { dateStyle:"medium", timeStyle:"short" }) : "";
+    }
+
+    function visitaKanbanEvents(v={}){
+      const events=[];
+      const push=(ts,title,detail="")=>{ const n=kanbanTimestamp(ts); if(n) events.push({ts:n,title,detail}); };
+      push(v.createdTs || v.createdAt, isVisitante(v) ? "Visita generada" : "Cita generada", creadorCitaNombre(v));
+      push(v.autorizacionTs, v.autorizacionEstado === "rechazada" ? "Solicitud rechazada" : "Solicitud autorizada", v.autorizacionPorNombre || v.autorizacionPorEmail || "");
+      push(v.llegadaTs, "Llegada registrada", "Lectura de QR");
+      push(v.entradaTs, "Entrada registrada", v.guardNombre || "Guardia no registrado");
+      push(v.dictamen?.ts, "Despacho / dictamen", v.dictamen?.por || "Calidad no registrada");
+      push(v.salidaTs, "Salida y finalización", v.salidaPor || "Usuario no registrado");
+      push(v.canceladoTs, "Cita cancelada", v.canceladoPor || "Usuario no registrado");
+      return events.sort((a,b)=>a.ts-b.ts);
+    }
+
+    function renderKanbanDetailsButton(){
+      return `<button type="button" class="secondary kanban-details-toggle" data-action="toggleKanbanDetails" data-no-sb="true" aria-expanded="false" aria-label="Mostrar detalles de movimientos" title="Detalles de movimientos">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+      </button>`;
+    }
+
+    function renderKanbanMovementPanel(events=[]){
+      const list = Array.isArray(events) ? events : [];
+      return `
+        <div class="kanban-movement-details" data-action="kanbanDetailsNoop" data-no-sb="true" hidden>
+          ${list.length ? `<ol class="kanban-movement-list">${list.map(event=>`
+            <li class="kanban-movement-item"><div><strong>${esc(event.title)}</strong><small>${esc(kanbanDateTime(event.ts))}${event.detail ? ` · ${esc(event.detail)}` : ""}</small></div></li>
+          `).join("")}</ol>` : `<small style="color:var(--muted)">Aún no hay movimientos registrados.</small>`}
+        </div>`;
+    }
+
+    function toggleKanbanDetails(button){
+      const card = button?.closest(".provider-kanban-card,.vale-personal-card");
+      const panel = card?.querySelector(".kanban-movement-details");
+      if(!panel) return;
+      const expand = panel.hidden;
+      panel.hidden = !expand;
+      button.setAttribute("aria-expanded", String(expand));
+      button.setAttribute("aria-label", expand ? "Ocultar detalles de movimientos" : "Mostrar detalles de movimientos");
+      button.title = expand ? "Ocultar detalles" : "Detalles de movimientos";
+    }
+
     function pillCitaCreada(v){
       const creador = creadorCitaNombre(v);
       return `
@@ -8646,8 +8712,9 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
                 ${v.status === Status.LLEGADO ? liveTimePill("Espera", v.llegadaTs, 0, true) : ""}
                 ${v.status === Status.DENTRO ? liveTimePill("Dentro", v.entradaTs, 0, false) : ""}
                 ${v.incidenciasSalida ? `<span class="provider-mini-pill alert">Incidencia</span>` : ""}
-                <span class="provider-card-actions"><button class="secondary" data-action="ficha" data-id="${esc(v.id)}" data-no-sb="true" aria-label="Ver detalle" title="Ver detalle">◉</button></span>
+                <span class="provider-card-actions">${renderKanbanDetailsButton()}<button class="secondary" data-action="ficha" data-id="${esc(v.id)}" data-no-sb="true" aria-label="Ver ficha" title="Ver ficha">◉</button></span>
               </div>
+              ${renderKanbanMovementPanel(visitaKanbanEvents(v))}
               ${v.status === Status.LLEGADO && hasPerm("registrar_entrada") ? `<button class="ok" data-action="entrada" data-id="${esc(v.id)}" data-no-sb="true" style="margin-top:9px;width:100%">Dar acceso</button>` : ""}
               ${v.status === Status.PENDIENTE_AUTORIZACION && [ROLES.ADMIN,ROLES.RECEPCIONISTA].includes(currentUser?.role) ? `<div class="row" style="margin-top:9px"><button class="ok" data-action="autorizarVisita" data-id="${esc(v.id)}" data-no-sb="true">Autorizar</button><button class="bad" data-action="rechazarVisita" data-id="${esc(v.id)}" data-no-sb="true">Rechazar</button></div>` : ""}
             </article>`;
@@ -8688,8 +8755,9 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
                 <span class="provider-mini-pill ${dict === "pendiente" ? "alert" : dict === "aprobado" ? "success" : ""}">${dict === "aprobado" ? "✓" : dict === "pendiente" ? "◷" : "!"} ${esc(dictamenLabel)}</span>
                 ${showInc ? `<span class="provider-mini-pill alert">! ${esc(incLabel)}</span>` : ""}
                 ${v.materialRecibir ? `<span class="provider-mini-pill" title="Material">${esc(v.materialRecibir)}</span>` : ""}
-                <span class="provider-card-actions"><button class="secondary" data-action="ficha" data-id="${esc(v.id)}" data-no-sb="true" aria-label="Ver detalle" title="Ver detalle">◉</button></span>
+                <span class="provider-card-actions">${renderKanbanDetailsButton()}<button class="secondary" data-action="ficha" data-id="${esc(v.id)}" data-no-sb="true" aria-label="Ver ficha" title="Ver ficha">◉</button></span>
               </div>
+              ${renderKanbanMovementPanel(visitaKanbanEvents(v))}
               ${v.status === Status.PENDIENTE_AUTORIZACION && currentUser?.role === ROLES.COMPRAS ? `<div class="row" style="margin-top:9px"><button class="ok" data-action="autorizarVisita" data-id="${esc(v.id)}" data-no-sb="true">Autorizar</button><button class="bad" data-action="rechazarVisita" data-id="${esc(v.id)}" data-no-sb="true">Rechazar</button></div>` : ""}
               ${qrVencido && currentUser?.role === ROLES.ADMIN ? `<button class="secondary" data-action="reactivar" data-id="${esc(v.id)}" data-no-sb="true" style="margin-top:9px;width:100%">Reactivar</button>` : ""}
             </article>`;
@@ -9507,7 +9575,9 @@ function renderValeActivoCard(v){
         ${v.status === ValeStatus.GENERADO && v.autorizadoTs && hasPerm("registrar_salida_activo") ? `<button class="danger" data-action="setValeStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.FUERA}" data-no-sb="true">Marcar fuera</button>` : ""}
         ${v.status === ValeStatus.FUERA && hasPerm("registrar_regreso_activo") ? `<button class="ok" data-action="setValeStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar regreso</button>` : ""}
         ${v.status !== ValeStatus.REGRESO_CANCELADO && hasPerm("crear_vale_activo") ? `<button class="secondary" data-action="cancelarVale" data-id="${esc(v.id)}" data-no-sb="true">Cancelar</button>` : ""}
+        ${renderKanbanDetailsButton()}
       </div>
+      ${renderKanbanMovementPanel(valeActivoHistoryEvents(v))}
     </div>
   `;
 }
@@ -10380,7 +10450,9 @@ function renderValePersonalCard(v){
           : `<button class="danger" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.FUERA}" data-no-sb="true">Marcar salida</button>`) : ""}
         ${mostrarRegistroManual && v.status === ValeStatus.FUERA && hasPerm("registrar_regreso_personal") ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar regreso</button>` : ""}
         ${v.status !== ValeStatus.REGRESO_CANCELADO && (hasPerm("crear_vale_personal") || (isPermisoImss(v) && hasPerm("crear_permiso_imss"))) ? `<button class="secondary" data-action="cancelarValePersonal" data-id="${esc(v.id)}" data-no-sb="true">Cancelar</button>` : ""}
+        ${renderKanbanDetailsButton()}
       </div>
+      ${renderKanbanMovementPanel(valeHistoryEvents(v))}
     </div>
   `;
 }
@@ -18407,6 +18479,8 @@ function renderProveedores(lista){
       const id = el.dataset.id;
 
       switch(action){
+        case "toggleKanbanDetails": toggleKanbanDetails(el); break;
+        case "kanbanDetailsNoop": break;
         case "logout": await doLogout(); break;
         case "whatsappValePersonal": enviarValePersonalWhatsApp(id); break;
         case "abrirMenuInicio": btnHamb?.click(); break;
@@ -18867,6 +18941,7 @@ document.addEventListener("input", (e) => {
 document.addEventListener("keydown", (e) => {
   const providerCard = e.target.closest?.(".provider-kanban-card[data-action='ficha']");
   if(!providerCard || (e.key !== "Enter" && e.key !== " ")) return;
+  if(e.target.closest?.("button,a,input,select,textarea,[data-action='kanbanDetailsNoop']")) return;
   e.preventDefault();
   providerCard.click();
 });
