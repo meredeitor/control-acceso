@@ -3533,7 +3533,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v235";
+  const APP_VERSION = "v236";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -4131,6 +4131,42 @@ const PIN_SESSION_KEY = "adminPinOkTs";
       CANCELADO:"cancelado",
       PENDIENTE_AUTORIZACION:"pendiente_autorizacion"
     };
+
+    function visitaStatusRank(status){
+      return {
+        [Status.PENDIENTE_AUTORIZACION]:-1,
+        [Status.PROGRAMADO]:0,
+        [Status.LLEGADO]:1,
+        [Status.DENTRO]:2,
+        [Status.DESPACHADO]:3,
+        [Status.FINALIZADO]:4,
+        [Status.CANCELADO]:5
+      }[status] ?? -2;
+    }
+
+    function reconcileVisitaStatus(v={}){
+      if(!v || typeof v !== "object") return false;
+      const tipo = String(v.tipoVisita || v.tipoAcceso || "").toLowerCase();
+      const esRegistroAcceso = tipo === "proveedor" || tipo === "visitante" || typeof v.fechaHoraTs === "number";
+      if(!esRegistroAcceso) return false;
+      const original = v.status;
+      let expected = original;
+      if(v.canceladoTs || original === Status.CANCELADO){
+        expected = Status.CANCELADO;
+      }else if(v.salidaTs){
+        expected = Status.FINALIZADO;
+      }else if(!isVisitante(v) && v.dictamen?.ts){
+        expected = Status.DESPACHADO;
+      }else if(v.entradaTs){
+        expected = Status.DENTRO;
+      }else if(v.llegadaTs){
+        expected = Status.LLEGADO;
+      }
+      if(expected === original) return false;
+      v.status = expected;
+      if(expected === Status.FINALIZADO || expected === Status.CANCELADO) v.qrActivo = false;
+      return true;
+    }
 
     const ValeStatus = {
       GENERADO: "generado",
@@ -5771,6 +5807,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v236</b><span>Los estados de proveedores y visitantes se reconcilian con las evidencias reales del recorrido: llegada, entrada, dictamen y salida. Se impide que un dispositivo desactualizado retroceda el Kanban y Administrador o Coordinador reparan registros inconsistentes al sincronizar.</span></div>
           <div class="help-release"><b>v235</b><span>La creación de visitantes espera la confirmación de Firebase antes de generar el QR, evitando pases locales que Guardia no puede validar. Los dashboards consultan la nube según los permisos configurados para cada rol y Servicio Médico puede operar visitantes con las reglas autorizadas.</span></div>
           <div class="help-release"><b>v234</b><span>Las tarjetas de Proveedores, Visitantes, Vales de personal y Vales de activos incorporan un historial desplegable con la fecha, hora y responsable de cada movimiento. El botón compacto de reloj se integra con las acciones y conserva tamaño uniforme en celular.</span></div>
           <div class="help-release"><b>v233</b><span>Enfermería puede generar correctamente permisos IMSS de Entrada posterior a las 8:15, conservando el tipo Permiso IMSS y diferenciando errores de permisos y conexión al guardar en Firebase.</span></div>
@@ -7335,12 +7372,14 @@ function fmt(ts){
 
   // Conserva locales para no perder capturas offline antes de subirlas.
   for(const v of localArr){
+    reconcileVisitaStatus(v);
     const id = String(v.id);
     map.set(id, v);
   }
 
   // La nube pisa al local cuando ambos comparten id.
   for(const v of cloudArr){
+    reconcileVisitaStatus(v);
     map.set(String(v.id), v);
   }
 
@@ -7460,12 +7499,26 @@ function fmt(ts){
       const oldSnap = await getDoc(ref);
       const before = oldSnap.exists() ? { id: oldSnap.id, ...oldSnap.data() } : null;
       const after = {
+        ...(before || {}),
         ...v,
         updatedTs: Date.now(),
         updatedAt: serverTimestamp(),
         updatedByUid: currentUser?.uid || "",
         updatedByEmail: currentUser?.email || ""
       };
+      reconcileVisitaStatus(after);
+      if(before){
+        const canonicalBefore = { ...before };
+        reconcileVisitaStatus(canonicalBefore);
+        if(visitaStatusRank(canonicalBefore.status) > visitaStatusRank(after.status)){
+          after.status = canonicalBefore.status;
+          after.qrActivo = canonicalBefore.qrActivo;
+        }
+      }
+      if(v && typeof v === "object"){
+        v.status = after.status;
+        v.qrActivo = after.qrActivo;
+      }
       const batch = writeBatch(db);
       batch.set(ref, after, { merge: true });
       addResumenDiffToBatch(batch, before, after);
@@ -7562,8 +7615,19 @@ function fmt(ts){
       if(!shouldReadCloudStamp(cloudReadCache.visitasDia.get(cacheKey), CLOUD_READ_TTL.visitasDia, force)) return;
       try{
         const cloud = await cloudFetchByDay(d);
+        const inconsistentes = cloud.filter(v => reconcileVisitaStatus(v));
         visitas = mergeById(visitas, cloud);
         saveVisitasLocal();
+        if(inconsistentes.length && [ROLES.ADMIN,ROLES.COORDINADOR].includes(currentUser?.role)){
+          const reparaciones = inconsistentes.slice(0, 25).map(v => {
+            v.statusReconciliadoTs = Date.now();
+            v.statusReconciliadoPor = currentUser?.email || currentUser?.uid || "";
+            return cloudUpsertVisita(v);
+          });
+          const resultados = await Promise.allSettled(reparaciones);
+          const corregidos = resultados.filter(result => result.status === "fulfilled").length;
+          if(corregidos) console.info(`Estados reconciliados en Firebase: ${corregidos}`);
+        }
         if(cloudDayReadAccess().visitantes){
           try{
             await normalizarQrVisitantesRetrasados();
