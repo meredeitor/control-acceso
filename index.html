@@ -3521,7 +3521,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v232";
+  const APP_VERSION = "v233";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5759,6 +5759,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v233</b><span>Enfermería puede generar correctamente permisos IMSS de Entrada posterior a las 8:15, conservando el tipo Permiso IMSS y diferenciando errores de permisos y conexión al guardar en Firebase.</span></div>
           <div class="help-release"><b>v232</b><span>La restricción de reagendas de proveedores mantiene el bloqueo para citas repetidas del día actual, pero permite programar normalmente una nueva cita para mañana o fechas posteriores.</span></div>
           <div class="help-release"><b>v231</b><span>Los perfiles de usuario incorporan número de nómina para impedir la autoautorización de vales de personal; la administración compacta sus acciones con iconos y simplifica la tabla ocultando Empresa.</span></div>
           <div class="help-release"><b>v230</b><span>El Reporte para Nóminas separa minutos de entrada y salida a cobrar, excluye permisos IMSS sin horario límite, pendientes sin regreso y duplicados, y aparta duraciones anómalas para revisión antes de totalizarlas.</span></div>
@@ -12989,7 +12990,9 @@ function createValePersonalFromModal(){
   const movimientoImss = document.getElementById("vpMovimientoImss")?.value || "";
   const esEntradaImss = esPermisoImss && movimientoImss === "entrada_815";
   const esSalidaImss = esPermisoImss && movimientoImss === "salida_consulta";
-  const tipoPermiso = esEntradaImss ? "Entrada" : tipoPermisoSeleccionado;
+  // Los movimientos de Enfermería conservan su tipo principal para que Firebase
+  // los reconozca como Permiso IMSS. La modalidad se distingue con movimientoImss.
+  const tipoPermiso = tipoPermisoSeleccionado;
   const tiempoAutorizado = esEntradaImss
     ? "Entrada posterior a las 8:15 a.m."
     : esSalidaImss
@@ -13144,7 +13147,13 @@ async function guardarValePersonal(){
     console.error(error);
     valesPersonal = valesPersonal.filter(existing => String(existing.id) !== String(v.id));
     saveValesPersonalLocal();
-    toast("No se pudo confirmar el vale","La operación no se repetirá automáticamente. Revisa tu conexión y vuelve a intentarlo.","bad",5200);
+    const errorCode = String(error?.code || "").toLowerCase();
+    const errorMessage = errorCode.includes("permission-denied")
+      ? "Firebase rechazó el permiso de escritura. Verifica que el usuario conserve el rol Servicio Médico e inténtalo nuevamente."
+      : errorCode.includes("unavailable") || errorCode.includes("network")
+        ? "Firebase no está disponible o no hay conexión. Recupera Internet y vuelve a intentarlo."
+        : "Firebase no confirmó el permiso. Vuelve a intentarlo; la operación no se repetirá automáticamente.";
+    toast("No se pudo confirmar el vale",errorMessage,"bad",6200);
   }finally{
     guardandoValePersonal = false;
     if(saveButton?.isConnected){ saveButton.disabled=false; saveButton.textContent="Guardar y generar QR"; }
