@@ -3533,7 +3533,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v234";
+  const APP_VERSION = "v235";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5771,6 +5771,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v235</b><span>La creación de visitantes espera la confirmación de Firebase antes de generar el QR, evitando pases locales que Guardia no puede validar. Los dashboards consultan la nube según los permisos configurados para cada rol y Servicio Médico puede operar visitantes con las reglas autorizadas.</span></div>
           <div class="help-release"><b>v234</b><span>Las tarjetas de Proveedores, Visitantes, Vales de personal y Vales de activos incorporan un historial desplegable con la fecha, hora y responsable de cada movimiento. El botón compacto de reloj se integra con las acciones y conserva tamaño uniforme en celular.</span></div>
           <div class="help-release"><b>v233</b><span>Enfermería puede generar correctamente permisos IMSS de Entrada posterior a las 8:15, conservando el tipo Permiso IMSS y diferenciando errores de permisos y conexión al guardar en Firebase.</span></div>
           <div class="help-release"><b>v232</b><span>La restricción de reagendas de proveedores mantiene el bloqueo para citas repetidas del día actual, pero permite programar normalmente una nueva cita para mañana o fechas posteriores.</span></div>
@@ -7483,18 +7484,9 @@ function fmt(ts){
     }
 
     function cloudDayReadAccess(){
-      const role = currentUser?.role;
       return {
-        proveedores: [
-          ROLES.ADMIN, ROLES.COORDINADOR, ROLES.COMPRAS, ROLES.JEFE_COMPRAS,
-          ROLES.GUARDIA, ROLES.CALIDAD, ROLES.CONTRALORIA, ROLES.JEFE,
-          ROLES.ANFITRION, ROLES.PROVEEDOR
-        ].includes(role),
-        visitantes: [
-          ROLES.ADMIN, ROLES.COORDINADOR, ROLES.COMPRAS, ROLES.JEFE_COMPRAS,
-          ROLES.GUARDIA, ROLES.CALIDAD, ROLES.CONTRALORIA, ROLES.JEFE,
-          ROLES.JEFE_TI, ROLES.ANFITRION, ROLES.RECEPCIONISTA
-        ].includes(role)
+        proveedores: hasPerm("ver_dashboard_proveedores"),
+        visitantes: hasPerm("ver_dashboard_visitantes")
       };
     }
 
@@ -7553,6 +7545,14 @@ function fmt(ts){
       if(code.includes("unavailable") || code.includes("network")) return "Firebase no respondió. Revisa la conexión a Internet.";
       if(code.includes("unauthenticated")) return "La sesión venció. Cierra sesión e ingresa nuevamente.";
       return "No se pudo actualizar la información del día.";
+    }
+
+    function cloudCreateVisitaErrorMessage(error){
+      const code = String(error?.code || "").toLowerCase();
+      if(code.includes("permission-denied")) return "Firebase rechazó el permiso de escritura. Verifica que el rol tenga autorización para crear visitantes.";
+      if(code.includes("unavailable") || code.includes("network")) return "Firebase no respondió. Revisa la conexión e inténtalo nuevamente.";
+      if(code.includes("unauthenticated")) return "La sesión venció. Cierra sesión e ingresa nuevamente.";
+      return "Firebase no confirmó el guardado. La cita y el QR no fueron generados.";
     }
 
     async function syncDay(dateObj, force = false){
@@ -18681,17 +18681,30 @@ function renderProveedores(lista){
           }
           const v = createVisitaFromForm();
           if(!v) return;
-
-          visitas.unshift(v);
-          await saveVisitas();
-
-          if(navigator.onLine && currentUser.role !== ROLES.PENDIENTE){
-            try{ await cloudUpsertVisita(v); }catch(e){ console.warn(e); }
+          if(!navigator.onLine){
+            toast("Sin conexión","La cita no se guardó ni se generó el QR. Conéctate a Internet e inténtalo nuevamente.","warn",5200);
+            return;
           }
 
-          toast("Guardado","Cita creada y QR generado.","ok",2200);
-          lockView = true;
-          renderQR(v.id);
+          el.disabled = true;
+          const previousLabel = el.textContent;
+          el.textContent = "Publicando…";
+          try{
+            await cloudUpsertVisita(v);
+            visitas.unshift(v);
+            saveVisitasLocal();
+            toast("Guardado","Firebase confirmó la cita. El QR ya puede utilizarse.","ok",2600);
+            lockView = true;
+            renderQR(v.id);
+          }catch(e){
+            console.error("No se pudo publicar la cita:", e);
+            toast("No se generó el QR", cloudCreateVisitaErrorMessage(e), "bad", 6000);
+          }finally{
+            if(el.isConnected){
+              el.disabled = false;
+              el.textContent = previousLabel;
+            }
+          }
           break;
         }
 

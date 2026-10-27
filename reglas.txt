@@ -277,6 +277,7 @@ service cloud.firestore {
           || isJefe()
           || isJefeTi()
           || isAnfitrion()
+          || isServicioMedico()
           || isRecepcionista()
           || (isKioskoAnon() && request.query.limit <= 500)
         );
@@ -286,8 +287,12 @@ service cloud.firestore {
         && request.resource.data.tipoVisita == "visitante"
         && (
           (
-            (isAdmin() || isCoordinador() || isCompras() || isJefeCompras() || isJefeTi() || isAnfitrion() || isJefe())
+            (isAdmin() || isCoordinador() || isCompras() || isJefeCompras() || isJefeTi() || isAnfitrion() || isJefe() || isServicioMedico())
             && request.resource.data.status == "programado"
+          )
+          || (
+            isServicioMedico()
+            && request.resource.data.status == "pendiente_autorizacion"
           )
           || (
             isKioskoAnon()
@@ -330,6 +335,15 @@ service cloud.firestore {
         )
 
         || (
+          isServicioMedico()
+          && resource.data.createdByUid == myUid()
+          && resource.data.tipoVisita == "visitante"
+          && request.resource.data.tipoVisita == "visitante"
+          && resource.data.status in ["programado", "pendiente_autorizacion"]
+          && request.resource.data.status in [resource.data.status, "cancelado"]
+        )
+
+        || (
           isGuardia()
           && resource.data.status in ["programado", "llegado"]
           && request.resource.data.status in ["llegado", "dentro"]
@@ -359,6 +373,7 @@ service cloud.firestore {
           || isContraloria()
           || isAnfitrion()
           || isJefe()
+          || isServicioMedico()
           || isRecepcionista()
         );
 
@@ -372,6 +387,7 @@ service cloud.firestore {
           || isCalidad()
           || isAnfitrion()
           || isJefe()
+          || isServicioMedico()
           || isRecepcionista()
         );
 
