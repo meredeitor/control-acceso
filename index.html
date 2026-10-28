@@ -3533,7 +3533,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v236";
+  const APP_VERSION = "v237";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5807,6 +5807,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v237</b><span>Las reglas de Servicio Médico distinguen correctamente la salida a consulta IMSS de la entrada posterior a las 8:15: esta última ya no requiere una hora programada de salida para guardarse en Firebase.</span></div>
           <div class="help-release"><b>v236</b><span>Los estados de proveedores y visitantes se reconcilian con las evidencias reales del recorrido: llegada, entrada, dictamen y salida. Se impide que un dispositivo desactualizado retroceda el Kanban y Administrador o Coordinador reparan registros inconsistentes al sincronizar.</span></div>
           <div class="help-release"><b>v235</b><span>La creación de visitantes espera la confirmación de Firebase antes de generar el QR, evitando pases locales que Guardia no puede validar. Los dashboards consultan la nube según los permisos configurados para cada rol y Servicio Médico puede operar visitantes con las reglas autorizadas.</span></div>
           <div class="help-release"><b>v234</b><span>Las tarjetas de Proveedores, Visitantes, Vales de personal y Vales de activos incorporan un historial desplegable con la fecha, hora y responsable de cada movimiento. El botón compacto de reloj se integra con las acciones y conserva tamaño uniforme en celular.</span></div>

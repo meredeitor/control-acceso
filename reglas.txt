@@ -514,7 +514,16 @@ service cloud.firestore {
             && request.resource.data.esPermisoImss == true
             && request.resource.data.tipoPermiso == "Permiso IMSS"
             && request.resource.data.status == "generado"
-            && request.resource.data.salidaProgramadaTs is int
+            && (
+              (
+                request.resource.data.movimientoImss == "salida_consulta"
+                && request.resource.data.salidaProgramadaTs is int
+              )
+              || (
+                request.resource.data.movimientoImss == "entrada_815"
+                && request.resource.data.salidaProgramadaTs == null
+              )
+            )
           )
         );
 
