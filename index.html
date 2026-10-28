@@ -3533,7 +3533,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v237";
+  const APP_VERSION = "v238";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -4518,7 +4518,7 @@ function citaConsumeCapacidad(v = {}){
 
 
 const SLOT_MINUTES = 30;      // bloques visuales
-const MIN_DIFF_MINUTES = 0;  // regla de negocio
+const MIN_DIFF_MINUTES = 30;  // anticipación mínima para citas de proveedores del mismo día
 const AGENDA_START = 8;      // 08:00
 const AGENDA_END = 17;       // 17:00
 
@@ -4551,6 +4551,61 @@ function validarCitaNoPasada(fechaHoraISO){
   const citaTxt = Number.isNaN(cita.getTime()) ? "la fecha seleccionada" : cita.toLocaleString();
   toast("Horario vencido", `No se puede agendar una cita en ${citaTxt}. Selecciona una hora futura.`, "warn", 4200);
   return false;
+}
+
+function citaProveedorCumpleAnticipacion(fechaHoraISO, baseTs = Date.now()){
+  if(!fechaHoraISO) return false;
+  const citaTs = new Date(fechaHoraISO).getTime();
+  if(!Number.isFinite(citaTs)) return false;
+  const cita = new Date(citaTs);
+  const base = new Date(baseTs);
+  // La anticipación solo se exige para citas del día actual. Las fechas futuras
+  // continúan disponibles desde cualquier hora.
+  if(!isSameDay(cita, base)) return citaTs > baseTs;
+  return citaTs >= baseTs + (MIN_DIFF_MINUTES * 60 * 1000);
+}
+
+function citaProveedorEstaEnBloque(fechaHoraISO){
+  if(!fechaHoraISO) return false;
+  const cita = new Date(fechaHoraISO);
+  if(Number.isNaN(cita.getTime())) return false;
+  return (cita.getMinutes() === 0 || cita.getMinutes() === 30) && cita.getSeconds() === 0;
+}
+
+function mostrarReglaAgendaProveedor(baseTs = Date.now()){
+  const primeraHoraTs = minimoFechaHoraProveedorTs(baseTs);
+  const primeraHora = new Date(primeraHoraTs).toLocaleTimeString("es-MX", { hour:"2-digit", minute:"2-digit" });
+  toast(
+    "Agenda con 30 minutos de anticipación",
+    `Las citas de proveedores deben generarse al menos ${MIN_DIFF_MINUTES} minutos antes y solo se programan en horarios cerrados (:00 o :30). El siguiente horario que puedes seleccionar es ${primeraHora}, siempre que tenga disponibilidad.`,
+    "warn",
+    6800
+  );
+}
+
+function validarBloqueCitaProveedor(fechaHoraISO, baseTs = Date.now()){
+  if(citaProveedorEstaEnBloque(fechaHoraISO)) return true;
+  mostrarReglaAgendaProveedor(baseTs);
+  return false;
+}
+
+function validarAnticipacionCitaProveedor(fechaHoraISO, baseTs = Date.now()){
+  if(citaProveedorCumpleAnticipacion(fechaHoraISO, baseTs)) return true;
+  mostrarReglaAgendaProveedor(baseTs);
+  return false;
+}
+
+function minimoFechaHoraProveedorTs(baseTs = Date.now()){
+  const limiteTs = baseTs + (MIN_DIFF_MINUTES * 60 * 1000);
+  // Las citas operan en bloques cerrados :00 y :30. El primer horario ofrecido
+  // es el siguiente bloque que además cumple la anticipación completa.
+  const bloqueMs = SLOT_MINUTES * 60 * 1000;
+  return Math.ceil(limiteTs / bloqueMs) * bloqueMs;
+}
+
+function aplicarMinimoFechaHoraProveedor(input, baseTs = Date.now()){
+  if(!input) return;
+  input.min = datetimeLocalValue(minimoFechaHoraProveedorTs(baseTs));
 }
 
 function datetimeLocalValue(ts = Date.now()){
@@ -5807,6 +5862,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v238</b><span>Las citas de proveedores del mismo día requieren 30 minutos de anticipación y horarios cerrados cada media hora. La agenda bloquea horarios de otras áreas, calcula el siguiente bloque permitido y conecta el selector de fecha con la capacidad real del área antes de generar el QR.</span></div>
           <div class="help-release"><b>v237</b><span>Las reglas de Servicio Médico distinguen correctamente la salida a consulta IMSS de la entrada posterior a las 8:15: esta última ya no requiere una hora programada de salida para guardarse en Firebase.</span></div>
           <div class="help-release"><b>v236</b><span>Los estados de proveedores y visitantes se reconcilian con las evidencias reales del recorrido: llegada, entrada, dictamen y salida. Se impide que un dispositivo desactualizado retroceda el Kanban y Administrador o Coordinador reparan registros inconsistentes al sincronizar.</span></div>
           <div class="help-release"><b>v235</b><span>La creación de visitantes espera la confirmación de Firebase antes de generar el QR, evitando pases locales que Guardia no puede validar. Los dashboards consultan la nube según los permisos configurados para cada rol y Servicio Médico puede operar visitantes con las reglas autorizadas.</span></div>
@@ -13742,7 +13798,7 @@ const esVisitante = isVisitante(v);
 
         <div>
           <label>Fecha y hora *</label>
-          <input type="datetime-local" id="ccFechaHora" value="${esc((v.fechaHora||"").slice(0,16))}" min="${datetimeLocalValue()}">
+          <input type="datetime-local" id="ccFechaHora" value="${esc((v.fechaHora||"").slice(0,16))}" min="${datetimeLocalValue(isVisitante(v) ? Date.now() : minimoFechaHoraProveedorTs())}" ${isVisitante(v) ? "" : `step="${SLOT_MINUTES * 60}"`}>
         </div>
       </div>
 
@@ -13833,6 +13889,14 @@ const esVisitante = isVisitante(v);
   }
 
   if(!validarCitaNoPasada(fechaHora)){
+    return;
+  }
+
+  const fechaHoraCambio = Math.abs(new Date(fechaHora).getTime() - Number(v.fechaHoraTs || 0)) > 30000;
+  if(!esVisitante && fechaHoraCambio && !validarBloqueCitaProveedor(fechaHora)){
+    return;
+  }
+  if(!esVisitante && fechaHoraCambio && !validarAnticipacionCitaProveedor(fechaHora)){
     return;
   }
 
@@ -16046,6 +16110,7 @@ function renderAgendaVisual(dateISO = ""){
   );
   const slots = generarSlots();
   const slotWindowMs = SLOT_MINUTES * 60 * 1000;
+  const selectedAgendaArea = document.getElementById("area")?.value || "";
 
   // helper: cuenta cuántas citas hay en ese slot para esa área
   function countOcupadas(area, slotHora){
@@ -16062,8 +16127,13 @@ function renderAgendaVisual(dateISO = ""){
   }
 
   const totalDisponibles = AREAS.reduce((total, area) => {
+    if(selectedAgendaArea && selectedAgendaArea !== area) return total;
     const cap = capArea(area);
-    return total + slots.filter(hora => countOcupadas(area, hora) < cap).length;
+    return total + slots.filter(hora => {
+      const fechaHoraSlot = `${targetISO}T${hora}`;
+      const cumpleAnticipacion = targetISO !== agendaTodayISO() || citaProveedorCumpleAnticipacion(fechaHoraSlot);
+      return cumpleAnticipacion && countOcupadas(area, hora) < cap;
+    }).length;
   }, 0);
 
   return `
@@ -16073,9 +16143,10 @@ function renderAgendaVisual(dateISO = ""){
     </div>
     ${AREAS.map(area => {
       const cap = capArea(area); // ✅ 2 solo en Avíos y Aduana Peleteria, si ya lo definiste así
+      const areaDistinta = !!selectedAgendaArea && selectedAgendaArea !== area;
 
       return `
-        <div style="margin-bottom:14px;">
+        <div style="margin-bottom:14px;${areaDistinta ? "opacity:.48;" : ""}">
           <div style="font-size:13px; font-weight:700; margin-bottom:6px;">
             ${area}${cap > 1 ? ` <span style="color:var(--muted); font-weight:600;">(capacidad ${cap})</span>` : ``}
           </div>
@@ -16084,24 +16155,28 @@ function renderAgendaVisual(dateISO = ""){
             ${slots.map(hora => {
               const ocupadas = countOcupadas(area, hora);
               const ocupado = ocupadas >= cap;
-              const selectedArea = document.getElementById("area")?.value || "";
+              const fechaHoraSlot = `${targetISO}T${hora}`;
+              const sinAnticipacion = targetISO === agendaTodayISO() && !citaProveedorCumpleAnticipacion(fechaHoraSlot);
+              const noDisponible = ocupado || sinAnticipacion || areaDistinta;
+              const selectedArea = selectedAgendaArea;
               const selectedHora = document.getElementById("fechaHora")?.value?.slice(11,16) || "";
               const selected = selectedArea === area && selectedHora === hora;
 
               return `
                 <div
-                  class="pill agenda-slot ${ocupado ? "agenda-busy" : "agenda-free"} ${selected ? "agenda-selected" : ""}"
+                  class="pill agenda-slot ${noDisponible ? "agenda-busy" : "agenda-free"} ${selected ? "agenda-selected" : ""}"
                   data-area="${area}"
                   data-hora="${hora}"
+                  data-reason="${areaDistinta ? "area" : sinAnticipacion ? "anticipacion" : ocupado ? "capacidad" : ""}"
                   style="
-                    cursor:${ocupado ? "not-allowed" : "pointer"};
-                    opacity:${ocupado ? "0.9" : "1"};
+                    cursor:${noDisponible ? "not-allowed" : "pointer"};
+                    opacity:${noDisponible ? "0.9" : "1"};
                   "
-                  title="${ocupado ? "Horario no disponible en esta área" : "Horario disponible"}"
+                  title="${areaDistinta ? `Seleccionaste ${selectedAgendaArea}; utiliza únicamente sus horarios` : sinAnticipacion ? `Se requieren ${MIN_DIFF_MINUTES} minutos de anticipación` : ocupado ? "Horario no disponible en esta área" : "Horario disponible"}"
                 >
                   ${hora}
                   ${cap > 1 ? ` (${ocupadas}/${cap})` : ``}
-                  ${ocupado ? " ✖" : ""}
+                  ${areaDistinta || sinAnticipacion ? " 🔒" : ocupado ? " ✖" : ""}
                 </div>
               `;
             }).join("")}
@@ -16343,7 +16418,7 @@ async function renderNuevo(tipoCita = "proveedor"){
         ` : ""}
         <div>
           <label>Fecha y hora *</label>
-          <input type="datetime-local" id="fechaHora" min="${datetimeLocalValue()}"/>
+          <input type="datetime-local" id="fechaHora" min="${datetimeLocalValue(esVisitanteNuevo ? Date.now() : minimoFechaHoraProveedorTs())}" ${esVisitanteNuevo ? "" : `step="${SLOT_MINUTES * 60}"`}/>
         </div>
       </div>
       <div id="agendaVisual">
@@ -16452,31 +16527,81 @@ function toggleBlock(id, show){
     }
     cont.innerHTML = renderAgendaVisual(dateISO);
   }
+
+  function limpiarFechaHoraProveedorNoDisponible(){
+    const fechaInput = document.getElementById("fechaHora");
+    const areaInput = document.getElementById("area");
+    if(!fechaInput?.value || !areaInput?.value) return false;
+    if(!existeCitaEnHorario(fechaInput.value, areaInput.value)) return false;
+    const hora = new Date(fechaInput.value).toLocaleTimeString("es-MX", { hour:"2-digit", minute:"2-digit" });
+    toast(
+      "Horario no disponible",
+      `${areaInput.value} ya alcanzó su capacidad para las ${hora}. Selecciona uno de los horarios disponibles mostrados en la agenda.`,
+      "warn",
+      6000
+    );
+    fechaInput.value = "";
+    return true;
+  }
   
   document.getElementById("agendaVisual")
   ?.addEventListener("click", e => {
 
   const slot = e.target.closest(".agenda-slot");
-  if(!slot || slot.classList.contains("agenda-busy")) return; // ✅ no permitir click en ocupado
+  if(!slot) return;
+  const areaInput = document.getElementById("area");
+  if(areaInput?.value && areaInput.value !== slot.dataset.area){
+    toast(
+      "Horario de otra área",
+      `Seleccionaste ${areaInput.value}. Elige un horario dentro de esa misma área o cambia primero el área seleccionada.`,
+      "warn",
+      5200
+    );
+    return;
+  }
+  if(slot.classList.contains("agenda-busy")){
+    if(slot.dataset.reason === "anticipacion") validarAnticipacionCitaProveedor(`${document.getElementById("fechaHora")?.value?.slice(0,10) || agendaTodayISO()}T${slot.dataset.hora}`);
+    return;
+  }
 
   const hora = slot.dataset.hora;
   const area = slot.dataset.area;
   const fechaInput = document.getElementById("fechaHora");
-  const areaInput = document.getElementById("area");
 
   const fecha = fechaInput.value.slice(0,10) || agendaTodayISO();
   const fechaHoraSlot = `${fecha}T${hora}`;
   if(!validarCitaNoPasada(fechaHoraSlot)) return;
+  if(!validarAnticipacionCitaProveedor(fechaHoraSlot)) return;
   if(areaInput) areaInput.value = area || "";
   fechaInput.value = fechaHoraSlot;
   refreshAgendaNuevo();
 });
 
 document.getElementById("area")
-  ?.addEventListener("change", refreshAgendaNuevo);
+  ?.addEventListener("change", async () => {
+    await refreshAgendaNuevo();
+    if(limpiarFechaHoraProveedorNoDisponible()) await refreshAgendaNuevo();
+  });
 
 document.getElementById("fechaHora")
-  ?.addEventListener("change", refreshAgendaNuevo);
+  ?.addEventListener("change", async event => {
+    const input = event.currentTarget;
+    const esVisitante = document.getElementById("tipoVisita")?.value === "visitante";
+    if(!esVisitante){
+      aplicarMinimoFechaHoraProveedor(input);
+      if(input.value){
+        if(!citaProveedorEstaEnBloque(input.value)){
+          validarBloqueCitaProveedor(input.value);
+          input.value = "";
+        }else if(!citaProveedorCumpleAnticipacion(input.value)){
+          validarAnticipacionCitaProveedor(input.value);
+          input.value = "";
+        }
+      }
+    }
+    await refreshAgendaNuevo();
+    if(!esVisitante && limpiarFechaHoraProveedorNoDisponible()) await refreshAgendaNuevo();
+  });
 
 function syncFechaHoraVisitante(){
   const fecha = document.getElementById("fechaVisitante")?.value || "";
@@ -16636,6 +16761,14 @@ async function recargarProveedoresNuevaCita(){
   }
 
   if(!validarCitaNoPasada(fechaHora)){
+    return null;
+  }
+
+  if(!esVisitante && !validarAnticipacionCitaProveedor(fechaHora)){
+    return null;
+  }
+
+  if(!esVisitante && !validarBloqueCitaProveedor(fechaHora)){
     return null;
   }
 
