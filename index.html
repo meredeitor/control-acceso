@@ -3088,7 +3088,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     .kanban-movement-item::before{content:"";width:9px;height:9px;margin-top:4px;border-radius:50%;background:#1687ff;box-shadow:0 0 0 3px color-mix(in srgb,#1687ff 18%,transparent)}
     .kanban-movement-item>div{min-width:0}.kanban-movement-item strong{display:block;font-size:11px;line-height:1.25;overflow-wrap:break-word}
     .kanban-movement-item small{display:block;margin-top:2px;color:var(--muted);font-size:10px;line-height:1.35;overflow-wrap:anywhere}
-    .provider-kanban-card.qr-vencido .kanban-movement-details{background:rgba(255,255,255,.94);border-color:rgba(255,255,255,.8);color:#071b3d}.provider-kanban-card.qr-vencido .kanban-movement-item{color:#071b3d}.provider-kanban-card.qr-vencido .kanban-movement-item small{color:#475569}.provider-kanban-card.qr-vencido .kanban-details-toggle{background:rgba(255,255,255,.94);border-color:#fff;color:#071b3d}
+    .provider-kanban-card.qr-vencido .kanban-movement-details{background:rgba(255,255,255,.94);border-color:rgba(255,255,255,.8);color:#071b3d}.provider-kanban-card.qr-vencido .kanban-movement-item{color:#071b3d}.provider-kanban-card.qr-vencido .kanban-movement-item strong{color:#071b3d!important}.provider-kanban-card.qr-vencido .kanban-movement-item small{color:#475569!important}.provider-kanban-card.qr-vencido .kanban-details-toggle{background:rgba(255,255,255,.94);border-color:#fff;color:#071b3d}
     .vale-personal-card.vale-card-excedido .kanban-movement-details{background:rgba(255,255,255,.96);border-color:rgba(255,255,255,.85);color:#29101a}.vale-personal-card.vale-card-excedido .kanban-movement-item strong{color:#29101a!important}.vale-personal-card.vale-card-excedido .kanban-movement-item small{color:#5f4b54!important}.vale-personal-card.vale-card-excedido .kanban-details-toggle{background:rgba(255,255,255,.94);border-color:#fff;color:#29101a}
     .provider-empty{display:grid;place-items:center;text-align:center;gap:7px;min-height:250px;padding:20px;color:var(--muted);font-size:11px}.provider-empty-icon{display:grid;place-items:center;width:58px;height:58px;border-radius:18px;background:color-mix(in srgb,var(--provider-blue) 6%,var(--panel));color:#91a4c4;font-size:28px}.provider-empty strong{color:var(--text);font-size:13px}
     .provider-no-results{grid-column:1/-1;padding:30px;text-align:center;border:1px dashed var(--border);border-radius:16px;color:var(--muted)}
@@ -3533,7 +3533,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v238";
+  const APP_VERSION = "v239";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5862,6 +5862,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v239</b><span>El historial desplegable de las citas inactivas por retraso conserva fondo claro y texto oscuro legible en todos los temas.</span></div>
           <div class="help-release"><b>v238</b><span>Las citas de proveedores del mismo día requieren 30 minutos de anticipación y horarios cerrados cada media hora. La agenda bloquea horarios de otras áreas, calcula el siguiente bloque permitido y conecta el selector de fecha con la capacidad real del área antes de generar el QR.</span></div>
           <div class="help-release"><b>v237</b><span>Las reglas de Servicio Médico distinguen correctamente la salida a consulta IMSS de la entrada posterior a las 8:15: esta última ya no requiere una hora programada de salida para guardarse en Firebase.</span></div>
           <div class="help-release"><b>v236</b><span>Los estados de proveedores y visitantes se reconcilian con las evidencias reales del recorrido: llegada, entrada, dictamen y salida. Se impide que un dispositivo desactualizado retroceda el Kanban y Administrador o Coordinador reparan registros inconsistentes al sincronizar.</span></div>
