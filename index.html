@@ -3533,7 +3533,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v240";
+  const APP_VERSION = "v241";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3701,6 +3701,7 @@ document.getElementById("appVersion").textContent = APP_VERSION;
     ADMIN: "admin",
     COORDINADOR: "coordinador",
     JEFE: "jefe",
+    JEFE_RESTRINGIDO: "jefe_restringido",
     JEFE_COMPRAS: "jefe_compras",
     JEFE_TI: "jefe_ti",
     COMPRAS: "compras",
@@ -3882,6 +3883,16 @@ const PERMISOS = {
     "autorizar_vale_personal"
   ],
 
+  [ROLES.JEFE_RESTRINGIDO]: [
+    "crear_cita_visitante",
+    "ver_vales_activos",
+    "crear_vale_activo",
+    "autorizar_vale_activo",
+    "ver_vales_personal",
+    "crear_vale_personal",
+    "autorizar_vale_personal"
+  ],
+
   [ROLES.PROVEEDOR]: [
     "ver_qr",
     "buscar_proveedor"
@@ -3969,6 +3980,7 @@ function normalizePermList(perms, role=""){
 
 function roleLabel(role){
   if(role === ROLES.JEFE_TI) return "Jefe de TI";
+  if(role === ROLES.JEFE_RESTRINGIDO) return "Jefe restringido";
   if(role === ROLES.SERVICIO_MEDICO) return "Servicio M\u00e9dico";
   if(role === ROLES.RECEPCIONISTA) return "Recepcionista";
   return String(role || "").replace(/_/g, " ").toUpperCase();
@@ -3992,6 +4004,7 @@ const VALE_ACTIVO_AUTORIZADOR_ROLES = [
 
 const VALE_PERSONAL_AUTORIZADOR_ROLES = [
   ROLES.JEFE,
+  ROLES.JEFE_RESTRINGIDO,
   ROLES.JEFE_COMPRAS,
   ROLES.CONTRALORIA,
   ROLES.ADMIN
@@ -4017,6 +4030,7 @@ let valeActivoAutorizadoresCache = [];
 let valeActivoAutorizadoresTs = 0;
 let valePersonalAutorizadoresCache = [];
 let valePersonalAutorizadoresTs = 0;
+let valePersonalPerfilesCache = [];
 const PROVEEDORES_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 let lockView = false;
 let currentView = "login";
@@ -5862,6 +5876,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v241</b><span>Se incorpora el rol Jefe restringido. Puede gestionar vales de colaboradores normales, pero sus propios vales y los de otros jefes restringidos solo pueden ser generados y autorizados por un Jefe normal o Administrador, identificando al colaborador por número de nómina.</span></div>
           <div class="help-release"><b>v240</b><span>Los gafetes de colaboradores se identifican exclusivamente con el formato QR NOMINA:número. Cuando no existe un vale utilizable, el escáner muestra una pantalla persistente que distingue pendientes, cancelados, desactivados, fechas diferentes y fallas de conexión, con opciones para reintentar o volver.</span></div>
           <div class="help-release"><b>v239</b><span>El historial desplegable de las citas inactivas por retraso conserva fondo claro y texto oscuro legible en todos los temas.</span></div>
           <div class="help-release"><b>v238</b><span>Las citas de proveedores del mismo día requieren 30 minutos de anticipación y horarios cerrados cada media hora. La agenda bloquea horarios de otras áreas, calcula el siguiente bloque permitido y conecta el selector de fecha con la capacidad real del área antes de generar el QR.</span></div>
@@ -6024,7 +6039,7 @@ function canConfigurePin(){
 
 function paintSidebar(){
   if(!sidebarEl) return;
-  sidebarEl.classList.toggle('role-jefe', currentUser?.role === ROLES.JEFE);
+  sidebarEl.classList.toggle('role-jefe', [ROLES.JEFE, ROLES.JEFE_RESTRINGIDO].includes(currentUser?.role));
 
   // 🔒 Bloqueo total para usuarios PENDIENTE
   if(!currentUser || currentUser.role === ROLES.PENDIENTE){
@@ -6120,7 +6135,7 @@ if(rondineroBtn) rondineroBtn.style.display = hasPerm('rondinero_ver') ? '' : 'n
   if(depurar30dBtn) depurar30dBtn.style.display = currentUser?.role === ROLES.ADMIN && hasPerm('eliminar') ? '' : 'none';
 
   // El rol Jefe solo administra su PIN; no debe ver herramientas administrativas.
-  if(currentUser?.role === ROLES.JEFE && sbConfigSub){
+  if([ROLES.JEFE, ROLES.JEFE_RESTRINGIDO].includes(currentUser?.role) && sbConfigSub){
     sbConfigSub.querySelectorAll(':scope > .sb-btn').forEach(item => {
       item.style.display = item.dataset.sb === 'mi_pin' ? '' : 'none';
     });
@@ -6979,7 +6994,7 @@ function fmt(ts){
     }
 
     async function cloudFetchValesPersonal(){
-      if(currentUser?.role === ROLES.JEFE_COMPRAS){
+      if([ROLES.JEFE_COMPRAS, ROLES.JEFE_RESTRINGIDO].includes(currentUser?.role)){
         const currentUid = String(currentUser?.uid || "");
         const currentEmail = String(currentUser?.email || "").trim().toLowerCase();
         const scopedQueries = [];
@@ -7011,7 +7026,7 @@ function fmt(ts){
     async function cloudFetchProximosValesPersonal(){
       const currentUid = String(currentUser?.uid || "");
       const currentEmail = String(currentUser?.email || "").trim().toLowerCase();
-      if([ROLES.JEFE, ROLES.JEFE_COMPRAS].includes(currentUser?.role)){
+      if([ROLES.JEFE, ROLES.JEFE_RESTRINGIDO, ROLES.JEFE_COMPRAS].includes(currentUser?.role)){
         const scopedQueries = [];
         if(currentUid) scopedQueries.push(query(collection(db, COL_VALES_PERSONAL), where("autorizadorUid", "==", currentUid), limit(300)));
         if(currentEmail) scopedQueries.push(query(collection(db, COL_VALES_PERSONAL), where("autorizadorEmail", "==", currentEmail), limit(300)));
@@ -9473,14 +9488,17 @@ async function ensureValePersonalAutorizadores(force=false){
   try{
     const snap = await getDocs(query(collection(db, COL_USERS), limit(300)));
     const arr = [];
+    const perfiles = [];
     snap.forEach(d => {
       const u = { uid: d.id, id: d.id, ...d.data() };
       if(u.eliminado) return;
       if(u.aprobado === false) return;
+      perfiles.push(u);
       if(!canRoleAuthorizeValePersonal(u.role)) return;
       arr.push(u);
     });
 
+    valePersonalPerfilesCache = perfiles;
     valePersonalAutorizadoresCache = arr.sort((a,b) =>
       String(a.nombre || a.email || "").localeCompare(String(b.nombre || b.email || ""))
     );
@@ -9488,6 +9506,7 @@ async function ensureValePersonalAutorizadores(force=false){
   }catch(e){
     console.warn("No se pudieron cargar autorizadores de vale personal", e);
     valePersonalAutorizadoresCache = [];
+    valePersonalPerfilesCache = [];
     valePersonalAutorizadoresTs = Date.now();
   }
 
@@ -9528,12 +9547,55 @@ function canCurrentUserAuthorizeValeActivo(v={}){
   );
 }
 
-function renderValePersonalAutorizadorOptions(){
-  if(!valePersonalAutorizadoresCache.length){
+function normalizarNominaPerfil(value){
+  return String(value || "").trim().replace(/\D/g, "").replace(/^0+(?=\d)/, "");
+}
+
+function perfilesValePersonalPorNomina(nomina){
+  const key = normalizarNominaPerfil(nomina);
+  if(!key) return [];
+  return valePersonalPerfilesCache.filter(u => normalizarNominaPerfil(u.nomina || u.noNomina || u.numeroNomina) === key);
+}
+
+function perfilValePersonalPorNomina(nomina){
+  const matches = perfilesValePersonalPorNomina(nomina);
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function esPerfilJefeRestringido(perfil={}){
+  return perfil?.role === ROLES.JEFE_RESTRINGIDO;
+}
+
+function esValeDeJefeRestringido(v={}){
+  if(v.colaboradorRole === ROLES.JEFE_RESTRINGIDO) return true;
+  return esPerfilJefeRestringido(perfilValePersonalPorNomina(v.nomina));
+}
+
+function puedeGestionarValeDeJefeRestringido(role=currentUser?.role){
+  return [ROLES.JEFE, ROLES.ADMIN].includes(role);
+}
+
+function mensajeRestriccionJefeRestringido(){
+  toast(
+    "Autorización restringida",
+    "Solo su Jefe o el Administrador puede autorizar este vale. Elija el nombre de su Jefe en el campo de autorización.",
+    "warn",
+    6200
+  );
+}
+
+function autorizadoresValePersonalParaPerfil(perfilColaborador=null){
+  if(!esPerfilJefeRestringido(perfilColaborador)) return valePersonalAutorizadoresCache;
+  return valePersonalAutorizadoresCache.filter(u => [ROLES.JEFE, ROLES.ADMIN].includes(u.role));
+}
+
+function renderValePersonalAutorizadorOptions(perfilColaborador=null){
+  const autorizadores = autorizadoresValePersonalParaPerfil(perfilColaborador);
+  if(!autorizadores.length){
     return `<option value="">No hay autorizadores disponibles</option>`;
   }
 
-  return `<option value="">-- Selecciona autorizador --</option>` + valePersonalAutorizadoresCache.map(u => `
+  return `<option value="">-- Selecciona autorizador --</option>` + autorizadores.map(u => `
     <option
       value="${esc(u.uid || u.id || "")}"
       data-email="${esc(u.email || "")}"
@@ -9549,6 +9611,7 @@ function renderValePersonalAutorizadorOptions(){
 function canCurrentUserAuthorizeValePersonal(v={}){
   if(!hasPerm("autorizar_vale_personal")) return false;
   if(!canRoleAuthorizeValePersonal(currentUser?.role)) return false;
+  if(esValeDeJefeRestringido(v) && !puedeGestionarValeDeJefeRestringido()) return false;
   return !isValePersonalDelUsuarioActual(v);
 }
 
@@ -9574,6 +9637,10 @@ function isValePersonalDelUsuarioActual(v={}){
 }
 
 function validarAutoautorizacionValePersonal(v={}){
+  if(esValeDeJefeRestringido(v) && !puedeGestionarValeDeJefeRestringido()){
+    mensajeRestriccionJefeRestringido();
+    return false;
+  }
   if(!isValePersonalDelUsuarioActual(v)) return true;
   toast(
     "Autoautorización no permitida",
@@ -10431,7 +10498,7 @@ async function renderValesPersonal(refresh=true){
   const allList = valesPersonal
     .filter(v => {
       if(currentUser?.role === ROLES.SERVICIO_MEDICO) return isPermisoImss(v);
-      if(![ROLES.JEFE, ROLES.JEFE_COMPRAS].includes(currentUser?.role)) return true;
+      if(![ROLES.JEFE, ROLES.JEFE_RESTRINGIDO, ROLES.JEFE_COMPRAS].includes(currentUser?.role)) return true;
       const currentUid = String(currentUser?.uid || "");
       const currentEmail = String(currentUser?.email || "").trim().toLowerCase();
       return (
@@ -10479,7 +10546,7 @@ async function renderValesPersonal(refresh=true){
           <div class="provider-dashboard-hero-icon" aria-hidden="true">👤</div>
           <div>
             <h2>Vales de salida de personal</h2>
-            <p>${currentUser?.role === ROLES.JEFE ? "Mostrando únicamente los vales donde estás asignado como autorizador." : currentUser?.role === ROLES.SERVICIO_MEDICO ? "Permisos IMSS emitidos por Servicio Médico y controlados por horario." : "Control de permisos del día en curso, salida, regreso y tiempo autorizado."}</p>
+            <p>${[ROLES.JEFE, ROLES.JEFE_RESTRINGIDO].includes(currentUser?.role) ? "Mostrando únicamente los vales donde estás asignado como autorizador." : currentUser?.role === ROLES.SERVICIO_MEDICO ? "Permisos IMSS emitidos por Servicio Médico y controlados por horario." : "Control de permisos del día en curso, salida, regreso y tiempo autorizado."}</p>
           </div>
         </div>
         <div class="provider-dashboard-date"><span aria-hidden="true">●</span>${new Date().toLocaleDateString()}</div>
@@ -10596,7 +10663,7 @@ async function renderProximosValesPersonal(refresh=true){
   }
   const list = valesPersonal.filter(v => String(v.fecha || "") > todayISO()).filter(v => {
     if(currentUser?.role === ROLES.SERVICIO_MEDICO) return isPermisoImss(v);
-    if(![ROLES.JEFE,ROLES.JEFE_COMPRAS].includes(currentUser?.role)) return true;
+    if(![ROLES.JEFE,ROLES.JEFE_RESTRINGIDO,ROLES.JEFE_COMPRAS].includes(currentUser?.role)) return true;
     const uid = String(currentUser?.uid || "");
     const email = String(currentUser?.email || "").trim().toLowerCase();
     return (v.autorizadorUid && String(v.autorizadorUid) === uid) || (v.autorizadorEmail && String(v.autorizadorEmail).trim().toLowerCase() === email);
@@ -13095,6 +13162,7 @@ function renderValePersonalModal(){
               <select id="vpAutorizador">
                 ${renderValePersonalAutorizadorOptions()}
               </select>
+              <small id="vpRestriccionAutorizacion" style="display:none;margin-top:6px;color:#b45309;font-weight:700;line-height:1.4;">Solo su Jefe o el Administrador puede autorizar este vale. Elija el nombre de su Jefe en el campo de autorización.</small>
             </div>
             <div style="grid-column:1/-1;">
               <label>Observaciones</label>
@@ -13130,6 +13198,34 @@ async function openValePersonalModal(){
   }
   const movimientoImss = document.getElementById("vpMovimientoImss");
   if(movimientoImss) movimientoImss.onchange = syncValePersonalTiempoPorTipo;
+  const nomina = document.getElementById("vpNomina");
+  if(nomina){
+    nomina.oninput = syncValePersonalAutorizadoresPorNomina;
+    nomina.onchange = syncValePersonalAutorizadoresPorNomina;
+    syncValePersonalAutorizadoresPorNomina();
+  }
+}
+
+function syncValePersonalAutorizadoresPorNomina(){
+  const nomina = document.getElementById("vpNomina")?.value || "";
+  const select = document.getElementById("vpAutorizador");
+  const aviso = document.getElementById("vpRestriccionAutorizacion");
+  if(!select) return;
+  const perfiles = perfilesValePersonalPorNomina(nomina);
+  const perfil = perfiles.length === 1 ? perfiles[0] : null;
+  const restringido = esPerfilJefeRestringido(perfil);
+  const selected = select.value;
+  select.innerHTML = renderValePersonalAutorizadorOptions(perfil);
+  if(Array.from(select.options).some(option => option.value === selected)) select.value = selected;
+  if(aviso){
+    aviso.style.display = restringido ? "block" : "none";
+    if(perfiles.length > 1){
+      aviso.style.display = "block";
+      aviso.textContent = "La nómina está duplicada en Usuarios. Corrija los perfiles antes de generar el vale.";
+    }else{
+      aviso.textContent = "Solo su Jefe o el Administrador puede autorizar este vale. Elija el nombre de su Jefe en el campo de autorización.";
+    }
+  }
 }
 
 function syncValePersonalTiempoPorTipo(){
@@ -13201,6 +13297,19 @@ function createValePersonalFromModal(){
   const autorizadorNombre = esPermisoImss ? (currentUser?.nombre || currentUser?.email || "Servicio Médico") : (autorizadorOption?.dataset?.nombre || "");
   const autorizadorRole = esPermisoImss ? (currentUser?.role || "") : (autorizadorOption?.dataset?.role || "");
   const autorizadorTelefono = autorizadorOption?.dataset?.telefono || "";
+  const perfilesColaborador = perfilesValePersonalPorNomina(nomina);
+  const perfilColaborador = perfilesColaborador.length === 1 ? perfilesColaborador[0] : null;
+
+  if(perfilesColaborador.length > 1){
+    toast("Nómina duplicada","Esta nómina pertenece a más de un perfil de usuario. Un Administrador debe corregir los perfiles antes de generar el vale.","bad",6200);
+    return null;
+  }
+  if(esPerfilJefeRestringido(perfilColaborador)){
+    if(!puedeGestionarValeDeJefeRestringido() || ![ROLES.JEFE, ROLES.ADMIN].includes(autorizadorRole)){
+      mensajeRestriccionJefeRestringido();
+      return null;
+    }
+  }
 
   if(esPermisoImss && (currentUser?.role !== ROLES.SERVICIO_MEDICO || !hasPerm("crear_permiso_imss"))){
     toast("No permitido","Solo el rol Servicio Médico puede emitir permisos IMSS.","warn");
@@ -13239,7 +13348,8 @@ function createValePersonalFromModal(){
     nombreColaborador,
     nomina,
     departamento,
-    colaboradorUid: esValePropio ? (currentUser?.uid || "") : "",
+    colaboradorUid: perfilColaborador?.uid || perfilColaborador?.id || (esValePropio ? (currentUser?.uid || "") : ""),
+    colaboradorRole: perfilColaborador?.role || "",
     tipoPermiso,
     tiempoAutorizado,
     observaciones,
@@ -15952,6 +16062,7 @@ async function saveUserModal(){
   valeActivoAutorizadoresCache = [];
   valeActivoAutorizadoresTs = 0;
   valePersonalAutorizadoresCache = [];
+  valePersonalPerfilesCache = [];
   valePersonalAutorizadoresTs = 0;
   if(String(_editingUserUid) === String(currentUser?.uid || "")){
     currentUser.puedeAutorizarValeActivo = payload.puedeAutorizarValeActivo;
