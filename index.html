@@ -3488,6 +3488,10 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 16h10l1-16"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span>
         <span class="sb-txt">Depurar (+30 días)</span>
       </div>
+      <div class="sb-btn" data-sb="resumen_depurar_30d">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>
+        <span class="sb-txt">Última depuración</span>
+      </div>
     </div>
 
   </div>
@@ -3533,7 +3537,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v241";
+  const APP_VERSION = "v242";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -3602,7 +3606,7 @@ document.getElementById("appVersion").textContent = APP_VERSION;
   getFirestore,
   collection, doc, getDoc, getDocFromServer, getDocs, addDoc, writeBatch,
   setDoc, updateDoc, deleteDoc,
-  query, orderBy, limit, where,
+  query, orderBy, limit, where, startAfter,
   serverTimestamp,
   getCountFromServer,
   increment,
@@ -4135,6 +4139,7 @@ const PIN_SESSION_KEY = "adminPinOkTs";
     const LS_RONDINERO_RONDINES_KEY = "rondinero_rondines_v1";
     const LS_RONDINERO_EVENTOS_KEY = "rondinero_eventos_v1";
     const LS_LAST_VISITAS_PUSH_TS = "visitas_last_cloud_push_ts_v1";
+    const LS_LAST_DEPURACION_30D = "ultima_depuracion_30d_v1";
 
     const Status = {
       PROGRAMADO:"programado",
@@ -4943,7 +4948,8 @@ function renderModuleHome(){
     group("Mantenimiento de datos","Herramientas administrativas de eliminación","⚠","vales",[
       link("eliminarfinalizados","Finalizados de hoy",currentUser?.role === ROLES.ADMIN && hasPerm("limpiar_finalizados"),"Elimina únicamente visitas finalizadas del día"),
       link("duplicados_vales_personal","Duplicados de vales",currentUser?.role === ROLES.ADMIN && hasPerm("eliminar"),"Detecta y elimina copias repetidas; conserva el registro con mayor avance"),
-      link("depurar_30d","Retención de 30 días",currentUser?.role === ROLES.ADMIN && hasPerm("eliminar"),"Elimina registros con más de 30 días"),
+      link("depurar_30d","Retención de 30 días",currentUser?.role === ROLES.ADMIN && hasPerm("eliminar"),"Elimina registros cerrados con más de 30 días"),
+      link("resumen_depurar_30d","Último resumen",currentUser?.role === ROLES.ADMIN && hasPerm("eliminar"),"Consulta el resultado persistente de la última depuración"),
       link("depurar_base","Depuración hasta hoy",currentUser?.role === ROLES.ADMIN && hasPerm("eliminar"),"Elimina registros históricos hasta hoy; conserva futuros")]),
     group("Ayuda","Información y asistencia","?","vales",[link("help_guide","Guía rápida"),link("help_about","Acerca de")])
   ].filter(Boolean).join("");
@@ -5876,6 +5882,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v242</b><span>La retención de 30 días consulta Firebase directamente, protege registros abiertos, muestra una vista previa, procesa eliminaciones confirmadas por bloques y conserva un resumen administrativo con encontrados, protegidos, eliminados y fallidos.</span></div>
           <div class="help-release"><b>v241</b><span>Se incorpora el rol Jefe restringido. Puede gestionar vales de colaboradores normales, pero sus propios vales y los de otros jefes restringidos solo pueden ser generados y autorizados por un Jefe normal o Administrador, identificando al colaborador por número de nómina.</span></div>
           <div class="help-release"><b>v240</b><span>Los gafetes de colaboradores se identifican exclusivamente con el formato QR NOMINA:número. Cuando no existe un vale utilizable, el escáner muestra una pantalla persistente que distingue pendientes, cancelados, desactivados, fechas diferentes y fallas de conexión, con opciones para reintentar o volver.</span></div>
           <div class="help-release"><b>v239</b><span>El historial desplegable de las citas inactivas por retraso conserva fondo claro y texto oscuro legible en todos los temas.</span></div>
@@ -6123,6 +6130,7 @@ if(rondineroBtn) rondineroBtn.style.display = hasPerm('rondinero_ver') ? '' : 'n
   const eliminarFinalizadosBtn = sidebarEl.querySelector('[data-sb="eliminarfinalizados"]');
   const depurarBaseBtn = sidebarEl.querySelector('[data-sb="depurar_base"]');
   const depurar30dBtn = sidebarEl.querySelector('[data-sb="depurar_30d"]');
+  const resumenDepurar30dBtn = sidebarEl.querySelector('[data-sb="resumen_depurar_30d"]');
 
   if(cfgToggle) cfgToggle.style.display = showCfg ? '' : 'none';
   if(sesionesBtn) sesionesBtn.style.display = hasPerm('ver_sesiones_activas') ? '' : 'none';
@@ -6133,6 +6141,7 @@ if(rondineroBtn) rondineroBtn.style.display = hasPerm('rondinero_ver') ? '' : 'n
   if(eliminarFinalizadosBtn) eliminarFinalizadosBtn.style.display = currentUser?.role === ROLES.ADMIN && hasPerm('limpiar_finalizados') ? '' : 'none';
   if(depurarBaseBtn) depurarBaseBtn.style.display = currentUser?.role === ROLES.ADMIN && hasPerm('eliminar') ? '' : 'none';
   if(depurar30dBtn) depurar30dBtn.style.display = currentUser?.role === ROLES.ADMIN && hasPerm('eliminar') ? '' : 'none';
+  if(resumenDepurar30dBtn) resumenDepurar30dBtn.style.display = currentUser?.role === ROLES.ADMIN && hasPerm('eliminar') ? '' : 'none';
 
   // El rol Jefe solo administra su PIN; no debe ver herramientas administrativas.
   if([ROLES.JEFE, ROLES.JEFE_RESTRINGIDO].includes(currentUser?.role) && sbConfigSub){
@@ -6409,6 +6418,11 @@ if(key === "sesiones_activas"){
 if (key === "depurar_30d") {
   sbClose();
   await depurarBaseRetencion30Dias();
+  return;
+}
+if (key === "resumen_depurar_30d") {
+  sbClose();
+  mostrarResumenDepuracion30();
   return;
 }
 if (key === "duplicados_vales_personal") {
@@ -8001,135 +8015,304 @@ async function depurarBaseHastaHoy() {
   renderCurrentAfterDepuracion();
 }
 
+function cerrarPanelDepuracion30(){
+  document.getElementById("depuracion30StatusOverlay")?.remove();
+}
+
+function mostrarProgresoDepuracion30(titulo, detalle, progreso=""){
+  cerrarPanelDepuracion30();
+  const overlay = document.createElement("div");
+  overlay.id = "depuracion30StatusOverlay";
+  overlay.className = "modal-overlay";
+  overlay.style.display = "flex";
+  overlay.innerHTML = `
+    <div class="modal" role="status" aria-live="polite" style="max-width:560px;">
+      <div style="display:flex;gap:14px;align-items:center;">
+        <div style="width:44px;height:44px;border-radius:50%;border:5px solid #dbeafe;border-top-color:#2563eb;animation:spin 1s linear infinite;flex:0 0 auto;"></div>
+        <div>
+          <h3 style="margin:0 0 6px;">${esc(titulo)}</h3>
+          <p id="depuracion30ProgressText" style="margin:0;color:var(--muted);">${esc(detalle)}</p>
+          <strong id="depuracion30ProgressCount" style="display:block;margin-top:8px;">${esc(progreso)}</strong>
+        </div>
+      </div>
+      <p style="margin:18px 0 0;color:var(--muted);font-size:13px;">No cierres esta pestaña mientras el proceso esté activo.</p>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function actualizarProgresoDepuracion30(detalle, progreso=""){
+  const text = document.getElementById("depuracion30ProgressText");
+  const count = document.getElementById("depuracion30ProgressCount");
+  if(text) text.textContent = detalle;
+  if(count) count.textContent = progreso;
+}
+
+function guardarResumenDepuracion30(reporte){
+  try{ localStorage.setItem(LS_LAST_DEPURACION_30D, JSON.stringify(reporte)); }catch(error){ console.warn("No se pudo guardar el resumen de depuración:", error); }
+}
+
+function cargarResumenDepuracion30(){
+  try{
+    const raw = localStorage.getItem(LS_LAST_DEPURACION_30D);
+    return raw ? JSON.parse(raw) : null;
+  }catch{ return null; }
+}
+
+function mostrarResumenDepuracion30(reporte = cargarResumenDepuracion30()){
+  cerrarPanelDepuracion30();
+  if(!reporte){
+    toast("Sin resumen", "Todavía no se ha completado una depuración de 30 días en este dispositivo.", "info", 4800);
+    return;
+  }
+  const detalle = reporte.detalle || {};
+  const estadoColor = reporte.estado === "completa" ? "#16a34a" : reporte.estado === "sin_cambios" ? "#2563eb" : "#d97706";
+  const estadoTexto = reporte.estado === "completa" ? "Completada" : reporte.estado === "sin_cambios" ? "Sin registros eliminables" : "Completada parcialmente";
+  const overlay = document.createElement("div");
+  overlay.id = "depuracion30StatusOverlay";
+  overlay.className = "modal-overlay";
+  overlay.style.display = "flex";
+  overlay.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="depuracion30ResumenTitulo" style="max-width:720px;max-height:88vh;overflow:auto;">
+      <div class="modal-head">
+        <div>
+          <h3 id="depuracion30ResumenTitulo" style="margin:0;">Resultado de la última depuración</h3>
+          <small>${esc(reporte.fechaHora || "Fecha no disponible")}</small>
+        </div>
+        <button type="button" class="secondary" id="cerrarResumenDepuracion30" aria-label="Cerrar">Cerrar</button>
+      </div>
+      <div style="margin:16px 0;padding:14px;border:1px solid ${estadoColor};border-radius:14px;background:color-mix(in srgb, ${estadoColor} 10%, transparent);">
+        <strong style="color:${estadoColor};">${esc(estadoTexto)}</strong>
+        <div style="margin-top:5px;">Retención aplicada: anteriores al ${esc(reporte.limiteFecha || "-")}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-bottom:16px;">
+        <div class="tarjeta"><small>Encontrados</small><strong style="display:block;font-size:24px;">${Number(reporte.encontrados || 0)}</strong></div>
+        <div class="tarjeta"><small>Protegidos</small><strong style="display:block;font-size:24px;">${Number(reporte.protegidos || 0)}</strong></div>
+        <div class="tarjeta"><small>Confirmados</small><strong style="display:block;font-size:24px;">${Number(reporte.confirmados || 0)}</strong></div>
+        <div class="tarjeta"><small>Fallidos</small><strong style="display:block;font-size:24px;">${Number(reporte.fallidos || 0)}</strong></div>
+      </div>
+      <div style="border:1px solid var(--line);border-radius:14px;overflow:hidden;">
+        ${[
+          ["Proveedores", detalle.proveedores], ["Visitantes", detalle.visitantes],
+          ["Vales de activos", detalle.valesActivos], ["Vales de personal", detalle.valesPersonal],
+          ["Bitácora", detalle.bitacora], ["Rondines", detalle.rondines],
+          ["Eventos de rondines", detalle.eventos], ["Resúmenes diarios", detalle.resumenes]
+        ].map(([label,value]) => `<div style="display:flex;justify-content:space-between;gap:16px;padding:10px 14px;border-bottom:1px solid var(--line);"><span>${esc(label)}</span><strong>${Number(value || 0)}</strong></div>`).join("")}
+      </div>
+      ${reporte.fallidos ? `<p style="margin:14px 0 0;color:#b45309;">Los registros fallidos permanecieron tanto en Firebase como en la caché local y pueden revisarse en una ejecución posterior.</p>` : ""}
+      <p style="margin:14px 0 0;color:var(--muted);font-size:13px;">Este resumen queda guardado en este dispositivo hasta que se realice otra depuración.</p>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById("cerrarResumenDepuracion30")?.addEventListener("click", cerrarPanelDepuracion30, { once:true });
+}
+
 async function depurarBaseRetencion30Dias() {
   if (currentUser?.role !== ROLES.ADMIN || !requirePerm("eliminar", "Solo ADMIN puede depurar la base.")) return;
-  if (!(await requireAdminPin("depurar registros mayores a 30 días"))) return;
+  if (!navigator.onLine) {
+    toast("Conexión requerida", "La depuración de 30 días solo puede ejecutarse con conexión a Firebase.", "warn", 5200);
+    return;
+  }
+  if (!(await requireAdminPin("consultar y depurar registros mayores a 30 días"))) return;
 
   const RETENCION_DIAS = 30;
-  const limiteTs = Date.now() - (RETENCION_DIAS * 24 * 60 * 60 * 1000);
+  const corte = new Date();
+  corte.setHours(0, 0, 0, 0);
+  corte.setDate(corte.getDate() - RETENCION_DIAS);
+  const limiteTs = corte.getTime();
+  const limiteFecha = localDateKeyFromTs(limiteTs);
+  const PAGE_SIZE = 200;
 
-  const confirmacion = confirm(
-    `⚠️ DEPURACIÓN DE BASE DE DATOS\n\n` +
-    `Se eliminarán TODOS los registros con más de ${RETENCION_DIAS} días en:\n` +
-    `• Citas de proveedores\n` +
-    `• Citas de visitantes\n` +
-    `• Vales de salida de activos\n` +
-    `• Vales de salida de personal\n` +
-    `• Bitácora de novedades\n` +
-    `• Rondines y eventos del Rondinero\n` +
-    `• Resúmenes diarios relacionados\n\n` +
-    `✅ Se conservará historial desde los últimos ${RETENCION_DIAS} días (incluye futuros).\n\n` +
-    `No se borrarán usuarios, proveedores, puntos QR ni rutas.\n\n` +
-    `¿Deseas continuar?`
-  );
-  if (!confirmacion) return;
+  const QUERY_TIMEOUT_MS = 15000;
+  async function consultarAntiguos(coleccion, campo, limiteValor, etiqueta){
+    const rows = [];
+    let cursor = null;
+    let pagina = 0;
+    do{
+      pagina++;
+      if(pagina > 100) throw new Error(`La consulta de ${etiqueta} superó el límite seguro de páginas.`);
+      actualizarProgresoDepuracion30(`Consultando ${etiqueta}…`, `Página ${pagina} · ${rows.length} registros encontrados`);
+      const parts = [where(campo, "<", limiteValor), orderBy(campo, "asc")];
+      if(cursor) parts.push(startAfter(cursor));
+      parts.push(limit(PAGE_SIZE));
+      let timer = null;
+      const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`Firebase tardó más de ${QUERY_TIMEOUT_MS / 1000} segundos al consultar ${etiqueta}.`)), QUERY_TIMEOUT_MS);
+      });
+      let snap;
+      try{
+        snap = await Promise.race([getDocs(query(collection(db, coleccion), ...parts)), timeout]);
+      }finally{
+        clearTimeout(timer);
+      }
+      snap.forEach(item => rows.push({ id:item.id, ...item.data(), _purgeCollection:coleccion }));
+      cursor = snap.size === PAGE_SIZE ? snap.docs[snap.docs.length - 1] : null;
+    }while(cursor);
+    return rows;
+  }
 
-  const citasEliminar = visitas.filter(v =>
-    typeof v.fechaHoraTs === "number" &&
-    v.fechaHoraTs < limiteTs
-  );
-  const proveedoresEliminar = citasEliminar.filter(v => !isVisitante(v)).length;
-  const visitantesEliminar = citasEliminar.filter(v => isVisitante(v)).length;
-  const valesActivosEliminar = valesActivos.filter(v => {
-    const ts = getValePurgeTs(v);
-    return typeof ts === "number" && ts < limiteTs;
-  });
-  const valesPersonalEliminar = valesPersonal.filter(v => {
-    const ts = getValePurgeTs(v);
-    return typeof ts === "number" && ts < limiteTs;
-  });
-  const bitacoraEliminar = bitacoraGuardia.filter(entry => {
-    const ts = getRegistroPurgeTs(entry);
-    return typeof ts === "number" && ts < limiteTs;
-  });
-  const rondinesEliminar = rondineroRondines.filter(r => {
-    const ts = getRegistroPurgeTs(r);
-    return typeof ts === "number" && ts < limiteTs;
-  });
-  const eventosEliminar = rondineroEventos.filter(ev => {
-    const ts = getRegistroPurgeTs(ev);
-    return typeof ts === "number" && ts < limiteTs;
-  });
-  const resumenKeysEliminar = Array.from(new Set(
-    citasEliminar
-      .map(getFechaKeyForPurge)
-      .filter(fechaKey => fechaKey && Number(parseLocalDateEndTs(fechaKey)) < limiteTs)
-  ));
-  const totalEliminar = citasEliminar.length + valesActivosEliminar.length + valesPersonalEliminar.length + bitacoraEliminar.length + rondinesEliminar.length + eventosEliminar.length + resumenKeysEliminar.length;
+  async function consultarCampos(coleccion, etiqueta, campos){
+    const lists = [];
+    for(const [campo, limiteValor] of campos){
+      lists.push(await consultarAntiguos(coleccion, campo, limiteValor, etiqueta));
+    }
+    return unirCandidatos(...lists);
+  }
 
-  if (!totalEliminar) {
-    toast("Depuración", "No hay registros antiguos para eliminar.", "info");
+  function unirCandidatos(...lists){
+    const map = new Map();
+    lists.flat().forEach(row => map.set(`${row._purgeCollection}:${row.id}`, row));
+    return Array.from(map.values());
+  }
+
+  function esVisitaCerrada(v){
+    return [Status.FINALIZADO, Status.CANCELADO].includes(v.status) || Boolean(v.salidaTs || v.canceladoTs);
+  }
+  function esValeCerrado(v){
+    return v.status === ValeStatus.REGRESO_CANCELADO || Boolean(v.regresoTs || v.finalizadoTs || v.canceladoTs || v.salidaSinRegresoFinalizadaTs);
+  }
+  function esRondinCerrado(r){
+    return ["completado", "incompleto", "cancelado"].includes(String(r.status || "").toLowerCase()) && Boolean(r.finTs || r.canceladoTs);
+  }
+  function esRealmenteAntiguo(row, tipo){
+    const ts = tipo === "vale" ? getValePurgeTs(row) : getRegistroPurgeTs(row);
+    return typeof ts === "number" && ts < limiteTs;
+  }
+
+  mostrarProgresoDepuracion30("Revisando Firebase", "Consultando registros anteriores al periodo de retención…", "Preparando vista previa");
+
+  let proveedores = [], visitantes = [], activos = [], personal = [], bitacora = [], rondines = [], eventos = [], resumenes = [];
+  try{
+    proveedores = await consultarCampos(COL_VISITAS, "citas de proveedores", [["fechaHoraTs", limiteTs], ["createdTs", limiteTs]]);
+    visitantes = await consultarCampos(COL_VISITANTES, "citas de visitantes", [["fechaHoraTs", limiteTs], ["createdTs", limiteTs]]);
+    activos = await consultarCampos(COL_VALES_ACTIVOS, "vales de activos", [["fecha", limiteFecha], ["createdTs", limiteTs]]);
+    personal = await consultarCampos(COL_VALES_PERSONAL, "vales de personal", [["fecha", limiteFecha], ["createdTs", limiteTs]]);
+    bitacora = await consultarCampos(COL_BITACORA, "bitácora", [["fecha", limiteFecha], ["createdTs", limiteTs]]);
+    rondines = await consultarCampos(COL_RONDINERO_RONDINES, "rondines", [["createdTs", limiteTs]]);
+    eventos = await consultarCampos(COL_RONDINERO_EVENTOS, "eventos de rondines", [["createdTs", limiteTs]]);
+    resumenes = await consultarCampos(COL_RESUMEN_DIARIO, "resúmenes diarios", [["fecha", limiteFecha]]);
+  }catch(error){
+    cerrarPanelDepuracion30();
+    console.error("No se pudo preparar la depuración:", error);
+    const detalle = String(error?.message || "");
+    toast("No se pudo revisar Firebase", detalle || cloudReadErrorMessage(error), "bad", 7200);
     return;
   }
 
-  toast(
-    "Depurando base",
-    `Eliminando ${totalEliminar} registros antiguos…`,
-    "warn",
-    3000
-  );
+  const accesosTodos = [...proveedores, ...visitantes].filter(row => esRealmenteAntiguo(row, "registro"));
+  const accesosEliminar = accesosTodos.filter(esVisitaCerrada);
+  const accesosProtegidos = accesosTodos.filter(row => !esVisitaCerrada(row));
+  const activosTodos = activos.filter(row => esRealmenteAntiguo(row, "vale"));
+  const activosEliminar = activosTodos.filter(esValeCerrado);
+  const activosProtegidos = activosTodos.filter(row => !esValeCerrado(row));
+  const personalTodos = personal.filter(row => esRealmenteAntiguo(row, "vale"));
+  const personalEliminar = personalTodos.filter(esValeCerrado);
+  const personalProtegidos = personalTodos.filter(row => !esValeCerrado(row));
+  const bitacoraEliminar = bitacora.filter(row => esRealmenteAntiguo(row, "registro"));
+  const rondinesTodos = rondines.filter(row => esRealmenteAntiguo(row, "registro"));
+  const rondinesEliminar = rondinesTodos.filter(esRondinCerrado);
+  const rondinesProtegidos = rondinesTodos.filter(row => !esRondinCerrado(row));
+  const rondinesCerradosIds = new Set(rondinesEliminar.map(row => String(row.id)));
+  const rondinesAbiertosIds = new Set(rondinesProtegidos.map(row => String(row.id)));
+  const eventosAntiguos = eventos.filter(row => esRealmenteAntiguo(row, "registro"));
+  const eventosEliminar = eventosAntiguos.filter(row => !row.rondinId || rondinesCerradosIds.has(String(row.rondinId)));
+  const eventosProtegidos = eventosAntiguos.filter(row => row.rondinId && (rondinesAbiertosIds.has(String(row.rondinId)) || !rondinesCerradosIds.has(String(row.rondinId))));
+  const fechasProtegidas = new Set(accesosProtegidos.map(getFechaKeyForPurge).filter(Boolean));
+  const resumenesEliminar = resumenes.filter(row => row.fecha && !fechasProtegidas.has(String(row.fecha).slice(0,10)));
+  const protegidosTotal = accesosProtegidos.length + activosProtegidos.length + personalProtegidos.length + rondinesProtegidos.length + eventosProtegidos.length;
+  const eliminar = [...accesosEliminar, ...activosEliminar, ...personalEliminar, ...bitacoraEliminar, ...rondinesEliminar, ...eventosEliminar, ...resumenesEliminar];
+  const encontradosTotal = accesosTodos.length + activosTodos.length + personalTodos.length + bitacoraEliminar.length + rondinesTodos.length + eventosAntiguos.length + resumenes.length;
+  const detalleResumen = {
+    proveedores: accesosEliminar.filter(row => row._purgeCollection === COL_VISITAS).length,
+    visitantes: accesosEliminar.filter(row => row._purgeCollection === COL_VISITANTES).length,
+    valesActivos: activosEliminar.length,
+    valesPersonal: personalEliminar.length,
+    bitacora: bitacoraEliminar.length,
+    rondines: rondinesEliminar.length,
+    eventos: eventosEliminar.length,
+    resumenes: resumenesEliminar.length
+  };
 
-  // 🔥 Limpiar documentos asociados (IndexedDB)
-  for (const v of citasEliminar) {
-    if (v.ocFileKey) await idbDelDoc(v.ocFileKey).catch(() => {});
-    if (v.facturaFileKey) await idbDelDoc(v.facturaFileKey).catch(() => {});
+  if(!eliminar.length){
+    const reporte = {
+      fechaHora: new Date().toLocaleString(), estado:"sin_cambios", limiteFecha,
+      encontrados:encontradosTotal, protegidos:protegidosTotal, confirmados:0, fallidos:0,
+      detalle:detalleResumen
+    };
+    guardarResumenDepuracion30(reporte);
+    mostrarResumenDepuracion30(reporte);
+    return;
   }
 
-  // 🔥 Eliminar en Firestore (best effort)
-  if (navigator.onLine) {
-    await Promise.all(
-      [
-        ...citasEliminar.map(v => cloudDeleteVisita(v.id).catch(() => {})),
-        ...valesActivosEliminar.map(v => cloudDeleteValeActivo(v.id).catch(() => {})),
-        ...valesPersonalEliminar.map(v => cloudDeleteValePersonal(v.id).catch(() => {})),
-        ...bitacoraEliminar.map(entry => cloudDeleteBitacora(entry.id).catch(() => {})),
-        ...rondinesEliminar.map(r => cloudDeleteRondineroRondin(r.id).catch(() => {})),
-        ...eventosEliminar.map(ev => cloudDeleteRondineroEvento(ev.id).catch(() => {})),
-        ...resumenKeysEliminar.map(fechaKey => cloudDeleteResumenDiario(fechaKey).catch(() => {}))
-      ]
-    );
+  cerrarPanelDepuracion30();
+  const proveedoresEliminar = detalleResumen.proveedores;
+  const visitantesEliminar = detalleResumen.visitantes;
+  const confirmacion = confirm(
+    `VISTA PREVIA · RETENCIÓN DE ${RETENCION_DIAS} DÍAS\n\n` +
+    `Se eliminarán únicamente registros cerrados anteriores al ${limiteFecha}:\n` +
+    `• Proveedores finalizados/cancelados: ${proveedoresEliminar}\n` +
+    `• Visitantes finalizados/cancelados: ${visitantesEliminar}\n` +
+    `• Vales de activos finalizados/cancelados: ${activosEliminar.length}\n` +
+    `• Vales de personal finalizados/cancelados: ${personalEliminar.length}\n` +
+    `• Bitácora: ${bitacoraEliminar.length}\n` +
+    `• Rondines cerrados: ${rondinesEliminar.length}\n` +
+    `• Eventos de rondines cerrados: ${eventosEliminar.length}\n` +
+    `• Resúmenes diarios sin accesos abiertos: ${resumenesEliminar.length}\n\n` +
+    `TOTAL A ELIMINAR: ${eliminar.length}\n` +
+    `REGISTROS ABIERTOS PROTEGIDOS: ${protegidosTotal}\n\n` +
+    `No se borrarán usuarios, proveedores del catálogo, puntos QR, rutas ni registros abiertos.\n\n` +
+    `¿Deseas continuar?`
+  );
+  if(!confirmacion) return;
+  if(!navigator.onLine){
+    toast("Conexión perdida", "No se eliminó ningún registro. Restablece Internet e inténtalo nuevamente.", "bad", 5200);
+    return;
   }
 
-  // ✅ Mantener SOLO registros dentro de la retención
-  visitas = visitas.filter(v =>
-    typeof v.fechaHoraTs === "number" &&
-    v.fechaHoraTs >= limiteTs
-  );
-  valesActivos = valesActivos.filter(v => {
-    const ts = getValePurgeTs(v);
-    return !(typeof ts === "number" && ts < limiteTs);
-  });
-  valesPersonal = valesPersonal.filter(v => {
-    const ts = getValePurgeTs(v);
-    return !(typeof ts === "number" && ts < limiteTs);
-  });
-  bitacoraGuardia = bitacoraGuardia.filter(entry => {
-    const ts = getRegistroPurgeTs(entry);
-    return !(typeof ts === "number" && ts < limiteTs);
-  });
-  rondineroRondines = rondineroRondines.filter(r => {
-    const ts = getRegistroPurgeTs(r);
-    return !(typeof ts === "number" && ts < limiteTs);
-  });
-  rondineroEventos = rondineroEventos.filter(ev => {
-    const ts = getRegistroPurgeTs(ev);
-    return !(typeof ts === "number" && ts < limiteTs);
-  });
+  mostrarProgresoDepuracion30("Depurando Firebase", "Eliminando únicamente los registros cerrados confirmados en la vista previa…", `0 de ${eliminar.length}`);
+  const confirmados = [];
+  const fallidos = [];
+  const BATCH_SIZE = 350;
+  for(let i = 0; i < eliminar.length; i += BATCH_SIZE){
+    const bloque = eliminar.slice(i, i + BATCH_SIZE);
+    actualizarProgresoDepuracion30(`Procesando bloque ${Math.floor(i / BATCH_SIZE) + 1} de ${Math.ceil(eliminar.length / BATCH_SIZE)}…`, `${confirmados.length} de ${eliminar.length} confirmados`);
+    const batch = writeBatch(db);
+    bloque.forEach(row => batch.delete(doc(db, row._purgeCollection, String(row.id))));
+    try{
+      await batch.commit();
+      confirmados.push(...bloque);
+      actualizarProgresoDepuracion30("Firebase confirmó el bloque más reciente.", `${confirmados.length} de ${eliminar.length} confirmados`);
+    }catch(error){
+      console.error(`Falló bloque de depuración ${Math.floor(i / BATCH_SIZE) + 1}:`, error);
+      fallidos.push(...bloque);
+    }
+  }
 
+  const clavesConfirmadas = new Set(confirmados.map(row => `${row._purgeCollection}:${row.id}`));
+  const fueEliminado = (coleccion, id) => clavesConfirmadas.has(`${coleccion}:${id}`);
+  visitas = visitas.filter(row => !fueEliminado(colAcceso(row), row.id));
+  valesActivos = valesActivos.filter(row => !fueEliminado(COL_VALES_ACTIVOS, row.id));
+  valesPersonal = valesPersonal.filter(row => !fueEliminado(COL_VALES_PERSONAL, row.id));
+  bitacoraGuardia = bitacoraGuardia.filter(row => !fueEliminado(COL_BITACORA, row.id));
+  rondineroRondines = rondineroRondines.filter(row => !fueEliminado(COL_RONDINERO_RONDINES, row.id));
+  rondineroEventos = rondineroEventos.filter(row => !fueEliminado(COL_RONDINERO_EVENTOS, row.id));
+
+  for(const row of confirmados.filter(item => [COL_VISITAS, COL_VISITANTES].includes(item._purgeCollection))){
+    if(row.ocFileKey) await idbDelDoc(row.ocFileKey).catch(() => {});
+    if(row.facturaFileKey) await idbDelDoc(row.facturaFileKey).catch(() => {});
+  }
   saveVisitasLocal();
   saveValesActivosLocal();
   saveValesPersonalLocal();
   saveBitacoraLocal();
   saveRondineroLocal();
 
-  toast(
-    "Depuración finalizada",
-    `Se eliminaron ${totalEliminar} registros: ${proveedoresEliminar} proveedores, ${visitantesEliminar} visitantes, ${valesActivosEliminar.length} vales de activos, ${valesPersonalEliminar.length} vales de personal, ${bitacoraEliminar.length} bitácora, ${rondinesEliminar.length} rondines, ${eventosEliminar.length} eventos y ${resumenKeysEliminar.length} resúmenes.`,
-    "ok",
-    3200
-  );
-
+  const reporte = {
+    fechaHora:new Date().toLocaleString(), estado:fallidos.length ? "parcial" : "completa", limiteFecha,
+    encontrados:encontradosTotal, protegidos:protegidosTotal,
+    confirmados:confirmados.length, fallidos:fallidos.length, detalle:detalleResumen
+  };
+  guardarResumenDepuracion30(reporte);
   renderCurrentAfterDepuracion();
+  mostrarResumenDepuracion30(reporte);
 }
 // -------------------------
 // Auto-Sync dashboard (cada 5 min solo si está visible)
