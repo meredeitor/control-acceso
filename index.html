@@ -3206,6 +3206,10 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
       .vale-history-card{padding:13px}
       .vale-history-card-head{flex-direction:column}
     }
+    @media(max-width:760px){
+      .vp-grupo-integrante{grid-template-columns:1fr!important;align-items:stretch!important}
+      .vp-grupo-integrante .vp-int-eliminar{width:100%}
+    }
     </style>
 </head>
 
@@ -3537,7 +3541,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v242";
+  const APP_VERSION = "v243";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5882,6 +5886,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v243</b><span>Los vales de personal pueden generarse en modalidad grupal con captura manual de 2 a 10 integrantes, responsable, un solo QR y autorización, movimientos conjuntos o individuales, seguimiento por persona y desglose separado en el reporte de Nóminas.</span></div>
           <div class="help-release"><b>v242</b><span>La retención de 30 días consulta Firebase directamente, protege registros abiertos, muestra una vista previa, procesa eliminaciones confirmadas por bloques y conserva un resumen administrativo con encontrados, protegidos, eliminados y fallidos.</span></div>
           <div class="help-release"><b>v241</b><span>Se incorpora el rol Jefe restringido. Puede gestionar vales de colaboradores normales, pero sus propios vales y los de otros jefes restringidos solo pueden ser generados y autorizados por un Jefe normal o Administrador, identificando al colaborador por número de nómina.</span></div>
           <div class="help-release"><b>v240</b><span>Los gafetes de colaboradores se identifican exclusivamente con el formato QR NOMINA:número. Cuando no existe un vale utilizable, el escáner muestra una pantalla persistente que distingue pendientes, cancelados, desactivados, fechas diferentes y fallas de conexión, con opciones para reintentar o volver.</span></div>
@@ -6996,15 +7001,22 @@ function fmt(ts){
     }
 
     async function cloudFetchValesPersonalByNomina(nomina){
-      const q = query(
+      const nominaKey = String(nomina || "").trim();
+      const qIndividual = query(
         collection(db, COL_VALES_PERSONAL),
-        where("nomina", "==", String(nomina || "").trim()),
+        where("nomina", "==", nominaKey),
         limit(20)
       );
-      const snap = await getDocs(q);
-      const list = [];
-      snap.forEach(d => list.push({ id:d.id, ...d.data() }));
-      return list;
+      const qGrupal = query(
+        collection(db, COL_VALES_PERSONAL),
+        where("nominasIntegrantes", "array-contains", nominaKey),
+        limit(20)
+      );
+      const [individualSnap, grupalSnap] = await Promise.all([getDocs(qIndividual), getDocs(qGrupal)]);
+      const map = new Map();
+      individualSnap.forEach(d => map.set(d.id, { id:d.id, ...d.data() }));
+      grupalSnap.forEach(d => map.set(d.id, { id:d.id, ...d.data() }));
+      return Array.from(map.values());
     }
 
     async function cloudFetchValesPersonal(){
@@ -7792,7 +7804,9 @@ async function pushRecentToCloud(){
 
 function valePersonalDuplicateSignature(v={}){
   const clean = value => String(value || "").trim().toLowerCase().replace(/\s+/g," ");
-  const nomina = clean(v.nomina).replace(/^0+(?=\d)/,"");
+  const nomina = esValePersonalGrupal(v)
+    ? v.integrantes.map(item => normalizarNominaPerfil(item.nomina)).filter(Boolean).sort().join(",")
+    : clean(v.nomina).replace(/^0+(?=\d)/,"");
   const colaborador = nomina || clean(v.nombreColaborador);
   const salidaProgramada = Number(v.salidaProgramadaTs || 0);
   const horario = salidaProgramada > 0
@@ -9749,7 +9763,52 @@ function esPerfilJefeRestringido(perfil={}){
   return perfil?.role === ROLES.JEFE_RESTRINGIDO;
 }
 
+function esValePersonalGrupal(v={}){
+  return v.esGrupal === true && Array.isArray(v.integrantes) && v.integrantes.length > 0;
+}
+
+function integrantesValePersonal(v={}){
+  if(esValePersonalGrupal(v)) return v.integrantes;
+  return [{
+    id:v.colaboradorUid || v.nomina || "individual",
+    nombre:v.nombreColaborador || "",
+    nomina:v.nomina || "",
+    departamento:v.departamento || "",
+    colaboradorUid:v.colaboradorUid || "",
+    colaboradorRole:v.colaboradorRole || "",
+    status:v.status,
+    salidaTs:v.salidaTs || null,
+    regresoTs:v.regresoTs || null,
+    llegadaTs:v.llegadaTs || null,
+    canceladoTs:v.canceladoTs || null,
+    salidaSinRegresoFinalizadaTs:v.salidaSinRegresoFinalizadaTs || null
+  }];
+}
+
+function valePersonalIncluyeNomina(v={}, nomina=""){
+  const key = normalizarNominaPerfil(nomina);
+  return !!key && integrantesValePersonal(v).some(item => normalizarNominaPerfil(item.nomina) === key);
+}
+
+function estadoIntegrantesValePersonal(v={}){
+  const integrantes = integrantesValePersonal(v);
+  return {
+    total:integrantes.length,
+    pendientes:integrantes.filter(item => item.status === ValeStatus.PENDIENTE).length,
+    inicio:integrantes.filter(item => item.status === ValeStatus.GENERADO).length,
+    fuera:integrantes.filter(item => item.status === ValeStatus.FUERA).length,
+    finalizados:integrantes.filter(item => item.status === ValeStatus.REGRESO_CANCELADO).length
+  };
+}
+
+function esPreviewValeGrupalLocal(){
+  return new URLSearchParams(location.search).has("valeGrupalLocal");
+}
+
 function esValeDeJefeRestringido(v={}){
+  if(esValePersonalGrupal(v)){
+    return v.integrantes.some(item => item.colaboradorRole === ROLES.JEFE_RESTRINGIDO || esPerfilJefeRestringido(perfilValePersonalPorNomina(item.nomina)));
+  }
   if(v.colaboradorRole === ROLES.JEFE_RESTRINGIDO) return true;
   return esPerfilJefeRestringido(perfilValePersonalPorNomina(v.nomina));
 }
@@ -9808,6 +9867,15 @@ function normalizarIdentidadValePersonal(value){
 
 function isValePersonalDelUsuarioActual(v={}){
   const currentUid = String(currentUser?.uid || "");
+  if(esValePersonalGrupal(v)){
+    const nominaUsuario = normalizarIdentidadValePersonal(currentUser?.nomina);
+    const nombreUsuario = normalizarIdentidadValePersonal(currentUser?.nombre);
+    return v.integrantes.some(item =>
+      (currentUid && item.colaboradorUid && String(item.colaboradorUid) === currentUid) ||
+      (nominaUsuario && normalizarIdentidadValePersonal(item.nomina) === nominaUsuario) ||
+      (nombreUsuario && normalizarIdentidadValePersonal(item.nombre) === nombreUsuario)
+    );
+  }
   if(currentUid && v.colaboradorUid && String(v.colaboradorUid) === currentUid) return true;
 
   const nominaUsuario = normalizarIdentidadValePersonal(currentUser?.nomina);
@@ -9969,6 +10037,7 @@ function renderValeActivoModal(){
           </div>
         </div>
         <div class="modal-body">
+          ${esPreviewValeGrupalLocal() ? `<div class="pill" style="display:block;margin-bottom:12px;white-space:normal;"><span class="dot info"></span><b>Prueba local:</b> los vales grupales creados aquí no se enviarán a Firebase.</div>` : ""}
           <div class="two">
             <div>
               <label>Fecha *</label>
@@ -10542,7 +10611,7 @@ async function marcarValesPersonalExcedidos(){
 
   saveValesPersonalLocal();
   if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
-    await Promise.all(legacy.map(v => cloudUpsertValePersonal(v).catch(e => console.warn(e))));
+    await Promise.all(legacy.filter(v => !(esValePersonalGrupal(v) && esPreviewValeGrupalLocal())).map(v => cloudUpsertValePersonal(v).catch(e => console.warn(e))));
   }
 }
 
@@ -10566,7 +10635,7 @@ async function normalizarValesSalidaSinRegreso(){
   });
   saveValesPersonalLocal();
   if(navigator.onLine && hasPerm("registrar_salida_personal")){
-    await Promise.all(pendientes.map(v => cloudUpsertValePersonal(v).catch(e => console.warn("No se pudo normalizar salida sin regreso:", e))));
+    await Promise.all(pendientes.filter(v => !(esValePersonalGrupal(v) && esPreviewValeGrupalLocal())).map(v => cloudUpsertValePersonal(v).catch(e => console.warn("No se pudo normalizar salida sin regreso:", e))));
   }
 }
 
@@ -10695,7 +10764,7 @@ async function renderValesPersonal(refresh=true){
     })
     .sort((a,b)=>(b.createdTs||0)-(a.createdTs||0));
   const list = !term ? allList : allList.filter(v =>
-    [v.folio,v.nombreColaborador,v.nomina,v.departamento,v.tipoPermiso,v.autorizadorNombre]
+    [v.folio,v.nombreColaborador,v.nomina,v.departamento,v.tipoPermiso,v.autorizadorNombre,...integrantesValePersonal(v).flatMap(item => [item.nombre,item.nomina,item.departamento])]
       .join(" ").toLowerCase().includes(term)
   );
   const { generados, pendientes, fuera, regresoCancelado } = getValeCounts(list);
@@ -10767,6 +10836,8 @@ async function renderValesPersonal(refresh=true){
 }
 
 function renderValePersonalCard(v){
+  const esGrupal = esValePersonalGrupal(v);
+  const estadoGrupo = esGrupal ? estadoIntegrantesValePersonal(v) : null;
   const autorizadoPor = v.autorizadoPorNombre || "";
   const autorizador = v.autorizadorNombre || v.autorizadorEmail || "";
   const usadoMin = calcValePersonalTiempo(v);
@@ -10786,7 +10857,7 @@ function renderValePersonalCard(v){
   const autorizadoMin = parseTiempoAutorizadoMin(v.tiempoAutorizado);
   const excedenteMin = excedido && usadoMin !== null && autorizadoMin !== null ? Math.max(0, usadoMin-autorizadoMin) : 0;
   const limiteTxt = autorizadoMin === null ? esc(v.tiempoAutorizado || "-") : formatMinutes(autorizadoMin);
-  const nombreColaborador = v.nombreColaborador || "Colaborador";
+  const nombreColaborador = esGrupal ? `Vale grupal · ${estadoGrupo.total} integrantes` : (v.nombreColaborador || "Colaborador");
   const iniciales = nombreColaborador.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x.charAt(0)).join("").toUpperCase() || "VP";
   const estadoTexto = esSalidaSinRegreso && v.status === ValeStatus.REGRESO_CANCELADO ? "Finalizado" : valeStatusLabel(v.status);
   const estadoTone = v.status === ValeStatus.PENDIENTE ? "is-warn" : v.status === ValeStatus.FUERA ? "is-bad" : v.status === ValeStatus.REGRESO_CANCELADO ? "is-ok" : "";
@@ -10796,7 +10867,7 @@ function renderValePersonalCard(v){
       ${excedido ? `<div class="vale-overdue-banner">Tiempo excedido<small>Excedido por ${esc(String(excedenteMin))} min</small></div>` : ""}
       <div class="vale-personal-card-head">
         <span class="vale-personal-avatar" aria-hidden="true">${esc(iniciales)}</span>
-        <span class="vale-personal-identity"><strong>${esc(nombreColaborador)}</strong><small>Nómina ${esc(v.nomina || "-")} · ${esc(v.departamento || "Departamento")}</small></span>
+        <span class="vale-personal-identity"><strong>${esc(nombreColaborador)}</strong><small>${esGrupal ? `Responsable: ${esc(v.nombreColaborador || "-")}` : `Nómina ${esc(v.nomina || "-")} · ${esc(v.departamento || "Departamento")}`}</small></span>
         <span class="vale-personal-status ${estadoTone}">${esc(estadoTexto)}</span>
       </div>
       <div class="vale-personal-folio">${esc(v.folio || v.id || "Sin folio")}${esFuturo ? ` · ${esc(valePassDate(v.fecha))}` : ""}</div>
@@ -10807,6 +10878,8 @@ function renderValePersonalCard(v){
         <div class="vale-personal-fact"><small>Autoriza</small><b>${esc(autorizador || "Pendiente de asignar")}</b></div>
       </div>
       <div class="meta vale-card-details">
+        ${esGrupal ? `<span class="pill"><span class="dot info"></span>Inicio: ${estadoGrupo.inicio} · Fuera: ${estadoGrupo.fuera} · Finalizados: ${estadoGrupo.finalizados}</span>
+        <details style="width:100%;" onclick="event.stopPropagation()"><summary style="cursor:pointer;font-weight:800;">Ver integrantes</summary><div style="display:grid;gap:6px;margin-top:8px;">${v.integrantes.map(item => `<span class="pill" style="white-space:normal;"><span class="dot ${item.status === ValeStatus.REGRESO_CANCELADO ? "ok" : item.status === ValeStatus.FUERA ? "bad" : "info"}"></span><b>${esc(item.nombre)}</b> · Nómina ${esc(item.nomina)} · ${esc(valeStatusLabel(item.status))}${item.salidaTs ? ` · Salida ${esc(formatHoraTs(item.salidaTs))}` : ""}${item.regresoTs || item.llegadaTs ? ` · ${item.llegadaTs ? "Ingreso" : "Regreso"} ${esc(formatHoraTs(item.regresoTs || item.llegadaTs))}` : ""}</span>`).join("")}</div></details>` : ""}
         ${esFuturo ? `<span class="pill"><span class="dot info"></span>Programado</span>` : ""}
         ${esSalidaSinRegreso ? `<span class="pill"><span class="dot ${v.status === ValeStatus.REGRESO_CANCELADO ? "ok" : "warn"}"></span>Salida sin regreso${v.status === ValeStatus.REGRESO_CANCELADO ? " · finalizada" : ""}</span>` : ""}
         ${esSinHorarioRegreso ? `<span class="pill"><span class="dot ${v.status === ValeStatus.REGRESO_CANCELADO ? "ok" : "info"}"></span>Regreso sin horario límite${v.status === ValeStatus.FUERA ? " · tiempo en medición" : v.status === ValeStatus.REGRESO_CANCELADO ? " · regreso registrado" : ""}</span>` : ""}
@@ -10818,10 +10891,14 @@ function renderValePersonalCard(v){
         ${v.qrActivo && !esFuturo ? `<button class="secondary" data-action="verValePersonalQR" data-id="${esc(v.id)}" data-no-sb="true">QR</button>` : esFuturo ? `<span class="pill"><span class="dot warn"></span>QR habilitado el día del vale</span>` : `<span class="pill"><span class="dot bad"></span>QR desactivado</span>`}
         ${v.status === ValeStatus.PENDIENTE && canCurrentUserAuthorizeValePersonal(v) ? `<button class="ok" data-action="autorizarValePersonal" data-id="${esc(v.id)}" data-no-sb="true">Autorizar</button>` : ""}
         ${v.status === ValeStatus.PENDIENTE && hasPerm("autorizar_vale_personal_emergencia") && !isValePersonalEntrada(v) && !isPermisoImss(v) ? `<button class="danger" data-action="autorizarValePersonalEmergencia" data-id="${esc(v.id)}" data-no-sb="true">Autorizar por urgencia</button>` : ""}
-        ${mostrarRegistroManual && v.status === ValeStatus.GENERADO && v.autorizadoTs && hasPerm("registrar_salida_personal") ? (esEntrada
+        ${esGrupal && mostrarRegistroManual && v.autorizadoTs && estadoGrupo.inicio > 0 && hasPerm("registrar_salida_personal") ? (esEntrada
+          ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar ingresos</button>`
+          : `<button class="danger" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.FUERA}" data-no-sb="true">Registrar salidas</button>`) : ""}
+        ${esGrupal && mostrarRegistroManual && estadoGrupo.fuera > 0 && hasPerm("registrar_regreso_personal") ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar regresos</button>` : ""}
+        ${!esGrupal && mostrarRegistroManual && v.status === ValeStatus.GENERADO && v.autorizadoTs && hasPerm("registrar_salida_personal") ? (esEntrada
           ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar ingreso</button>`
           : `<button class="danger" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.FUERA}" data-no-sb="true">Marcar salida</button>`) : ""}
-        ${mostrarRegistroManual && v.status === ValeStatus.FUERA && hasPerm("registrar_regreso_personal") ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar regreso</button>` : ""}
+        ${!esGrupal && mostrarRegistroManual && v.status === ValeStatus.FUERA && hasPerm("registrar_regreso_personal") ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar regreso</button>` : ""}
         ${v.status !== ValeStatus.REGRESO_CANCELADO && (hasPerm("crear_vale_personal") || (isPermisoImss(v) && hasPerm("crear_permiso_imss"))) ? `<button class="secondary" data-action="cancelarValePersonal" data-id="${esc(v.id)}" data-no-sb="true">Cancelar</button>` : ""}
         ${renderKanbanDetailsButton()}
       </div>
@@ -11084,6 +11161,30 @@ function valesUnicosReporteNominas(list=[]){
   };
 }
 
+function expandirValesGrupalesReporteNominas(list=[]){
+  return list.flatMap(v => {
+    if(!esValePersonalGrupal(v)) return [v];
+    return v.integrantes.map(item => ({
+      ...v,
+      id:`${v.id}:${item.id}`,
+      valeGrupalId:v.id,
+      esGrupal:true,
+      integrantes:[],
+      nombreColaborador:item.nombre,
+      nomina:item.nomina,
+      departamento:item.departamento,
+      colaboradorUid:item.colaboradorUid || "",
+      colaboradorRole:item.colaboradorRole || "",
+      status:item.status,
+      salidaTs:item.salidaTs || null,
+      regresoTs:item.regresoTs || null,
+      llegadaTs:item.llegadaTs || null,
+      canceladoTs:item.canceladoTs || null,
+      salidaSinRegresoFinalizadaTs:item.salidaSinRegresoFinalizadaTs || null
+    }));
+  });
+}
+
 async function renderReporteNominas(refresh=true){
   if(currentUser?.role !== ROLES.ADMIN || !hasPerm("ver_reporte_nominas")){
     return toast("Acceso restringido", "El Reporte de Nóminas es exclusivo para Administrador.", "warn", 4200);
@@ -11104,7 +11205,8 @@ async function renderReporteNominas(refresh=true){
   const desdeTs = reporteNominasFiltros.desde ? new Date(`${reporteNominasFiltros.desde}T00:00:00`).getTime() : 0;
   const hastaTs = reporteNominasFiltros.hasta ? new Date(`${reporteNominasFiltros.hasta}T23:59:59`).getTime() : Number.MAX_SAFE_INTEGER;
   const buscar = reporteNominasFiltros.buscar.trim().toLowerCase();
-  const { list:reporteSinDuplicados, duplicadosOmitidos } = valesUnicosReporteNominas(reporteNominasCache);
+  const reporteExpandido = expandirValesGrupalesReporteNominas(reporteNominasCache);
+  const { list:reporteSinDuplicados, duplicadosOmitidos } = valesUnicosReporteNominas(reporteExpandido);
   const departamentos = Array.from(new Set(reporteSinDuplicados.map(v=>String(v.departamento||"").trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
   const coincideFiltros = v => {
     const fechaTs = v.fecha ? new Date(`${v.fecha}T12:00:00`).getTime() : 0;
@@ -13272,11 +13374,16 @@ function renderValePersonalModal(){
             <small>${soloImss ? "Servicio Médico registra salidas a consulta o entradas posteriores a las 8:15." : "Permiso de entrada/salida y tiempo autorizado."}</small>
           </div>
           <div class="modal-actions">
+            ${soloImss ? "" : `<div id="vpModalidad" aria-label="Modalidad del vale" style="display:inline-flex;align-items:center;gap:4px;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--soft);">
+              <label class="vp-modalidad-opcion" style="position:relative;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:28px;padding:4px 12px;border:1px solid var(--primary);border-radius:999px;cursor:pointer;font-size:13px;font-weight:900;background:var(--panel);color:var(--primary);"><input type="radio" name="vpModalidad" value="individual" checked style="position:absolute!important;opacity:0!important;width:1px!important;height:1px!important;pointer-events:none;"><span class="vp-modalidad-indicador" aria-hidden="true" style="width:12px;height:12px;border:1.5px solid currentColor;border-radius:50%;display:grid;place-items:center;flex:0 0 12px;"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;"></span></span><span>Individual</span></label>
+              <label class="vp-modalidad-opcion" style="position:relative;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:28px;padding:4px 12px;border:1px solid transparent;border-radius:999px;cursor:pointer;font-size:13px;font-weight:900;color:var(--muted);"><input type="radio" name="vpModalidad" value="grupal" style="position:absolute!important;opacity:0!important;width:1px!important;height:1px!important;pointer-events:none;"><span class="vp-modalidad-indicador" aria-hidden="true" style="width:12px;height:12px;border:1.5px solid currentColor;border-radius:50%;display:grid;place-items:center;flex:0 0 12px;"><span style="width:5px;height:5px;border-radius:50%;background:currentColor;opacity:0;"></span></span><span>Grupal</span></label>
+            </div>`}
             <button class="secondary" data-action="closeValePersonalModal">Cerrar</button>
           </div>
         </div>
         <div class="modal-body">
           <div class="two">
+            <div id="vpDatosIndividuales" style="display:contents;">
             <div>
               <label>Nombre colaborador *</label>
               <input id="vpNombre" placeholder="Nombre completo">
@@ -13304,6 +13411,16 @@ function renderValePersonalModal(){
                 <option>Ventas</option>
               </select>
             </div>
+            </div>
+            ${soloImss ? "" : `<div id="vpDatosGrupales" style="display:none;grid-column:1/-1;">
+              <div class="card" style="padding:14px;margin:0;">
+                <div class="row" style="justify-content:space-between;align-items:center;">
+                  <div><b>Integrantes del grupo</b><small style="display:block;color:var(--muted);">Captura manualmente nombre, nómina y departamento. Marca a una persona como responsable.</small><small id="vpContadorIntegrantes" style="display:block;margin-top:4px;font-weight:900;color:var(--primary);">0 de 10 integrantes</small></div>
+                  <button type="button" class="secondary" id="vpAgregarIntegrante">Agregar integrante</button>
+                </div>
+                <div id="vpIntegrantesGrupo" style="display:grid;gap:10px;margin-top:12px;"></div>
+              </div>
+            </div>`}
             <div>
               <label>Tipo permiso *</label>
               <select id="vpTipoPermiso">
@@ -13363,6 +13480,115 @@ function renderValePersonalModal(){
   `;
 }
 
+function opcionesDepartamentoValePersonal(selected=""){
+  return ["Administración y Finanzas","Calidad","Comercialización","Compras","Contraloria","Diseño y desarrollo","DOH","Ingeniería","Mantenimiento","Operaciones","SYS","TI","Ventas"]
+    .map(value => `<option ${value === selected ? "selected" : ""}>${esc(value)}</option>`).join("");
+}
+
+const MAX_INTEGRANTES_VALE_GRUPAL = 10;
+
+function actualizarLimiteIntegrantesValeGrupal(){
+  const total = document.querySelectorAll("#vpIntegrantesGrupo .vp-grupo-integrante").length;
+  const contador = document.getElementById("vpContadorIntegrantes");
+  const boton = document.getElementById("vpAgregarIntegrante");
+  if(contador) contador.textContent = `${total} de ${MAX_INTEGRANTES_VALE_GRUPAL} integrantes`;
+  if(boton){
+    boton.disabled = total >= MAX_INTEGRANTES_VALE_GRUPAL;
+    boton.textContent = total >= MAX_INTEGRANTES_VALE_GRUPAL ? "Límite alcanzado" : "Agregar integrante";
+  }
+}
+
+function agregarIntegranteValeGrupal(data={}){
+  const contenedor = document.getElementById("vpIntegrantesGrupo");
+  if(!contenedor) return;
+  if(contenedor.querySelectorAll(".vp-grupo-integrante").length >= MAX_INTEGRANTES_VALE_GRUPAL){
+    actualizarLimiteIntegrantesValeGrupal();
+    return toast("Límite alcanzado",`Cada vale grupal admite un máximo de ${MAX_INTEGRANTES_VALE_GRUPAL} integrantes. Genera otro vale para las personas restantes.`,"warn",4800);
+  }
+  const row = document.createElement("div");
+  row.className = "vp-grupo-integrante";
+  row.dataset.id = data.id || globalThis.crypto?.randomUUID?.() || `INT-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+  row.style.cssText = "display:grid;grid-template-columns:minmax(170px,1.5fr) minmax(100px,.7fr) minmax(160px,1fr) auto auto;gap:8px;align-items:end;padding:10px;border:1px solid var(--line);border-radius:12px;";
+  row.innerHTML = `
+    <div><label>Nombre *</label><input class="vp-int-nombre" value="${esc(data.nombre || "")}" placeholder="Nombre completo"></div>
+    <div><label>Nómina *</label><input class="vp-int-nomina" value="${esc(data.nomina || "")}" inputmode="numeric" placeholder="Nómina"></div>
+    <div><label>Departamento *</label><select class="vp-int-departamento"><option value="">— Selecciona —</option>${opcionesDepartamentoValePersonal(data.departamento || "")}</select></div>
+    <label style="display:flex;gap:6px;align-items:center;min-height:42px;"><input type="radio" name="vpResponsableGrupo" class="vp-int-responsable" ${data.responsable ? "checked" : ""}> Responsable</label>
+    <button type="button" class="secondary vp-int-eliminar" aria-label="Quitar integrante">Quitar</button>`;
+  contenedor.appendChild(row);
+  actualizarLimiteIntegrantesValeGrupal();
+  if(!contenedor.querySelector(".vp-int-responsable:checked")) row.querySelector(".vp-int-responsable").checked = true;
+  row.querySelector(".vp-int-eliminar").addEventListener("click", () => {
+    const eraResponsable = row.querySelector(".vp-int-responsable").checked;
+    row.remove();
+    if(eraResponsable && !contenedor.querySelector(".vp-int-responsable:checked")) contenedor.querySelector(".vp-int-responsable")?.click();
+    actualizarLimiteIntegrantesValeGrupal();
+    syncValePersonalAutorizadoresGrupo();
+  });
+  row.querySelector(".vp-int-nomina").addEventListener("input", syncValePersonalAutorizadoresGrupo);
+}
+
+function obtenerIntegrantesValeGrupalFormulario(){
+  return Array.from(document.querySelectorAll("#vpIntegrantesGrupo .vp-grupo-integrante")).map(row => {
+    const nomina = row.querySelector(".vp-int-nomina")?.value.trim() || "";
+    const perfil = perfilValePersonalPorNomina(nomina);
+    return {
+      id:row.dataset.id || globalThis.crypto?.randomUUID?.() || `INT-${Date.now()}`,
+      nombre:row.querySelector(".vp-int-nombre")?.value.trim() || "",
+      nomina,
+      departamento:row.querySelector(".vp-int-departamento")?.value || "",
+      responsable:Boolean(row.querySelector(".vp-int-responsable")?.checked),
+      colaboradorUid:perfil?.uid || perfil?.id || "",
+      colaboradorRole:perfil?.role || ""
+    };
+  });
+}
+
+function modalidadValePersonalActual(){
+  return document.querySelector('input[name="vpModalidad"]:checked')?.value || "individual";
+}
+
+function syncModalidadValePersonal(){
+  const grupal = modalidadValePersonalActual() === "grupal";
+  document.querySelectorAll(".vp-modalidad-opcion").forEach(label => {
+    const active = Boolean(label.querySelector("input")?.checked);
+    label.style.background = active ? "var(--panel)" : "transparent";
+    label.style.boxShadow = "none";
+    label.style.color = active ? "var(--primary)" : "var(--muted)";
+    label.style.borderColor = active ? "var(--primary)" : "transparent";
+    const innerDot = label.querySelector(".vp-modalidad-indicador span");
+    if(innerDot) innerDot.style.opacity = active ? "1" : "0";
+  });
+  const individual = document.getElementById("vpDatosIndividuales");
+  const grupo = document.getElementById("vpDatosGrupales");
+  if(individual) individual.style.display = grupal ? "none" : "contents";
+  if(grupo) grupo.style.display = grupal ? "block" : "none";
+  if(grupal && !document.querySelector("#vpIntegrantesGrupo .vp-grupo-integrante")){
+    agregarIntegranteValeGrupal({ responsable:true });
+    agregarIntegranteValeGrupal();
+  }
+  if(grupal) syncValePersonalAutorizadoresGrupo(); else syncValePersonalAutorizadoresPorNomina();
+}
+
+function syncValePersonalAutorizadoresGrupo(){
+  const select = document.getElementById("vpAutorizador");
+  const aviso = document.getElementById("vpRestriccionAutorizacion");
+  if(!select || modalidadValePersonalActual() !== "grupal") return;
+  const integrantes = obtenerIntegrantesValeGrupalFormulario();
+  const perfiles = integrantes.map(item => perfilValePersonalPorNomina(item.nomina)).filter(Boolean);
+  const tieneRestringido = perfiles.some(esPerfilJefeRestringido);
+  const selected = select.value;
+  const perfilFiltro = tieneRestringido ? { role:ROLES.JEFE_RESTRINGIDO } : null;
+  select.innerHTML = renderValePersonalAutorizadorOptions(perfilFiltro);
+  if(Array.from(select.options).some(option => option.value === selected)) select.value = selected;
+  if(aviso){
+    aviso.style.display = tieneRestringido ? "block" : "none";
+    aviso.textContent = tieneRestringido
+      ? "El grupo incluye un Jefe restringido. Solo su Jefe o el Administrador puede autorizar este vale."
+      : "";
+  }
+}
+
 async function openValePersonalModal(){
   if(hasPerm("crear_vale_personal")){
     await ensureValePersonalAutorizadores();
@@ -13371,6 +13597,11 @@ async function openValePersonalModal(){
   }
   const modal = document.getElementById("valePersonalModal");
   if(modal){
+    const modalidadIndividual = document.querySelector('input[name="vpModalidad"][value="individual"]');
+    if(modalidadIndividual) modalidadIndividual.checked = true;
+    const integrantesGrupo = document.getElementById("vpIntegrantesGrupo");
+    if(integrantesGrupo) integrantesGrupo.innerHTML = "";
+    actualizarLimiteIntegrantesValeGrupal();
     modal.dataset.draftId = (globalThis.crypto?.randomUUID?.() || `VP-${Date.now()}-${Math.random().toString(36).slice(2,10)}`);
     modal.style.display = "flex";
   }
@@ -13381,6 +13612,12 @@ async function openValePersonalModal(){
   }
   const movimientoImss = document.getElementById("vpMovimientoImss");
   if(movimientoImss) movimientoImss.onchange = syncValePersonalTiempoPorTipo;
+  const modalidades = document.querySelectorAll('input[name="vpModalidad"]');
+  if(modalidades.length){
+    modalidades.forEach(input => input.addEventListener("change", syncModalidadValePersonal));
+    document.getElementById("vpAgregarIntegrante")?.addEventListener("click", () => agregarIntegranteValeGrupal());
+    syncModalidadValePersonal();
+  }
   const nomina = document.getElementById("vpNomina");
   if(nomina){
     nomina.oninput = syncValePersonalAutorizadoresPorNomina;
@@ -13390,6 +13627,7 @@ async function openValePersonalModal(){
 }
 
 function syncValePersonalAutorizadoresPorNomina(){
+  if(modalidadValePersonalActual() === "grupal") return syncValePersonalAutorizadoresGrupo();
   const nomina = document.getElementById("vpNomina")?.value || "";
   const select = document.getElementById("vpAutorizador");
   const aviso = document.getElementById("vpRestriccionAutorizacion");
@@ -13454,9 +13692,11 @@ function closeValePersonalModal(){
 }
 
 function createValePersonalFromModal(){
-  const nombreColaborador = document.getElementById("vpNombre")?.value.trim() || "";
-  const nomina = document.getElementById("vpNomina")?.value.trim() || "";
-  const departamento = document.getElementById("vpDepartamento")?.value.trim() || "";
+  const esGrupal = modalidadValePersonalActual() === "grupal";
+  let integrantes = esGrupal ? obtenerIntegrantesValeGrupalFormulario() : [];
+  let nombreColaborador = document.getElementById("vpNombre")?.value.trim() || "";
+  let nomina = document.getElementById("vpNomina")?.value.trim() || "";
+  let departamento = document.getElementById("vpDepartamento")?.value.trim() || "";
   const tipoPermisoSeleccionado = document.getElementById("vpTipoPermiso")?.value || "";
   const fecha = document.getElementById("vpFecha")?.value || new Date().toISOString().slice(0,10);
   const observaciones = document.getElementById("vpObservaciones")?.value.trim() || "";
@@ -13480,14 +13720,39 @@ function createValePersonalFromModal(){
   const autorizadorNombre = esPermisoImss ? (currentUser?.nombre || currentUser?.email || "Servicio Médico") : (autorizadorOption?.dataset?.nombre || "");
   const autorizadorRole = esPermisoImss ? (currentUser?.role || "") : (autorizadorOption?.dataset?.role || "");
   const autorizadorTelefono = autorizadorOption?.dataset?.telefono || "";
-  const perfilesColaborador = perfilesValePersonalPorNomina(nomina);
-  const perfilColaborador = perfilesColaborador.length === 1 ? perfilesColaborador[0] : null;
+  if(esGrupal){
+    if(integrantes.length < 2){
+      toast("Grupo incompleto","Agrega por lo menos dos integrantes al vale grupal.","warn",4200);
+      return null;
+    }
+    if(integrantes.length > MAX_INTEGRANTES_VALE_GRUPAL){
+      toast("Grupo demasiado grande",`El máximo permitido es de ${MAX_INTEGRANTES_VALE_GRUPAL} integrantes por vale grupal.`,"bad",4800);
+      return null;
+    }
+    if(integrantes.some(item => !item.nombre || !item.nomina || !item.departamento)){
+      toast("Integrantes incompletos","Cada integrante debe tener nombre, número de nómina y departamento.","warn",4800);
+      return null;
+    }
+    const nominas = integrantes.map(item => normalizarNominaPerfil(item.nomina));
+    if(nominas.some((value,index) => !value || nominas.indexOf(value) !== index)){
+      toast("Nóminas duplicadas","Cada integrante debe tener una nómina válida y diferente dentro del grupo.","bad",4800);
+      return null;
+    }
+    if(!integrantes.some(item => item.responsable)) integrantes[0].responsable = true;
+    const responsable = integrantes.find(item => item.responsable) || integrantes[0];
+    nombreColaborador = responsable.nombre;
+    nomina = "VARIOS";
+    departamento = "Varios";
+  }
+  const perfilesColaborador = esGrupal ? [] : perfilesValePersonalPorNomina(nomina);
+  const perfilColaborador = esGrupal ? null : (perfilesColaborador.length === 1 ? perfilesColaborador[0] : null);
 
   if(perfilesColaborador.length > 1){
     toast("Nómina duplicada","Esta nómina pertenece a más de un perfil de usuario. Un Administrador debe corregir los perfiles antes de generar el vale.","bad",6200);
     return null;
   }
-  if(esPerfilJefeRestringido(perfilColaborador)){
+  const grupoTieneJefeRestringido = esGrupal && integrantes.some(item => item.colaboradorRole === ROLES.JEFE_RESTRINGIDO);
+  if(esPerfilJefeRestringido(perfilColaborador) || grupoTieneJefeRestringido){
     if(!puedeGestionarValeDeJefeRestringido() || ![ROLES.JEFE, ROLES.ADMIN].includes(autorizadorRole)){
       mensajeRestriccionJefeRestringido();
       return null;
@@ -13524,6 +13789,17 @@ function createValePersonalFromModal(){
     normalizarIdentidadValePersonal(currentUser?.nomina) &&
     normalizarIdentidadValePersonal(nomina) === normalizarIdentidadValePersonal(currentUser?.nomina)
   );
+  if(esGrupal){
+    integrantes = integrantes.map(item => ({
+      ...item,
+      status:ValeStatus.PENDIENTE,
+      salidaTs:null,
+      regresoTs:null,
+      llegadaTs:null,
+      canceladoTs:null,
+      salidaSinRegresoFinalizadaTs:null
+    }));
+  }
   return {
     id,
     folio: `${esPermisoImss ? "IMSS" : "VP"}-${new Date().getFullYear()}-${String(valesPersonal.length + 1).padStart(4,"0")}`,
@@ -13531,6 +13807,12 @@ function createValePersonalFromModal(){
     nombreColaborador,
     nomina,
     departamento,
+    esGrupal,
+    integrantes:esGrupal ? integrantes : [],
+    nominasIntegrantes:esGrupal ? integrantes.map(item => String(item.nomina).trim()) : [],
+    rolesIntegrantes:esGrupal ? integrantes.map(item => item.colaboradorRole || "").filter(Boolean) : [],
+    contieneJefeRestringido:esGrupal ? integrantes.some(item => item.colaboradorRole === ROLES.JEFE_RESTRINGIDO) : false,
+    totalIntegrantes:esGrupal ? integrantes.length : 1,
     colaboradorUid: perfilColaborador?.uid || perfilColaborador?.id || (esValePropio ? (currentUser?.uid || "") : ""),
     colaboradorRole: perfilColaborador?.role || "",
     tipoPermiso,
@@ -13596,11 +13878,17 @@ async function guardarValePersonal(){
   // El diálogo depende del permiso del rol y nunca permite autoautorizarse.
   const ofreceAutorizacionInmediata = !isPermisoImss(v) && canCurrentUserAuthorizeValePersonal(v);
   if(ofreceAutorizacionInmediata) v.qrActivo = false;
-  let existingDuplicate = encontrarValePersonalActivoEquivalente(valesPersonal, v);
+  let existingDuplicate = esValePersonalGrupal(v)
+    ? valesPersonal.find(existing => valePersonalActivoParaDuplicado(existing) && v.integrantes.some(item => valePersonalIncluyeNomina(existing, item.nomina))) || null
+    : encontrarValePersonalActivoEquivalente(valesPersonal, v);
   if(!existingDuplicate && navigator.onLine){
     try{
-      const cloudByNomina = await cloudFetchValesPersonalByNomina(v.nomina);
-      existingDuplicate = encontrarValePersonalActivoEquivalente(cloudByNomina, v);
+      const nominasConsulta = esValePersonalGrupal(v) ? v.nominasIntegrantes : [v.nomina];
+      const cloudLists = await Promise.all(nominasConsulta.map(value => cloudFetchValesPersonalByNomina(value)));
+      const cloudByNomina = mergeById([], cloudLists.flat());
+      existingDuplicate = esValePersonalGrupal(v)
+        ? cloudByNomina.find(existing => valePersonalActivoParaDuplicado(existing) && v.integrantes.some(item => valePersonalIncluyeNomina(existing, item.nomina))) || null
+        : encontrarValePersonalActivoEquivalente(cloudByNomina, v);
       if(existingDuplicate){
         valesPersonal = mergeById(valesPersonal, cloudByNomina);
         saveValesPersonalLocal();
@@ -13621,7 +13909,8 @@ async function guardarValePersonal(){
   try{
     if(!valesPersonal.some(existing => String(existing.id) === String(v.id))) valesPersonal.unshift(v);
     await saveValesPersonal();
-    if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE) await cloudUpsertValePersonal(v);
+    if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE && !(esValePersonalGrupal(v) && esPreviewValeGrupalLocal())) await cloudUpsertValePersonal(v);
+    if(esValePersonalGrupal(v) && esPreviewValeGrupalLocal()) toast("Prueba local","El vale grupal se guardó únicamente en este dispositivo; Firebase no fue modificado.","info",5200);
     toast(isPermisoImss(v) ? "Permiso IMSS generado" : "Vale generado", isPermisoImss(v) ? "El QR respetará el horario programado." : ofreceAutorizacionInmediata ? "Vale guardado. El QR se activará al autorizarlo." : "Vale de personal guardado y QR generado.","ok",2400);
     closeValePersonalModal();
     if(ofreceAutorizacionInmediata){
@@ -13637,7 +13926,11 @@ async function guardarValePersonal(){
     saveValesPersonalLocal();
     const errorCode = String(error?.code || "").toLowerCase();
     const errorMessage = errorCode.includes("permission-denied")
-      ? "Firebase rechazó el permiso de escritura. Verifica que el usuario conserve el rol Servicio Médico e inténtalo nuevamente."
+      ? isPermisoImss(v)
+        ? "Firebase rechazó el permiso de escritura. Verifica que el usuario conserve el rol Servicio Médico e inténtalo nuevamente."
+        : currentUser?.role === ROLES.JEFE_RESTRINGIDO
+          ? "Firebase rechazó el permiso del Jefe restringido. Verifica que las reglas vigentes incluyan este rol y que el vale no corresponda a otro Jefe restringido."
+          : "Firebase rechazó el permiso de escritura. Verifica que el rol conserve el permiso para crear vales de personal."
       : errorCode.includes("unavailable") || errorCode.includes("network")
         ? "Firebase no está disponible o no hay conexión. Recupera Internet y vuelve a intentarlo."
         : "Firebase no confirmó el permiso. Vuelve a intentarlo; la operación no se repetirá automáticamente.";
@@ -13646,6 +13939,94 @@ async function guardarValePersonal(){
     guardandoValePersonal = false;
     if(saveButton?.isConnected){ saveButton.disabled=false; saveButton.textContent="Guardar y generar QR"; }
   }
+}
+
+function seleccionarIntegrantesMovimientoGrupal(v, status){
+  const esEntrada = isValePersonalEntrada(v);
+  const elegibles = v.integrantes.filter(item => status === ValeStatus.FUERA
+    ? item.status === ValeStatus.GENERADO
+    : esEntrada ? item.status === ValeStatus.GENERADO : item.status === ValeStatus.FUERA);
+  if(!elegibles.length){
+    toast("Sin integrantes pendientes", status === ValeStatus.FUERA ? "No hay integrantes pendientes de salida." : "No hay integrantes pendientes de regreso o ingreso.", "info", 3800);
+    return Promise.resolve([]);
+  }
+  return new Promise(resolve => {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay show";
+    const accion = status === ValeStatus.FUERA ? "Registrar salida" : esEntrada ? "Registrar ingreso" : "Registrar regreso";
+    overlay.innerHTML = `<div class="modal" style="max-width:620px;" role="dialog" aria-modal="true">
+      <div class="modal-head"><div><h3 style="margin:0;">${esc(accion)} · Vale grupal</h3><small>Selecciona a los integrantes que realizan este movimiento.</small></div></div>
+      <div class="modal-body">
+        <label style="display:flex;gap:8px;align-items:center;margin-bottom:10px;"><input type="checkbox" id="vpGrupoSeleccionarTodos" checked> Seleccionar todos</label>
+        <div style="display:grid;gap:8px;max-height:50vh;overflow:auto;">
+          ${elegibles.map(item => `<label style="display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;"><input type="checkbox" class="vp-grupo-movimiento" value="${esc(item.id)}" checked><span><b>${esc(item.nombre)}</b><small style="display:block;">Nómina ${esc(item.nomina)} · ${esc(item.departamento)}</small></span></label>`).join("")}
+        </div>
+        <div class="divider"></div><div class="row" style="justify-content:flex-end;"><button class="secondary" id="vpGrupoCancelarMovimiento">Cancelar</button><button class="ok" id="vpGrupoConfirmarMovimiento">${esc(accion)}</button></div>
+      </div></div>`;
+    document.body.appendChild(overlay);
+    const close = value => { overlay.remove(); resolve(value); };
+    overlay.querySelector("#vpGrupoSeleccionarTodos").onchange = event => overlay.querySelectorAll(".vp-grupo-movimiento").forEach(input => { input.checked = event.target.checked; });
+    overlay.querySelector("#vpGrupoCancelarMovimiento").onclick = () => close([]);
+    overlay.querySelector("#vpGrupoConfirmarMovimiento").onclick = () => {
+      const ids = Array.from(overlay.querySelectorAll(".vp-grupo-movimiento:checked")).map(input => input.value);
+      if(!ids.length) return toast("Selecciona integrantes","Elige por lo menos una persona para registrar el movimiento.","warn",3200);
+      close(ids);
+    };
+  });
+}
+
+function recalcularEstadoValeGrupal(v){
+  const estado = estadoIntegrantesValePersonal(v);
+  if(estado.finalizados === estado.total){
+    v.status = ValeStatus.REGRESO_CANCELADO;
+    v.qrActivo = false;
+    v.qrDesactivadoTs = Date.now();
+    v.qrDesactivadoMotivo = "GRUPO_FINALIZADO";
+  }else if(estado.fuera > 0){
+    v.status = ValeStatus.FUERA;
+    v.qrActivo = true;
+  }else{
+    v.status = ValeStatus.GENERADO;
+    v.qrActivo = true;
+  }
+}
+
+async function updateValePersonalStatusGrupal(v, status, movimientoDesdeQr){
+  const ids = await seleccionarIntegrantesMovimientoGrupal(v, status);
+  if(!ids.length) return false;
+  const now = Date.now();
+  const elegidos = new Set(ids.map(String));
+  const esEntrada = isValePersonalEntrada(v);
+  const salidaSinRegreso = isValePersonalSalidaSinRegreso(v);
+  v.integrantes.forEach(item => {
+    if(!elegidos.has(String(item.id))) return;
+    item.updatedTs = now;
+    if(status === ValeStatus.FUERA){
+      item.salidaTs = now;
+      if(salidaSinRegreso){
+        item.status = ValeStatus.REGRESO_CANCELADO;
+        item.salidaSinRegresoFinalizadaTs = now;
+      }else{
+        item.status = ValeStatus.FUERA;
+      }
+    }else{
+      item.status = ValeStatus.REGRESO_CANCELADO;
+      if(esEntrada){ item.llegadaTs = now; item.entradaBaseTs = getEntrada815BaseTs(v); }
+      else item.regresoTs = now;
+    }
+  });
+  recalcularEstadoValeGrupal(v);
+  v.updatedTs = now;
+  v.ultimoRegistroOrigen = movimientoDesdeQr ? "qr" : "manual";
+  await saveValesPersonal();
+  if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE && !esPreviewValeGrupalLocal()){
+    try{ await cloudUpsertValePersonal(v); }catch(error){ console.warn(error); toast("Sin confirmar en Firebase","El movimiento quedó local, pero Firebase no lo confirmó.","warn",4800); }
+  }
+  const estado = estadoIntegrantesValePersonal(v);
+  toast("Movimiento grupal registrado",`${ids.length} integrante(s) actualizados · ${estado.finalizados}/${estado.total} finalizados.`,"ok",4200);
+  if(!movimientoDesdeQr) cerrarRegistroManualPersonal();
+  await renderValesPersonal();
+  return true;
 }
 
 async function updateValePersonalStatus(id, status){
@@ -13661,6 +14042,8 @@ async function updateValePersonalStatus(id, status){
     toast("Escaneo requerido","Escanea el QR del vale o habilita temporalmente el registro manual.","warn",4200);
     return;
   }
+
+  if(esValePersonalGrupal(v)) return updateValePersonalStatusGrupal(v, status, movimientoDesdeQr);
 
   const now = Date.now();
   const finalizarSinRegreso = status === ValeStatus.FUERA && isValePersonalSalidaSinRegreso(v);
@@ -13862,7 +14245,7 @@ async function autorizarValePersonal(id, { renderAfter=true, freshPin=false }={}
     : await requireUserPin("autorizar este vale de personal");
   if(!pinValido) return false;
   const returnToUpcoming = currentView === "proximos_vales_personal";
-  const previousVale = { ...v };
+  const previousVale = globalThis.structuredClone ? structuredClone(v) : JSON.parse(JSON.stringify(v));
   const now = Date.now();
   v.status = ValeStatus.GENERADO;
   v.qrActivo = true;
@@ -13872,8 +14255,11 @@ async function autorizarValePersonal(id, { renderAfter=true, freshPin=false }={}
   v.autorizadoPorNombre = currentUser?.nombre || "";
   v.autorizadoPorRol = currentUser?.role || "";
   v.updatedTs = Date.now();
+  if(esValePersonalGrupal(v)){
+    v.integrantes.forEach(item => { if(item.status === ValeStatus.PENDIENTE) item.status = ValeStatus.GENERADO; });
+  }
   try{
-    await cloudUpsertValePersonal(v);
+    if(!(esValePersonalGrupal(v) && esPreviewValeGrupalLocal())) await cloudUpsertValePersonal(v);
   }catch(e){
     console.warn("No se pudo confirmar la autorización en Firebase:", e);
     Object.assign(v, previousVale);
@@ -13902,8 +14288,13 @@ async function cancelarValePersonal(id){
   v.canceladoPor = currentUser?.email || "";
   v.qrActivo = false;
   v.updatedTs = Date.now();
+  if(esValePersonalGrupal(v)){
+    v.integrantes.forEach(item => {
+      if(item.status !== ValeStatus.REGRESO_CANCELADO){ item.status = ValeStatus.REGRESO_CANCELADO; item.canceladoTs = v.canceladoTs; }
+    });
+  }
   await saveValesPersonal();
-  if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
+  if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE && !(esValePersonalGrupal(v) && esPreviewValeGrupalLocal())){
     try{ await cloudUpsertValePersonal(v); }catch(e){ console.warn(e); }
   }
   toast("Cancelado","El vale de personal fue cancelado.","ok",2200);
@@ -13932,11 +14323,14 @@ function renderValePersonalQR(id, { allowCreatedPreview=false }={}){
   const payload = `VALE_PERSONAL:${String(v.id)}`;
   const folio = v.folio || v.id;
   const esEntrada = isValePersonalEntrada(v);
+  const esGrupal = esValePersonalGrupal(v);
+  const listaIntegrantes = esGrupal ? v.integrantes.map((item,index) => `${index + 1}. ${item.nombre} · Nómina ${item.nomina}`).join("\n") : "";
   const shareText = [
-    "Permiso de personal",
+    esGrupal ? "Permiso grupal de personal" : "Permiso de personal",
     `Folio: ${folio}`,
-    `Colaborador: ${v.nombreColaborador || ""}`,
-    `Nomina: ${v.nomina || ""}`,
+    esGrupal ? `Responsable: ${v.nombreColaborador || ""}` : `Colaborador: ${v.nombreColaborador || ""}`,
+    esGrupal ? `Integrantes: ${v.integrantes.length}` : `Nomina: ${v.nomina || ""}`,
+    ...(esGrupal ? [listaIntegrantes] : []),
     `Departamento: ${v.departamento || ""}`,
     `Tipo: ${valePersonalMovimientoLabel(v)}`,
     `Fecha: ${valePassDate(v.fecha)}`,
@@ -13944,12 +14338,12 @@ function renderValePersonalQR(id, { allowCreatedPreview=false }={}){
   ].join("\n");
 
   appEl.innerHTML = renderValePermisoPass({
-    tipo:isValePersonalEntrada(v) ? "Entrada autorizada" : isPermisoImss(v) ? "Permiso IMSS" : "Entrada / Salida",
+    tipo:esGrupal ? "Vale grupal" : isValePersonalEntrada(v) ? "Entrada autorizada" : isPermisoImss(v) ? "Permiso IMSS" : "Entrada / Salida",
     payload,
     folio,
-    nombre:v.nombreColaborador || "",
-    dato1:v.nomina ? `Nomina: ${v.nomina}` : "",
-    dato2:v.observaciones || "Permiso de personal",
+    nombre:esGrupal ? `${v.integrantes.length} integrantes` : (v.nombreColaborador || ""),
+    dato1:esGrupal ? `Responsable: ${v.nombreColaborador || ""}` : v.nomina ? `Nomina: ${v.nomina}` : "",
+    dato2:esGrupal ? v.integrantes.map(item => `${item.nombre} (${item.nomina})`).join(" · ") : (v.observaciones || "Permiso de personal"),
     rol:"Empleado",
     depto:v.departamento || "",
     tipoPermiso:valePersonalMovimientoLabel(v),
@@ -13960,7 +14354,7 @@ function renderValePersonalQR(id, { allowCreatedPreview=false }={}){
       ? "Muestra este código QR al llegar. Es válido durante la fecha indicada, incluso si llegas antes de las 8:15 a.m.; el sistema registrará la hora real."
       : isPermisoImss(v)
       ? `Muestra este QR en caseta. La salida se habilita 5 minutos antes de las ${formatHoraTs(v.salidaProgramadaTs)} y permanece vigente hasta las 6:00 p.m. del mismo día.`
-      : "Muestra este codigo QR en caseta. Este permiso es personal e intransferible.",
+      : esGrupal ? "Muestra este código QR en caseta. El guardia podrá registrar a todo el grupo o seleccionar integrantes." : "Muestra este codigo QR en caseta. Este permiso es personal e intransferible.",
     volverAction:"valesPersonal"
   });
   const compartirQrButton = appEl.querySelector("#btnCompartirValePass");
@@ -14002,7 +14396,8 @@ function enviarValePersonalWhatsApp(id){
   const mensaje = [
     `Hola ${v.autorizadorNombre || ""}, tienes un vale pendiente de autorización.`,
     `Folio: ${v.folio || v.id}`,
-    `Colaborador: ${v.nombreColaborador || ""}`,
+    esValePersonalGrupal(v) ? `Vale grupal: ${v.integrantes.length} integrantes` : `Colaborador: ${v.nombreColaborador || ""}`,
+    ...(esValePersonalGrupal(v) ? v.integrantes.map(item => `• ${item.nombre} · Nómina ${item.nomina}`) : []),
     `Tipo: ${v.tipoPermiso || ""}`,
     `Tiempo autorizado: ${v.tiempoAutorizado || ""}`,
     `Departamento: ${v.departamento || ""}`,
@@ -17497,15 +17892,16 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
     }
 
     function valePersonalVigenteParaGafete(v, nomina){
-      const mismaNomina = normalizarNomina(v?.nomina) === normalizarNomina(nomina);
+      const mismaNomina = valePersonalIncluyeNomina(v, nomina);
       const fechaValida = String(v?.fecha || "") === todayISO();
-      const estadoValido = [ValeStatus.GENERADO, ValeStatus.FUERA].includes(v?.status);
+      const integrante = integrantesValePersonal(v).find(item => normalizarNomina(item.nomina) === normalizarNomina(nomina));
+      const estadoValido = [ValeStatus.GENERADO, ValeStatus.FUERA].includes(integrante?.status || v?.status);
       return mismaNomina && fechaValida && estadoValido && v?.qrActivo !== false;
     }
 
     function diagnosticoGafeteSinVale(nomina){
       const relacionados = valesPersonal
-        .filter(v => normalizarNomina(v?.nomina) === normalizarNomina(nomina))
+        .filter(v => valePersonalIncluyeNomina(v, nomina))
         .sort((a,b) => Number(b.updatedTs || b.createdTs || 0) - Number(a.updatedTs || a.createdTs || 0));
       const deHoy = relacionados.filter(v => String(v?.fecha || "") === todayISO());
       const pendiente = deHoy.find(v => v.status === ValeStatus.PENDIENTE);
@@ -17576,7 +17972,7 @@ ${docsText}• Horario: ${citaFmt}${reminderText}`;
       }
       candidatos.sort((a,b) => Number(b.autorizadoTs || b.updatedTs || b.createdTs || 0) - Number(a.autorizadoTs || a.updatedTs || a.createdTs || 0));
       if(!candidatos.length){
-        const tieneDatosLocales = valesPersonal.some(v => normalizarNomina(v?.nomina) === normalizarNomina(nomina));
+        const tieneDatosLocales = valesPersonal.some(v => valePersonalIncluyeNomina(v, nomina));
         if((navigator.onLine && !consultaNubeConfirmada) || (!navigator.onLine && !tieneDatosLocales)){
           return renderResultadoGafetePersonal({
             nomina,

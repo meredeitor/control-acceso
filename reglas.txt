@@ -30,6 +30,7 @@ service cloud.firestore {
     function isAdmin() { return hasRole("admin"); }
     function isCoordinador() { return hasRole("coordinador"); }
     function isJefe() { return hasRole("jefe"); }
+    function isJefeRestringido() { return hasRole("jefe_restringido"); }
     function isCompras() { return hasRole("compras"); }
     function isJefeCompras() { return hasRole("jefe_compras"); }
     function isJefeTi() { return hasRole("jefe_ti"); }
@@ -53,7 +54,8 @@ service cloud.firestore {
         || isJefeCompras()
         || isJefeTi()
         || isAnfitrion()
-        || isJefe();
+        || isJefe()
+        || isJefeRestringido();
     }
 
     function hasValeRoleOverride() {
@@ -78,7 +80,28 @@ service cloud.firestore {
     function canAuthorizeValePersonal() {
       return isAdmin()
         || hasConfiguredRolePermission("autorizar_vale_personal")
-        || (!hasValeRoleOverride() && (isJefe() || isJefeCompras() || isContraloria()));
+        || (!hasValeRoleOverride() && (isJefe() || isJefeRestringido() || isJefeCompras() || isContraloria()));
+    }
+
+    function isJefeRestringidoTarget(data) {
+      return (
+          ('colaboradorRole' in data)
+          && data.colaboradorRole == "jefe_restringido"
+        )
+        || (
+          ('esGrupal' in data)
+          && data.esGrupal == true
+          && ('rolesIntegrantes' in data)
+          && data.rolesIntegrantes is list
+          && data.rolesIntegrantes.hasAny(["jefe_restringido"])
+        )
+        || (
+          ('colaboradorUid' in data)
+          && data.colaboradorUid is string
+          && data.colaboradorUid != ""
+          && exists(/databases/$(database)/documents/users/$(data.colaboradorUid))
+          && userDoc(data.colaboradorUid).data.role == "jefe_restringido"
+        );
     }
 
     match /app_config/{id} {
@@ -485,6 +508,13 @@ service cloud.firestore {
               || resource.data.autorizadorEmail == myEmail()
             )
           )
+          || (
+            isJefeRestringido()
+            && (
+              resource.data.autorizadorUid == myUid()
+              || resource.data.autorizadorEmail == myEmail()
+            )
+          )
           || isJefeTi()
           || isGuardia()
           || isContraloria()
@@ -492,7 +522,7 @@ service cloud.firestore {
           || isJefe()
           || isServicioMedico()
           || isRecepcionista()
-          || (!isJefeCompras() && canAuthorizeValePersonal())
+          || (!isJefeCompras() && !isJefeRestringido() && canAuthorizeValePersonal())
         );
 
       allow create: if isAuth()
@@ -500,6 +530,7 @@ service cloud.firestore {
           (
             canManageVales()
             && request.resource.data.createdByUid == myUid()
+            && (!isJefeRestringido() || !isJefeRestringidoTarget(request.resource.data))
           )
           || (
             isKioskoAnon()
@@ -531,6 +562,7 @@ service cloud.firestore {
         && (
           (
             canAuthorizeValePersonal()
+            && (!isJefeRestringido() || !isJefeRestringidoTarget(resource.data))
             && (!('colaboradorUid' in resource.data) || resource.data.colaboradorUid != myUid())
             && resource.data.nombreColaborador != userDoc(myUid()).data.nombre
           )
@@ -576,6 +608,7 @@ service cloud.firestore {
           || (
             canManageVales()
             && resource.data.createdByUid == myUid()
+            && (!isJefeRestringido() || !isJefeRestringidoTarget(resource.data))
             && !(
               resource.data.status == "pendiente_autorizacion"
               && request.resource.data.status == "generado"
