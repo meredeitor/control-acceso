@@ -3541,7 +3541,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v243";
+  const APP_VERSION = "v244";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5886,6 +5886,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v244</b><span>Los vales de personal con tiempo excedido incluyen un aviso manual por WhatsApp al autorizador o, como alternativa, a quien creó el vale; el mensaje informa el tiempo fuera y solicita verificar el registro de entrada con el guardia.</span></div>
           <div class="help-release"><b>v243</b><span>Los vales de personal pueden generarse en modalidad grupal con captura manual de 2 a 10 integrantes, responsable, un solo QR y autorización, movimientos conjuntos o individuales, seguimiento por persona y desglose separado en el reporte de Nóminas.</span></div>
           <div class="help-release"><b>v242</b><span>La retención de 30 días consulta Firebase directamente, protege registros abiertos, muestra una vista previa, procesa eliminaciones confirmadas por bloques y conserva un resumen administrativo con encontrados, protegidos, eliminados y fallidos.</span></div>
           <div class="help-release"><b>v241</b><span>Se incorpora el rol Jefe restringido. Puede gestionar vales de colaboradores normales, pero sus propios vales y los de otros jefes restringidos solo pueden ser generados y autorizados por un Jefe normal o Administrador, identificando al colaborador por número de nómina.</span></div>
@@ -10900,6 +10901,7 @@ function renderValePersonalCard(v){
           : `<button class="danger" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.FUERA}" data-no-sb="true">Marcar salida</button>`) : ""}
         ${!esGrupal && mostrarRegistroManual && v.status === ValeStatus.FUERA && hasPerm("registrar_regreso_personal") ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar regreso</button>` : ""}
         ${v.status !== ValeStatus.REGRESO_CANCELADO && (hasPerm("crear_vale_personal") || (isPermisoImss(v) && hasPerm("crear_permiso_imss"))) ? `<button class="secondary" data-action="cancelarValePersonal" data-id="${esc(v.id)}" data-no-sb="true">Cancelar</button>` : ""}
+        ${excedido && !esGrupal ? `<button class="ok" data-action="alertaTiempoExcedidoWhatsApp" data-id="${esc(v.id)}" data-no-sb="true" aria-label="Avisar tiempo excedido por WhatsApp" title="Avisar tiempo excedido por WhatsApp"><svg aria-hidden="true" viewBox="0 0 32 32" width="18" height="18" fill="currentColor" focusable="false"><path d="M16.04 3.2A12.7 12.7 0 0 0 5.3 22.67L3.6 28.8l6.28-1.65a12.72 12.72 0 1 0 6.16-23.95Zm0 22.93c-1.93 0-3.82-.52-5.47-1.5l-.39-.23-3.72.98.99-3.62-.25-.37a10.2 10.2 0 1 1 8.84 4.74Zm5.6-7.64c-.3-.15-1.82-.9-2.1-1-.28-.1-.48-.15-.69.15-.2.3-.79 1-.97 1.2-.18.2-.36.23-.66.08-.3-.15-1.3-.48-2.47-1.53a9.2 9.2 0 0 1-1.7-2.12c-.18-.3-.02-.46.13-.61.14-.14.3-.36.46-.54.15-.18.2-.3.3-.51.1-.2.05-.38-.03-.54-.08-.15-.69-1.65-.94-2.26-.25-.6-.5-.52-.69-.53h-.58c-.2 0-.53.08-.81.38-.28.3-1.07 1.05-1.07 2.56s1.1 2.97 1.25 3.18c.15.2 2.16 3.3 5.24 4.63.73.32 1.3.5 1.75.65.74.23 1.4.2 1.93.12.59-.09 1.82-.74 2.08-1.46.25-.71.25-1.33.18-1.46-.08-.13-.28-.2-.59-.36Z"/></svg><span>Avisar</span></button>` : ""}
         ${renderKanbanDetailsButton()}
       </div>
       ${renderKanbanMovementPanel(valeHistoryEvents(v))}
@@ -13838,6 +13840,7 @@ function createValePersonalFromModal(){
     createdByUid: currentUser?.uid || "",
     createdByEmail: currentUser?.email || "",
     createdByNombre: currentUser?.nombre || "",
+    createdByTelefono: currentUser?.telefono || "",
     createdTs: Date.now(),
     updatedTs: Date.now()
   };
@@ -14403,6 +14406,47 @@ function enviarValePersonalWhatsApp(id){
     `Departamento: ${v.departamento || ""}`,
     "",
     `Abrir Caborca Access Control: ${enlace}`
+  ].join("\n");
+  window.open(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, "_blank", "noopener,noreferrer");
+}
+
+async function enviarAlertaTiempoExcedidoWhatsApp(id){
+  const v = valesPersonal.find(x => String(x.id) === String(id));
+  if(!v) return toast("No encontrado","No se encontró el vale de personal.","warn",3200);
+  if(!isValePersonalExcedido(v) || v.status !== ValeStatus.FUERA){
+    return toast("Aviso no disponible","El vale ya no aparece fuera con tiempo excedido.","warn",3800);
+  }
+
+  await ensureValePersonalAutorizadores().catch(()=>{});
+  const perfiles = [...valePersonalPerfilesCache, ...valePersonalAutorizadoresCache];
+  const buscarPerfil = (uid, email) => perfiles.find(u =>
+    (uid && String(u.uid || u.id || "") === String(uid)) ||
+    (email && String(u.email || "").toLowerCase() === String(email).toLowerCase())
+  );
+  const perfilAutorizador = buscarPerfil(v.autorizadorUid || v.autorizadoPorUid, v.autorizadorEmail || v.autorizadoPor);
+  const perfilCreador = buscarPerfil(v.createdByUid, v.createdByEmail);
+  const telefonoAutorizador = normalizarTelefonoWhatsApp(v.autorizadorTelefono || perfilAutorizador?.telefono);
+  const telefonoCreador = normalizarTelefonoWhatsApp(v.createdByTelefono || perfilCreador?.telefono);
+  const telefono = telefonoAutorizador || telefonoCreador;
+  const destinatario = telefonoAutorizador
+    ? (v.autorizadorNombre || v.autorizadoPorNombre || perfilAutorizador?.nombre || "")
+    : (v.createdByNombre || perfilCreador?.nombre || "");
+  if(!telefono){
+    return toast("Teléfono requerido","Registra el teléfono del autorizador o de quien creó el vale en Usuarios para enviar la alerta.","warn",5200);
+  }
+
+  const usadoMin = calcValePersonalTiempo(v);
+  const autorizadoMin = parseTiempoAutorizadoMin(v.tiempoAutorizado);
+  const excedenteMin = usadoMin !== null && autorizadoMin !== null ? Math.max(0, usadoMin - autorizadoMin) : null;
+  const mensaje = [
+    `⚠️ Alerta de tiempo excedido${destinatario ? ` para ${destinatario}` : ""}`,
+    `${v.nombreColaborador || "El colaborador"}${v.nomina ? `, nómina ${v.nomina}` : ""}, todavía aparece fuera en Caborca Access Control.`,
+    `Tiempo autorizado: ${v.tiempoAutorizado || "No especificado"}.`,
+    `Tiempo fuera registrado: ${usadoMin !== null ? formatMinutes(usadoMin) : "No disponible"}.`,
+    `Tiempo excedido: ${excedenteMin !== null ? formatMinutes(excedenteMin) : "No disponible"}.`,
+    `Folio: ${v.folio || v.id || "Sin folio"}.`,
+    "",
+    "Verifica si el colaborador ya regresó y registró su entrada con el guardia."
   ].join("\n");
   window.open(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, "_blank", "noopener,noreferrer");
 }
@@ -19438,6 +19482,7 @@ function renderProveedores(lista){
         case "kanbanDetailsNoop": break;
         case "logout": await doLogout(); break;
         case "whatsappValePersonal": enviarValePersonalWhatsApp(id); break;
+        case "alertaTiempoExcedidoWhatsApp": await enviarAlertaTiempoExcedidoWhatsApp(id); break;
         case "abrirMenuInicio": btnHamb?.click(); break;
         case "homeModulo": {
           const moduleKey = el.dataset.module;
@@ -19968,6 +20013,7 @@ window.addEventListener("offline",updateNet);
         role: prof.role,
         nombre: prof.nombre || prof.email,
         nomina: prof.nomina || prof.noNomina || prof.numeroNomina || "",
+        telefono: prof.telefono || "",
         createdTs: prof.createdTs || 0,
         solicitadoTs: prof.solicitadoTs || 0,
         passwordChangedTs: prof.passwordChangedTs || 0,
