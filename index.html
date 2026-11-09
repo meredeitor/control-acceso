@@ -3541,7 +3541,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v244";
+  const APP_VERSION = "v245";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5886,6 +5886,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v245</b><span>Los avisos de vales de personal abren directamente la aplicación instalada de WhatsApp en computadora, teléfono o tablet, evitando WhatsApp Web y pestañas adicionales del navegador.</span></div>
           <div class="help-release"><b>v244</b><span>Los vales de personal con tiempo excedido incluyen un aviso manual por WhatsApp al autorizador o, como alternativa, a quien creó el vale; el mensaje informa el tiempo fuera y solicita verificar el registro de entrada con el guardia.</span></div>
           <div class="help-release"><b>v243</b><span>Los vales de personal pueden generarse en modalidad grupal con captura manual de 2 a 10 integrantes, responsable, un solo QR y autorización, movimientos conjuntos o individuales, seguimiento por persona y desglose separado en el reporte de Nóminas.</span></div>
           <div class="help-release"><b>v242</b><span>La retención de 30 días consulta Firebase directamente, protege registros abiertos, muestra una vista previa, procesa eliminaciones confirmadas por bloques y conserva un resumen administrativo con encontrados, protegidos, eliminados y fallidos.</span></div>
@@ -14388,6 +14389,11 @@ function normalizarTelefonoWhatsApp(value=""){
   return digits;
 }
 
+function abrirWhatsAppInstalado(telefono, mensaje){
+  const enlace = `whatsapp://send?phone=${encodeURIComponent(telefono)}&text=${encodeURIComponent(mensaje)}`;
+  window.location.assign(enlace);
+}
+
 function enviarValePersonalWhatsApp(id){
   const v = valesPersonal.find(x => String(x.id) === String(id));
   if(!v) return toast("No encontrado","No se encontró el vale de personal.","warn",3200);
@@ -14407,7 +14413,7 @@ function enviarValePersonalWhatsApp(id){
     "",
     `Abrir Caborca Access Control: ${enlace}`
   ].join("\n");
-  window.open(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, "_blank", "noopener,noreferrer");
+  abrirWhatsAppInstalado(telefono, mensaje);
 }
 
 async function enviarAlertaTiempoExcedidoWhatsApp(id){
@@ -14448,7 +14454,7 @@ async function enviarAlertaTiempoExcedidoWhatsApp(id){
     "",
     "Verifica si el colaborador ya regresó y registró su entrada con el guardia."
   ].join("\n");
-  window.open(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, "_blank", "noopener,noreferrer");
+  abrirWhatsAppInstalado(telefono, mensaje);
 }
 
 async function renderEditarCitaCompras(id){
