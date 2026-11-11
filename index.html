@@ -3541,7 +3541,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v246";
+  const APP_VERSION = "v247";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5886,6 +5886,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v247</b><span>Las tarjetas programadas del dashboard de proveedores incorporan un botón compacto con icono para abrir el QR de la cita, sin alterar su estado; el control se oculta después de registrar la llegada.</span></div>
           <div class="help-release"><b>v246</b><span>Los vales individuales y cada integrante de los vales grupales requieren una nómina numérica de exactamente 4 dígitos; se bloquean letras y valores como “Varios”, y las alertas de validación se muestran correctamente sobre el modal.</span></div>
           <div class="help-release"><b>v245</b><span>Los avisos de vales de personal abren directamente la aplicación instalada de WhatsApp en computadora, teléfono o tablet, evitando WhatsApp Web y pestañas adicionales del navegador.</span></div>
           <div class="help-release"><b>v244</b><span>Los vales de personal con tiempo excedido incluyen un aviso manual por WhatsApp al autorizador o, como alternativa, a quien creó el vale; el mensaje informa el tiempo fuera y solicita verificar el registro de entrada con el guardia.</span></div>
@@ -9093,7 +9094,7 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
                 <span class="provider-mini-pill ${dict === "pendiente" ? "alert" : dict === "aprobado" ? "success" : ""}">${dict === "aprobado" ? "✓" : dict === "pendiente" ? "◷" : "!"} ${esc(dictamenLabel)}</span>
                 ${showInc ? `<span class="provider-mini-pill alert">! ${esc(incLabel)}</span>` : ""}
                 ${v.materialRecibir ? `<span class="provider-mini-pill" title="Material">${esc(v.materialRecibir)}</span>` : ""}
-                <span class="provider-card-actions">${renderKanbanDetailsButton()}<button class="secondary" data-action="ficha" data-id="${esc(v.id)}" data-no-sb="true" aria-label="Ver ficha" title="Ver ficha">◉</button></span>
+                <span class="provider-card-actions">${v.status === Status.PROGRAMADO ? `<button class="secondary" data-action="verQR" data-id="${esc(v.id)}" data-no-sb="true" aria-label="Ver QR" title="Ver QR"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="3" width="6" height="6" rx="1"></rect><rect x="15" y="3" width="6" height="6" rx="1"></rect><rect x="3" y="15" width="6" height="6" rx="1"></rect><path d="M15 15h2v2h-2zM19 15h2v4h-2M15 19h2v2h-2M19 21h2"></path></svg></button>` : ""}${renderKanbanDetailsButton()}<button class="secondary" data-action="ficha" data-id="${esc(v.id)}" data-no-sb="true" aria-label="Ver ficha" title="Ver ficha">◉</button></span>
               </div>
               ${renderKanbanMovementPanel(visitaKanbanEvents(v))}
               ${v.status === Status.PENDIENTE_AUTORIZACION && currentUser?.role === ROLES.COMPRAS ? `<div class="row" style="margin-top:9px"><button class="ok" data-action="autorizarVisita" data-id="${esc(v.id)}" data-no-sb="true">Autorizar</button><button class="bad" data-action="rechazarVisita" data-id="${esc(v.id)}" data-no-sb="true">Rechazar</button></div>` : ""}
