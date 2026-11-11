@@ -3175,6 +3175,10 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     .user-icon-action{display:inline-grid;place-items:center;flex:0 0 38px;width:38px;height:38px;min-width:38px;padding:0;border-radius:11px}
     .user-icon-action svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
     .user-icon-action.danger{color:#dc2626}
+    .citas-action-buttons{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+    .citas-icon-action{display:inline-grid!important;place-items:center;flex:0 0 38px;width:38px!important;height:38px;min-width:38px;padding:0!important;margin:0!important;border-radius:11px}
+    .citas-icon-action svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+    .citas-icon-action.danger{color:#dc2626}
     .vale-history-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
     .vale-history-card{min-width:0;padding:16px;border:1px solid var(--border);border-radius:18px;background:var(--panel);box-shadow:0 10px 26px rgba(15,23,42,.07)}
     .vale-history-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
@@ -3541,7 +3545,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v247";
+  const APP_VERSION = "v248";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -4350,6 +4354,7 @@ async function saveRolePermsConfig(role, perms){
     let _rondRutaEditorDraft = null;
     let _returnToEditCitaId = null;
     let _returnToEditMode = false;
+    let _returnToCitasComprasMode = false;
 
 
     // -------------------------
@@ -5886,6 +5891,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v248</b><span>La columna Acciones de Citas de proveedores utiliza botones compactos con iconos y tooltips para ver QR, editar y cancelar; Ver QR aparece únicamente en citas programadas y permite regresar al listado.</span></div>
           <div class="help-release"><b>v247</b><span>Las tarjetas programadas del dashboard de proveedores incorporan un botón compacto con icono para abrir el QR de la cita, sin alterar su estado; el control se oculta después de registrar la llegada.</span></div>
           <div class="help-release"><b>v246</b><span>Los vales individuales y cada integrante de los vales grupales requieren una nómina numérica de exactamente 4 dígitos; se bloquean letras y valores como “Varios”, y las alertas de validación se muestran correctamente sobre el modal.</span></div>
           <div class="help-release"><b>v245</b><span>Los avisos de vales de personal abren directamente la aplicación instalada de WhatsApp en computadora, teléfono o tablet, evitando WhatsApp Web y pestañas adicionales del navegador.</span></div>
@@ -9603,12 +9609,11 @@ function paintCitasComprasTable(tableList, baseList){
               <td>${esc(v.motivo||"-")}</td>
               <td>${badge(v.status)}</td>
               <td style="white-space:nowrap;">
-                <button class="secondary" data-action="ccEdit" data-id="${esc(v.id)}" ${canEdit?"":"disabled"}>
-                  Editar
-                </button>
-                <button class="danger" data-action="ccCancel" data-id="${esc(v.id)}" ${canCancel?"":"disabled"}>
-                  Cancelar
-                </button>
+                <div class="citas-action-buttons">
+                  ${_citasTipoFiltro === "proveedores" && v.status === Status.PROGRAMADO && hasPerm("ver_qr") ? `<button class="secondary citas-icon-action" data-action="ccTableVerQR" data-id="${esc(v.id)}" aria-label="Ver QR" title="Ver QR"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"></rect><rect x="15" y="3" width="6" height="6" rx="1"></rect><rect x="3" y="15" width="6" height="6" rx="1"></rect><path d="M15 15h2v2h-2zM19 15h2v4h-2M15 19h2v2h-2M19 21h2"></path></svg></button>` : ""}
+                  <button class="secondary citas-icon-action" data-action="ccEdit" data-id="${esc(v.id)}" aria-label="Editar cita" title="Editar cita" ${canEdit?"":"disabled"}><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"></path><path d="m14 7 3 3"></path></svg></button>
+                  <button class="danger citas-icon-action" data-action="ccCancel" data-id="${esc(v.id)}" aria-label="Cancelar cita" title="Cancelar cita" ${canCancel?"":"disabled"}><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m9 9 6 6M15 9l-6 6"></path></svg></button>
+                </div>
               </td>
             </tr>
           `;
@@ -17782,7 +17787,9 @@ if(!esVisitante && existeCitaEnHorario(fechaHora, area)){
     </div>
 
     <div class="row appointment-pass-actions">
-      ${_returnToEditMode ? `
+      ${_returnToCitasComprasMode ? `
+        <button class="secondary" data-action="citasComprasBack">Volver a citas</button>
+      ` : _returnToEditMode ? `
         <button class="secondary" data-action="volverAEditarCita">Volver a edición</button>
       ` : ""}
       <button class="secondary" id="btnGuardarQR" type="button">Guardar pase</button>
@@ -19907,8 +19914,16 @@ function renderProveedores(lista){
   break;
 
 case "ccEdit":
+  _returnToCitasComprasMode = false;
   if(bloquearAccionCitaRetrasada(id, "editar la cita")) break;
   await renderEditarCitaCompras(id);
+  break;
+
+case "ccTableVerQR":
+  _returnToEditMode = false;
+  _returnToEditCitaId = null;
+  _returnToCitasComprasMode = true;
+  renderQR(id);
   break;
 
 case "ccSaveEdit":
@@ -19924,6 +19939,7 @@ case "ccCancel":
   break;
 
 case "citasComprasBack":
+  _returnToCitasComprasMode = false;
   await renderCitasCompras(_citasTipoFiltro);
   await loadCitasCompras();
   break;
@@ -19941,6 +19957,7 @@ case "citasComprasBack":
 }
 
 case "ccVerQR":
+  _returnToCitasComprasMode = false;
   _returnToEditCitaId = id;
   _returnToEditMode = true;
   renderQR(id);
@@ -19955,6 +19972,7 @@ case "volverAEditarCita":
   break;
 
   case "home":
+  _returnToCitasComprasMode = false;
   _returnToEditMode = false;
   _returnToEditCitaId = null;
   lockView = false;
