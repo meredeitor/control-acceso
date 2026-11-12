@@ -362,7 +362,7 @@
         padding:8px 12px 10px;
       }
       .vale-modal:not(.is-grupal) .two{
-        grid-template-columns:repeat(4,minmax(0,1fr));
+        grid-template-columns:repeat(2,minmax(0,1fr));
         gap:7px 10px;
       }
       .vale-modal:not(.is-grupal) label{
@@ -3578,7 +3578,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v249";
+  const APP_VERSION = "v250";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5924,6 +5924,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v250</b><span>El formulario individual de Nuevo vale de personal conserva una distribución clara de dos columnas y aprovecha la altura ampliada del modal para evitar desplazamiento vertical innecesario.</span></div>
           <div class="help-release"><b>v249</b><span>Los vales de personal admiten nóminas de practicantes con formato P más tres dígitos, por ejemplo P064, sin confundirlas con nóminas numéricas; el modal individual aprovecha mejor la altura disponible y evita desplazamiento vertical innecesario.</span></div>
           <div class="help-release"><b>v248</b><span>La columna Acciones de Citas de proveedores utiliza botones compactos con iconos y tooltips para ver QR, editar y cancelar; Ver QR aparece únicamente en citas programadas y permite regresar al listado.</span></div>
           <div class="help-release"><b>v247</b><span>Las tarjetas programadas del dashboard de proveedores incorporan un botón compacto con icono para abrir el QR de la cita, sin alterar su estado; el control se oculta después de registrar la llegada.</span></div>
