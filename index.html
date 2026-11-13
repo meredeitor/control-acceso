@@ -3578,7 +3578,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   </div>
 </div>
 <script type="module">
-  const APP_VERSION = "v250";
+  const APP_VERSION = "v251";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5924,7 +5924,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
-          <div class="help-release"><b>v250</b><span>El formulario individual de Nuevo vale de personal conserva una distribución clara de dos columnas y aprovecha la altura ampliada del modal para evitar desplazamiento vertical innecesario.</span></div>
+          <div class="help-release"><b>v251</b><span>Los vales grupales muestran en el historial la salida, ingreso o regreso registrados por integrante, incluyendo la hora y el usuario que realizó los nuevos movimientos.</span></div>
           <div class="help-release"><b>v249</b><span>Los vales de personal admiten nóminas de practicantes con formato P más tres dígitos, por ejemplo P064, sin confundirlas con nóminas numéricas; el modal individual aprovecha mejor la altura disponible y evita desplazamiento vertical innecesario.</span></div>
           <div class="help-release"><b>v248</b><span>La columna Acciones de Citas de proveedores utiliza botones compactos con iconos y tooltips para ver QR, editar y cancelar; Ver QR aparece únicamente en citas programadas y permite regresar al listado.</span></div>
           <div class="help-release"><b>v247</b><span>Las tarjetas programadas del dashboard de proveedores incorporan un botón compacto con icono para abrir el QR de la cita, sin alterar su estado; el control se oculta después de registrar la llegada.</span></div>
@@ -11012,6 +11012,29 @@ function valeHistoryEvents(v={}){
   push(v.salidaTs, isValePersonalSalidaSinRegreso(v) ? "Salida sin regreso registrada · vale finalizado" : "Salida registrada", [v.salidaGuardiaNombre,v.salidaGuardiaEmail,v.imssSalidaGuardiaNombre,v.imssSalidaGuardiaEmail].filter(Boolean).join(" · ") || "Guardia no registrado", isValePersonalSalidaSinRegreso(v) ? "ok" : "warn");
   push(v.llegadaTs, "Ingreso registrado", v.regresoGuardiaNombre || v.regresoGuardiaEmail || v.registroIngresoPor || "Guardia no registrado", "ok");
   push(v.regresoTs, "Regreso registrado", v.regresoGuardiaNombre || v.regresoGuardiaEmail || "Guardia no registrado", "ok");
+  if(esValePersonalGrupal(v)){
+    const movimientos = new Map();
+    const agregarMovimiento = (item, ts, tipo, title, tone) => {
+      const n = Number(ts || 0);
+      if(!n) return;
+      const key = `${tipo}:${n}`;
+      if(!movimientos.has(key)) movimientos.set(key,{ ts:n, title, tone, integrantes:[], registradoPor:"" });
+      const movimiento = movimientos.get(key);
+      movimiento.integrantes.push(item.nombre || `Nómina ${item.nomina || "-"}`);
+      movimiento.registradoPor ||= item.movimientoPorNombre || item.movimientoPorEmail || "";
+    };
+    v.integrantes.forEach(item => {
+      agregarMovimiento(item, item.salidaTs, "salida", isValePersonalSalidaSinRegreso(v) ? "Salida sin regreso registrada" : "Salida registrada", isValePersonalSalidaSinRegreso(v) ? "ok" : "warn");
+      agregarMovimiento(item, item.llegadaTs, "ingreso", "Ingreso registrado", "ok");
+      agregarMovimiento(item, item.regresoTs, "regreso", "Regreso registrado", "ok");
+    });
+    movimientos.forEach(movimiento => {
+      const cantidad = movimiento.integrantes.length;
+      const nombres = movimiento.integrantes.join(", ");
+      const quien = movimiento.registradoPor ? ` · Registró: ${movimiento.registradoPor}` : "";
+      push(movimiento.ts, `${movimiento.title} · ${cantidad} integrante${cantidad === 1 ? "" : "s"}`, `${nombres}${quien}`, movimiento.tone);
+    });
+  }
   push(v.canceladoTs, "Vale cancelado", v.canceladoPor || "Usuario no registrado", "bad");
   return events.sort((a,b)=>a.ts-b.ts);
 }
@@ -14114,6 +14137,9 @@ async function updateValePersonalStatusGrupal(v, status, movimientoDesdeQr){
   v.integrantes.forEach(item => {
     if(!elegidos.has(String(item.id))) return;
     item.updatedTs = now;
+    item.movimientoPorUid = currentUser?.uid || "";
+    item.movimientoPorEmail = currentUser?.email || "";
+    item.movimientoPorNombre = currentUser?.nombre || "";
     if(status === ValeStatus.FUERA){
       item.salidaTs = now;
       if(salidaSinRegreso){
