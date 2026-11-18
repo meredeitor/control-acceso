@@ -2437,6 +2437,14 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     .access-auth-form .auth-intro{margin:-5px 0 5px;color:var(--muted);font-size:.82rem;line-height:1.45}
     .access-auth-form input{min-height:50px;border-radius:13px;padding:12px 14px;font-size:1rem}
     .access-auth-form #btnLogin,.access-auth-form #btnCreate{min-height:50px;border-radius:14px;background:linear-gradient(145deg,#1687ff,#075ddb);box-shadow:0 12px 24px rgba(8,104,242,.28)}
+    .auth-progress{display:grid;gap:8px;padding:12px 13px;border:1px solid var(--border);border-radius:13px;background:color-mix(in srgb,var(--panel2) 76%,transparent)}
+    .auth-progress[hidden]{display:none!important}.auth-progress-step{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:.78rem;font-weight:800}
+    .auth-progress-step::before{content:"";flex:0 0 15px;width:15px;height:15px;border:2px solid color-mix(in srgb,var(--muted) 28%,transparent);border-radius:50%;box-sizing:border-box}
+    .auth-progress-step.active{color:var(--text)}.auth-progress-step.active::before{border-color:color-mix(in srgb,#1687ff 28%,transparent);border-top-color:#1687ff;animation:auth-spin .75s linear infinite}
+    .auth-progress-step.done{color:#16813f}.auth-progress-step.done::before{content:"✓";display:grid;place-items:center;border-color:#22c55e;background:#22c55e;color:#fff;font-size:10px;line-height:1}
+    .auth-progress-step.failed{color:#dc2626}.auth-progress-step.failed::before{content:"!";display:grid;place-items:center;border-color:#ef4444;background:#ef4444;color:#fff;font-size:10px;line-height:1}
+    .auth-inline-error{padding:11px 13px;border:1px solid rgba(239,68,68,.45);border-radius:12px;background:rgba(239,68,68,.11);color:#dc2626;font-size:.8rem;font-weight:800;line-height:1.4}
+    .auth-inline-error[hidden]{display:none!important}@keyframes auth-spin{to{transform:rotate(360deg)}}
     .auth-admin-help{margin:2px 0 0;padding:12px 14px;border:1px solid rgba(96,165,250,.28);border-radius:14px;background:rgba(59,130,246,.10);color:var(--muted);font-size:.8rem;line-height:1.5;text-align:center}
     .auth-theme-toggle{position:absolute;z-index:3;right:16px;top:16px;width:44px;height:44px;min-height:44px;padding:0;border-radius:14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.32);color:#fff;box-shadow:0 8px 18px rgba(0,0,0,.15);font-size:1.25rem}
     .auth-theme-toggle:hover{background:rgba(255,255,255,.24);transform:translateY(-1px)}
@@ -3571,14 +3579,44 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
 </header>
 <div class="container">
   
-  <div id="app"></div>
+  <div id="app"><section class="access-auth-view" id="initialLoginShell">
+    <article class="access-auth-card">
+      <div class="access-auth-brand">
+        <div class="access-auth-brand-content">
+          <img class="access-auth-shield" src="icon-shield-master.png" alt="Escudo de Caborca Access Control">
+          <div class="access-auth-brand-name"><span>Caborca</span><span>Access Control</span></div>
+          <p class="access-auth-brand-copy">Control seguro para proveedores, visitantes, vales de salida y rondines.</p>
+          <div class="access-auth-features"><span>Acceso seguro</span><span>Control centralizado</span><span>Operación móvil</span></div>
+        </div>
+      </div>
+      <div class="access-auth-form">
+        <h2>Iniciar sesión</h2>
+        <p class="auth-intro">Ingresa tus datos para acceder a Caborca Access Control.</p>
+        <label for="initialLoginEmail">Correo electrónico</label><input id="initialLoginEmail" type="email" autocomplete="email">
+        <label for="initialLoginPass">Contraseña</label><input id="initialLoginPass" type="password" autocomplete="current-password">
+        <button id="initialLoginButton" type="button" disabled>Preparando acceso…</button>
+        <div class="auth-progress"><div class="auth-progress-step active">Preparando conexión segura…</div></div>
+        <p class="auth-admin-help">La pantalla ya está disponible; la conexión segura terminará de prepararse en segundo plano.</p>
+      </div>
+    </article>
+  </section></div>
 </div>
 
 <div class="toast-wrap" id="toasts"></div>
   </div>
 </div>
+<script>
+  window.setTimeout(function(){
+    var shell=document.getElementById("initialLoginShell");
+    if(!shell) return;
+    var step=shell.querySelector(".auth-progress-step");
+    if(step){ step.classList.remove("active"); step.classList.add("failed"); step.textContent="No se pudo preparar la conexión segura."; }
+    var help=shell.querySelector(".auth-admin-help");
+    if(help) help.textContent="Revisa tu conexión a Internet y vuelve a cargar la página.";
+  },15000);
+</script>
 <script type="module">
-  const APP_VERSION = "v251";
+  const APP_VERSION = "v252";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5924,7 +5962,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
-          <div class="help-release"><b>v251</b><span>Los vales grupales muestran en el historial la salida, ingreso o regreso registrados por integrante, incluyendo la hora y el usuario que realizó los nuevos movimientos.</span></div>
+          <div class="help-release"><b>v252</b><span>El inicio de sesión aparece inmediatamente y muestra el avance de credenciales, perfil y permisos, con tiempos máximos y errores visibles dentro del formulario.</span></div>
           <div class="help-release"><b>v249</b><span>Los vales de personal admiten nóminas de practicantes con formato P más tres dígitos, por ejemplo P064, sin confundirlas con nóminas numéricas; el modal individual aprovecha mejor la altura disponible y evita desplazamiento vertical innecesario.</span></div>
           <div class="help-release"><b>v248</b><span>La columna Acciones de Citas de proveedores utiliza botones compactos con iconos y tooltips para ver QR, editar y cancelar; Ver QR aparece únicamente en citas programadas y permite regresar al listado.</span></div>
           <div class="help-release"><b>v247</b><span>Las tarjetas programadas del dashboard de proveedores incorporan un botón compacto con icono para abrir el QR de la cita, sin alterar su estado; el control se oculta después de registrar la llegada.</span></div>
@@ -8419,6 +8457,67 @@ window.addEventListener('visibilitychange', ()=>{
     // -------------------------
     // Login / Logout UI
     // -------------------------
+    const AUTH_TIMEOUT_MS = 12000;
+    const PROFILE_TIMEOUT_MS = 10000;
+    const PERMISSIONS_TIMEOUT_MS = 10000;
+    let authFlowToken = 0;
+    let authCredentialsTimedOut = false;
+    let pendingAuthInlineError = "";
+
+    function withAuthTimeout(promise, timeoutMs, code){
+      let timer;
+      return Promise.race([
+        Promise.resolve(promise).finally(() => clearTimeout(timer)),
+        new Promise((_, reject) => { timer = setTimeout(() => reject(Object.assign(new Error(code), { code })), timeoutMs); })
+      ]);
+    }
+
+    function setAuthProgress(stage, failed=false){
+      const box = document.getElementById("authProgress");
+      if(!box) return;
+      box.hidden = false;
+      const order = ["credentials","profile","permissions","authorized"];
+      const activeIndex = order.indexOf(stage);
+      box.querySelectorAll("[data-auth-stage]").forEach(step => {
+        const index = order.indexOf(step.dataset.authStage);
+        step.classList.toggle("done", !failed && index < activeIndex || (!failed && stage === "authorized" && index === activeIndex));
+        step.classList.toggle("active", !failed && index === activeIndex && stage !== "authorized");
+        step.classList.toggle("failed", failed && index === activeIndex);
+      });
+    }
+
+    function clearAuthInlineError(){
+      const errorBox = document.getElementById("authInlineError");
+      if(errorBox){ errorBox.hidden = true; errorBox.textContent = ""; }
+      document.querySelectorAll(".access-auth-form input").forEach(input => input.removeAttribute("aria-invalid"));
+    }
+
+    function showAuthInlineError(message, fieldId=""){
+      const errorBox = document.getElementById("authInlineError");
+      if(errorBox){
+        errorBox.textContent = message;
+        errorBox.hidden = false;
+        errorBox.setAttribute("role","alert");
+        errorBox.scrollIntoView({ block:"nearest", behavior:"smooth" });
+      }
+      if(fieldId) document.getElementById(fieldId)?.setAttribute("aria-invalid","true");
+      const button = document.getElementById("btnLogin");
+      if(button){ button.disabled = false; button.textContent = "Entrar"; }
+    }
+
+    function authErrorMessage(error){
+      const code = String(error?.code || "").toLowerCase();
+      if(code.includes("auth/invalid-credential") || code.includes("auth/wrong-password") || code.includes("auth/user-not-found")) return "El correo o la contraseña no son correctos. Verifica los datos e inténtalo nuevamente.";
+      if(code.includes("auth/invalid-email")) return "El formato del correo electrónico no es válido.";
+      if(code.includes("auth/user-disabled")) return "Esta cuenta está deshabilitada. Comunícate con el administrador.";
+      if(code.includes("auth/too-many-requests")) return "Se realizaron demasiados intentos. Espera unos minutos antes de volver a intentarlo.";
+      if(code.includes("auth/network-request-failed")) return "No fue posible conectar con Firebase. Revisa Internet y vuelve a intentarlo.";
+      if(code.includes("auth_timeout")) return "La validación de credenciales tardó demasiado. Revisa tu conexión y pulsa Entrar nuevamente.";
+      if(code.includes("profile_timeout")) return "La consulta del perfil tardó demasiado. Revisa tu conexión y vuelve a intentarlo.";
+      if(code.includes("permissions_timeout")) return "La carga de permisos tardó demasiado. Revisa tu conexión y vuelve a intentarlo.";
+      return error?.message || "No fue posible completar el inicio de sesión.";
+    }
+
     function setAuthShell(enabled){
       document.body.classList.toggle("auth-mode", Boolean(enabled));
       if(enabled) sbClose();
@@ -8467,6 +8566,8 @@ window.addEventListener('visibilitychange', ()=>{
 }
 
   function renderLogin(){
+  const bootstrapEmail = document.getElementById("initialLoginEmail")?.value || "";
+  const bootstrapPass = document.getElementById("initialLoginPass")?.value || "";
   setAuthShell(true);
   currentView = "login";
   dashboardSearchTerm = "";
@@ -8480,6 +8581,19 @@ window.addEventListener('visibilitychange', ()=>{
 
   function render(){
     appEl.innerHTML = isRegister ? renderRegisterForm() : renderLoginForm();
+
+    if(!isRegister && bootstrapEmail){
+      const emailInput = document.getElementById("loginEmail");
+      const passInput = document.getElementById("loginPass");
+      if(emailInput) emailInput.value = bootstrapEmail;
+      if(passInput) passInput.value = bootstrapPass;
+    }
+
+    if(!isRegister && pendingAuthInlineError){
+      const message = pendingAuthInlineError;
+      pendingAuthInlineError = "";
+      showAuthInlineError(message);
+    }
 
     const authThemeBtn = document.querySelector("[data-auth-theme]");
     const syncAuthTheme = () => {
@@ -8498,10 +8612,15 @@ window.addEventListener('visibilitychange', ()=>{
 
     // ---- Eventos LOGIN ----
     const btnLogin = document.getElementById("btnLogin");
+    ["loginEmail","loginPass"].forEach(id => document.getElementById(id)?.addEventListener("input", () => {
+      clearAuthInlineError();
+      const progress = document.getElementById("authProgress");
+      if(progress) progress.hidden = true;
+    }));
 
 if (btnLogin) {
 
-  btnLogin.onclick = async () => {
+    btnLogin.onclick = async () => {
 
     const email = $("#loginEmail").value.trim();
     const pass  = $("#loginPass").value.trim();
@@ -8514,84 +8633,30 @@ if (btnLogin) {
       );
     }
 
-    // Evitar múltiples clics
+    clearAuthInlineError();
+    const flowToken = ++authFlowToken;
+    authCredentialsTimedOut = false;
+    setAuthProgress("credentials");
     btnLogin.disabled = true;
+    btnLogin.textContent = "Validando…";
+    let credentialsAccepted = false;
 
     try {
-
-      await signInWithEmailAndPassword(auth, email, pass);
+      await withAuthTimeout(signInWithEmailAndPassword(auth, email, pass), AUTH_TIMEOUT_MS, "AUTH_TIMEOUT");
+      if(flowToken !== authFlowToken) return;
+      credentialsAccepted = true;
+      setAuthProgress("profile");
 
     } catch (error) {
-
       console.error("Error de login:", error);
-
-      switch (error.code) {
-
-        case "auth/invalid-credential":
-        case "auth/wrong-password":
-        case "auth/user-not-found":
-
-          toast(
-            "Acceso incorrecto",
-            "Correo o contraseña incorrectos",
-            "error"
-          );
-
-          break;
-
-        case "auth/too-many-requests":
-
-          toast(
-            "Demasiados intentos",
-            "Firebase bloqueó temporalmente el acceso. Espera unos minutos e intenta nuevamente.",
-            "warn"
-          );
-
-          break;
-
-        case "auth/invalid-email":
-
-          toast(
-            "Correo inválido",
-            "Verifica el formato del correo electrónico.",
-            "warn"
-          );
-
-          break;
-
-        case "auth/user-disabled":
-
-          toast(
-            "Usuario deshabilitado",
-            "Esta cuenta se encuentra deshabilitada.",
-            "error"
-          );
-
-          break;
-
-        case "auth/network-request-failed":
-
-          toast(
-            "Sin conexión",
-            "No fue posible conectar con Firebase.",
-            "error"
-          );
-
-          break;
-
-        default:
-
-          toast(
-            "Error de acceso",
-            "No fue posible iniciar sesión.",
-            "error"
-          );
-
-      }
+      authCredentialsTimedOut = String(error?.code || "").toUpperCase().includes("AUTH_TIMEOUT");
+      authFlowToken++;
+      if(authCredentialsTimedOut && auth.currentUser) signOut(auth).catch(()=>{});
+      setAuthProgress("credentials", true);
+      showAuthInlineError(authErrorMessage(error), String(error?.code || "").includes("invalid-email") ? "loginEmail" : "");
 
     } finally {
-
-      btnLogin.disabled = false;
+      if(!credentialsAccepted && btnLogin.isConnected){ btnLogin.disabled = false; btnLogin.textContent = "Entrar"; }
 
     }
 
@@ -8678,6 +8743,13 @@ function renderLoginForm(){
         <input id="loginPass" type="password" autocomplete="current-password" />
 
         <button id="btnLogin">Entrar</button>
+        <div id="authProgress" class="auth-progress" hidden aria-live="polite">
+          <div class="auth-progress-step" data-auth-stage="credentials">Cargando credenciales…</div>
+          <div class="auth-progress-step" data-auth-stage="profile">Validando perfil…</div>
+          <div class="auth-progress-step" data-auth-stage="permissions">Validando permisos…</div>
+          <div class="auth-progress-step" data-auth-stage="authorized">Acceso autorizado</div>
+        </div>
+        <div id="authInlineError" class="auth-inline-error" hidden></div>
         <p class="auth-admin-help">Si no puedes entrar, ponte en contacto con el administrador.</p>
 
         <p class="access-auth-switch">
@@ -20149,16 +20221,25 @@ window.addEventListener("offline",updateNet);
         return;
       }
 
-      let prof;
-      try{
-        prof = await ensureUserProfile(user);
-      }catch(error){
-        console.error("Perfil de usuario inválido:", error);
+      if(authCredentialsTimedOut){
         await signOut(auth).catch(()=>{});
-        toast("Perfil incompleto", error?.message || "El perfil no puede utilizarse hasta que un administrador lo repare.", "bad", 6000);
         return;
       }
-      setAuthShell(false);
+
+      const observerFlowToken = authFlowToken || ++authFlowToken;
+      setAuthProgress("profile");
+      let prof;
+      try{
+        prof = await withAuthTimeout(ensureUserProfile(user), PROFILE_TIMEOUT_MS, "PROFILE_TIMEOUT");
+        if(observerFlowToken !== authFlowToken) return;
+      }catch(error){
+        console.error("Perfil de usuario inválido:", error);
+        setAuthProgress("profile", true);
+        pendingAuthInlineError = authErrorMessage(error);
+        authFlowToken++;
+        await signOut(auth).catch(()=>{});
+        return;
+      }
       currentUser = {
         uid: prof.uid,
         email: prof.email,
@@ -20175,12 +20256,28 @@ window.addEventListener("offline",updateNet);
       };
       
       localStorage.setItem(LS_USER, JSON.stringify(currentUser));
-      await loadRolePermsConfig(true);
+      setAuthProgress("permissions");
+      try{
+        await withAuthTimeout(loadRolePermsConfig(true), PERMISSIONS_TIMEOUT_MS, "PERMISSIONS_TIMEOUT");
+        if(observerFlowToken !== authFlowToken) return;
+      }catch(error){
+        console.error("No se pudieron validar permisos:", error);
+        setAuthProgress("permissions", true);
+        pendingAuthInlineError = authErrorMessage(error);
+        authFlowToken++;
+        await signOut(auth).catch(()=>{});
+        return;
+      }
 
+      setAuthProgress("authorized");
+      await new Promise(resolve => setTimeout(resolve, 420));
+      if(observerFlowToken !== authFlowToken) return;
+
+      setAuthShell(false);
       paintHeader();
       paintSidebar();     // ✅ AQUÍ 
       updatePendingBadge();
-      await touchActiveSession(true);
+      touchActiveSession(true).catch(error => console.warn("Presencia en segundo plano:", error));
       startAutoSync();
       // carga local inmediata + sync HOY
       visitas = loadVisitasLocal();
@@ -20191,9 +20288,10 @@ window.addEventListener("offline",updateNet);
       }else{
         renderHome();
       }
-      await syncDay(new Date(), true);
-      if(isDashboardView()) renderActiveDashboard();
-      else if(currentView === "module_home") renderModuleHome();
+      syncDay(new Date(), true).then(() => {
+        if(isDashboardView()) renderActiveDashboard();
+        else if(currentView === "module_home") renderModuleHome();
+      }).catch(error => console.warn("Sincronización inicial en segundo plano:", error));
     });
 
     paintHeader();
