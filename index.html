@@ -11,6 +11,20 @@
   <meta name="apple-mobile-web-app-title" content="Caborca Access" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="theme-color" content="#0f172a" />
+  <script>
+    (function(){
+      try{
+        var saved=localStorage.getItem("ui_theme");
+        var theme=saved==="dark"||saved==="light"?saved:(saved==="copper"?"dark":"light");
+        document.documentElement.setAttribute("data-theme",theme);
+        document.documentElement.style.colorScheme=theme;
+        var meta=document.querySelector('meta[name="theme-color"]');
+        if(meta) meta.setAttribute("content",theme==="light"?"#f6f8fc":"#0f172a");
+      }catch(error){
+        document.documentElement.setAttribute("data-theme","light");
+      }
+    })();
+  </script>
 
   <!-- Cargar librerías pesadas sin bloquear render -->
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -3616,7 +3630,7 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
   },15000);
 </script>
 <script type="module">
-  const APP_VERSION = "v252";
+  const APP_VERSION = "v253";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",
@@ -5962,7 +5976,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
-          <div class="help-release"><b>v252</b><span>El inicio de sesión aparece inmediatamente y muestra el avance de credenciales, perfil y permisos, con tiempos máximos y errores visibles dentro del formulario.</span></div>
+          <div class="help-release"><b>v253</b><span>El tema guardado se aplica antes del primer render para evitar el destello oscuro al abrir la aplicación con el tema claro.</span></div>
           <div class="help-release"><b>v249</b><span>Los vales de personal admiten nóminas de practicantes con formato P más tres dígitos, por ejemplo P064, sin confundirlas con nóminas numéricas; el modal individual aprovecha mejor la altura disponible y evita desplazamiento vertical innecesario.</span></div>
           <div class="help-release"><b>v248</b><span>La columna Acciones de Citas de proveedores utiliza botones compactos con iconos y tooltips para ver QR, editar y cancelar; Ver QR aparece únicamente en citas programadas y permite regresar al listado.</span></div>
           <div class="help-release"><b>v247</b><span>Las tarjetas programadas del dashboard de proveedores incorporan un botón compacto con icono para abrir el QR de la cita, sin alterar su estado; el control se oculta después de registrar la llegada.</span></div>
