@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Caborca Access Control</title>
+  <link rel="manifest" href="manifest.json?v=168" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-app-192.png?v=168" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180.png?v=168" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Caborca Access" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#0f172a" />
+  <script>
+    (function(){
+      try{
+        var saved=localStorage.getItem("ui_theme");
+        var theme=saved==="dark"||saved==="light"?saved:(saved==="copper"?"dark":"light");
+        document.documentElement.setAttribute("data-theme",theme);
+        document.documentElement.style.colorScheme=theme;
+        var meta=document.querySelector('meta[name="theme-color"]');
+        if(meta) meta.setAttribute("content",theme==="light"?"#f6f8fc":"#0f172a");
+      }catch(error){
+        document.documentElement.setAttribute("data-theme","light");
+      }
+    })();
+  </script>
+
+  <!-- Cargador local: QR, cámara y reportes se descargan solo al utilizarlos. -->
+  <script defer src="./dependency-loader.js"></script>
+  
+  <link rel="stylesheet" href="./app.css">
+</head>
+
+<body class="auth-mode">
+  <!-- Modal: Incidencias (Calidad) -->
+<div class="modal-overlay" id="incCalModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="incCalTitle">⚠️ Incidencias (Calidad)</h3>
+        <small id="incCalSubtitle">—</small>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary" id="incCalCloseBtn">Cerrar</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="incCalTableWrap"></div>
+    </div>
+  </div>
+</div>
+  <!-- Modal: No asistieron -->
+<div class="modal-overlay" id="noShowModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="noShowTitle">🚫 No asistieron</h3>
+        <small id="noShowSubtitle">—</small>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary" id="noShowCloseBtn">Cerrar</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="noShowTableWrap"></div>
+    </div>
+  </div>
+</div>
+<!-- Modal: Llegadas tarde -->
+<div class="modal-overlay" id="lateModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="lateTitle">⏰ Citas que llegaron tarde</h3>
+        <small id="lateSubtitle">—</small>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary" id="lateCloseBtn">Cerrar</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div id="lateTableWrap"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ayuda -->
+<div class="modal-overlay" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="helpModalTitle">Ayuda</h3>
+        <small id="helpModalSubtitle">Caborca Access Control</small>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary" data-action="closeHelpModal">Cerrar</button>
+      </div>
+    </div>
+    <div class="modal-body" id="helpModalBody"></div>
+  </div>
+</div>
+
+<div class="sb-overlay" id="sbOverlay"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo"><img src="icon-192-cobre.png" alt="Caborca Access Control"></div>
+    <div class="sb-title">
+      <b>Caborca Access Control</b>
+      <span>Caborca Suite</span>
+    </div>
+  </div>
+  <div class="sb-section">
+  <h4>Navegación</h4>
+
+  <div class="sb-nav" id="sbNav">
+
+    <div class="sb-btn" data-sb="grupo_proveedores" id="sbProveedoresToggle" aria-expanded="false">
+      <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M9 22V12h6v10"/></svg></span>
+      <span class="sb-txt">Proveedores</span>
+      <span class="sb-caret" aria-hidden="true"></span>
+    </div>
+    <div class="sb-sub" id="sbProveedoresSub">
+      <div class="sb-btn" data-sb="dashboard_proveedores" aria-current="page">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M9 22V12h6v10"/></svg></span>
+        <span class="sb-txt">Dashboard</span>
+      </div>
+      <div class="sb-btn" data-sb="nuevo">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span>
+        <span class="sb-txt">Nueva cita</span>
+      </div>
+      <div class="sb-btn" data-sb="citas_proveedores">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 5h18"/><path d="M7 3v4"/><path d="M17 3v4"/><path d="M5 9h14"/><path d="M7 13h4"/><path d="M7 17h6"/></svg></span>
+        <span class="sb-txt">Citas</span>
+      </div>
+    </div>
+
+    <div class="sb-btn" data-sb="grupo_visitantes" id="sbVisitantesToggle" aria-expanded="false">
+      <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M19 8h2"/><path d="M20 7v2"/></svg></span>
+      <span class="sb-txt">Visitantes</span>
+      <span class="sb-caret" aria-hidden="true"></span>
+    </div>
+    <div class="sb-sub" id="sbVisitantesSub">
+      <div class="sb-btn" data-sb="dashboard_visitantes">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M19 8h2"/><path d="M20 7v2"/></svg></span>
+        <span class="sb-txt">Dashboard</span>
+      </div>
+      <div class="sb-btn" data-sb="nuevo_visitante">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/><path d="M16 11a4 4 0 1 0-8 0"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
+        <span class="sb-txt">Nueva cita</span>
+      </div>
+      <div class="sb-btn" data-sb="citas_visitantes">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 5h18"/><path d="M7 3v4"/><path d="M17 3v4"/><path d="M5 9h14"/><path d="M9 14a3 3 0 1 0 6 0"/><path d="M6 21a6 6 0 0 1 12 0"/></svg></span>
+        <span class="sb-txt">Citas</span>
+      </div>
+    </div>
+
+    <div class="sb-btn" data-sb="grupo_vales" id="sbValesToggle" aria-expanded="false">
+      <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h6"/></svg></span>
+      <span class="sb-txt">Vales</span>
+      <span class="sb-caret" aria-hidden="true"></span>
+    </div>
+    <div class="sb-sub" id="sbValesSub">
+      <div class="sb-btn" data-sb="vales_personal">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M16 6h4"/><path d="M18 4v4"/></svg></span>
+        <span class="sb-txt">Vales personal</span>
+      </div>
+      <div class="sb-btn" data-sb="proximos_vales_personal">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 5h18v16H3z"/><path d="M7 3v4"/><path d="M17 3v4"/><path d="M3 9h18"/><path d="M12 13v4"/><path d="M10 15h4"/></svg></span>
+        <span class="sb-txt">Próximos vales</span>
+      </div>
+      <div class="sb-btn" data-sb="historial_vales_personal">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8v5l3 2"/><path d="M3.5 9A9 9 0 1 1 3 15"/><path d="M3 4v5h5"/></svg></span>
+        <span class="sb-txt">Historial personal</span>
+      </div>
+      <div class="sb-btn" data-sb="vales_activos">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v18H6z"/><path d="M14 3v5h5"/><path d="M8 13h8"/><path d="M8 17h6"/></svg></span>
+        <span class="sb-txt">Vales activos</span>
+      </div>
+      <div class="sb-btn" data-sb="historial_vales_activos">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8v5l3 2"/><path d="M3.5 9A9 9 0 1 1 3 15"/><path d="M3 4v5h5"/></svg></span>
+        <span class="sb-txt">Historial activos</span>
+      </div>
+    </div>
+
+    <div class="sb-btn" data-sb="grupo_guardia" id="sbGuardiaToggle" aria-expanded="false">
+      <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v10H4z"/><path d="M8 19h8"/><path d="M12 15v4"/></svg></span>
+      <span class="sb-txt">Guardia</span>
+      <span class="sb-caret" aria-hidden="true"></span>
+    </div>
+    <div class="sb-sub" id="sbGuardiaSub">
+      <div class="sb-btn" data-sb="scan">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h6v6H5z"/><path d="M13 5h6v6h-6z"/><path d="M5 13h6v6H5z"/><path d="M14 14h1"/><path d="M17 13h2v2h-2z"/><path d="M13 18h6"/></svg></span>
+        <span class="sb-txt">Escáner de accesos</span>
+      </div>
+      <div class="sb-btn" data-sb="bitacora_guardia">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v18H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/></svg></span>
+        <span class="sb-txt">Bitácora Novedades</span>
+      </div>
+      <div class="sb-btn" data-sb="rondinero">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v5c0 5-3 8-7 9-4-1-7-4-7-9V7z"/><path d="M9 12l2 2 4-5"/></svg></span>
+        <span class="sb-txt">Rondinero</span>
+      </div>
+    </div>
+
+    <div class="sb-btn" data-sb="grupo_reportes" id="sbReportesToggle" aria-expanded="false">
+      <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16v-6"/><path d="M12 16v-10"/><path d="M17 16v-4"/></svg></span>
+      <span class="sb-txt">Reportes</span>
+      <span class="sb-caret" aria-hidden="true"></span>
+    </div>
+    <div class="sb-sub" id="sbReportesSub">
+      <div class="sb-btn" data-sb="historial">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 5h14"/><path d="M3 12h14"/><path d="M3 19h14"/><path d="M19 5v14"/><path d="M19 12h2"/></svg></span>
+        <span class="sb-txt">Historial</span>
+      </div>
+      <div class="sb-btn" data-sb="reportes">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 16v-6"/><path d="M12 16v-10"/><path d="M17 16v-4"/></svg></span>
+        <span class="sb-txt">Reportes</span>
+      </div>
+      <div class="sb-btn" data-sb="reporte_nominas">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h4"/><path d="M16 15v4"/><path d="M14 17h4"/></svg></span>
+        <span class="sb-txt">Reporte Nóminas</span>
+      </div>
+      <div class="sb-btn" data-sb="reporte_cambios">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 7h10"/><path d="M7 11h10"/><path d="M7 15h6"/></svg></span>
+        <span class="sb-txt">Cambios en Citas</span>
+      </div>
+      <div class="sb-btn" data-sb="export" id="sbExportToggle" aria-expanded="false">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></span>
+        <span class="sb-txt">Exportar</span>
+        <span class="sb-caret" aria-hidden="true"></span>
+      </div>
+      <div class="sb-sub" id="sbExportSub">
+        <div class="sb-btn" data-sb="export_excel">
+          <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h6"/></svg></span>
+          <span class="sb-txt">Excel (solo hoy)</span>
+        </div>
+        <div class="sb-btn" data-sb="export_excel_all">
+          <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h6"/></svg></span>
+          <span class="sb-txt">Excel (hasta hoy)</span>
+        </div>
+        <div class="sb-btn" data-sb="export_pdf">
+          <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h4"/></svg></span>
+          <span class="sb-txt">PDF</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sb-btn" data-sb="grupo_ayuda" id="sbHelpToggle" aria-expanded="false">
+      <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"/><path d="M9.5 9a2.5 2.5 0 1 1 3.7 2.2c-.8.5-1.2 1-1.2 1.8"/><path d="M12 17h.01"/></svg></span>
+      <span class="sb-txt">Ayuda</span>
+      <span class="sb-caret" aria-hidden="true"></span>
+    </div>
+    <div class="sb-sub" id="sbHelpSub">
+      <div class="sb-btn" data-sb="help_about">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"/><path d="M12 10v7"/><path d="M12 7h.01"/></svg></span>
+        <span class="sb-txt">Acerca de</span>
+      </div>
+      <div class="sb-btn" data-sb="help_guide">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h6a3 3 0 0 1 3 3v13a3 3 0 0 0-3-3H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3v13a3 3 0 0 1 3-3h6z"/></svg></span>
+        <span class="sb-txt">Guía rápida</span>
+      </div>
+    </div>
+
+    <div class="sb-btn" data-sb="config" id="sbConfigToggle" aria-expanded="false">
+      <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M19.4 15a7.8 7.8 0 0 0 .1-1 7.8 7.8 0 0 0-.1-1l2-1.6-2-3.4-2.4 1a8 8 0 0 0-1.7-1L15 3h-6l-.3 2.4a8 8 0 0 0-1.7 1l-2.4-1-2 3.4L4.6 13a7.8 7.8 0 0 0-.1 1 7.8 7.8 0 0 0 .1 1L2.6 16.6l2 3.4 2.4-1a8 8 0 0 0 1.7 1L9 21h6l.3-2.4a8 8 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z"/></svg></span>
+        <span class="sb-txt">Configuración</span>
+        <span class="sb-caret" aria-hidden="true"></span>
+    </div>
+
+    <div class="sb-sub" id="sbConfigSub">
+      <div class="sb-btn" data-sb="proveedores">
+          <span class="sb-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+             <path d="M3 7h18v10H3z"/>
+             <path d="M9 7V5h6v2"/>
+             <path d="M3 12h18"/>
+            </svg>
+           </span>
+          <span class="sb-txt">Proveedores</span>
+      </div>
+      <div class="sb-btn" data-sb="roles">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-8 0"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M19 8h2"/><path d="M20 7v2"/></svg></span>
+        <span class="sb-txt">Usuarios</span>
+      </div>
+      <div class="sb-btn" data-sb="personas_visita">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M18 8h4"/><path d="M20 6v4"/></svg></span>
+        <span class="sb-txt">Personas a visitar</span>
+      </div>
+      <div class="sb-btn" data-sb="role_permissions">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/><path d="M8 5v2"/><path d="M16 11v2"/><path d="M12 17v2"/></svg></span>
+        <span class="sb-txt">Roles</span>
+      </div>
+      <div class="sb-btn" data-sb="mi_pin">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3"/><path d="M5 10h14v11H5z"/><path d="M12 15v2"/></svg></span>
+        <span class="sb-txt">Mi PIN</span>
+      </div>
+      <div class="sb-btn" data-sb="sesiones_activas">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v10H4z"/><path d="M8 19h8"/><path d="M12 15v4"/><path d="M8 9h8"/></svg></span>
+        <span class="sb-txt">Usuarios logeados</span>
+      </div>
+      <div class="sb-btn" data-sb="eliminarfinalizados">
+         <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 16h10l1-16"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span>
+         <span class="sb-txt">Eliminar finalizados</span>
+      </div>
+      <div class="sb-btn" data-sb="depurar_base">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 16h10l1-16"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span>
+        <span class="sb-txt">Depurar (≤ hoy)</span>
+      </div>
+      <div class="sb-btn" data-sb="depurar_30d">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 16h10l1-16"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></span>
+        <span class="sb-txt">Depurar (+30 días)</span>
+      </div>
+      <div class="sb-btn" data-sb="resumen_depurar_30d">
+        <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>
+        <span class="sb-txt">Última depuración</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+  
+  </div>
+  <div style="margin-top:auto; padding:0 6px 6px;">
+    <div class="sb-btn" data-sb="logout" style="background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.25);">
+      <span class="sb-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M21 3v18"/></svg></span>
+      <span class="sb-txt">Cerrar sesión</span>
+    </div>
+  </div>
+</aside>
+
+<div class="app-shell">
+  <div class="main-wrap">
+<header>
+  <div class="topbar">
+    <div class="title brand-lockup" aria-label="Caborca Access Control">
+      <span class="brand-shield" aria-hidden="true"></span>
+      <div class="brand-words"><span class="brand-caborca">Caborca</span><span class="brand-access">Access Control <span id="appVersion" class="version-badge brand-version">v223</span></span></div>
+    </div>
+    <div class="actions" id="actionsBar">
+ <button class="hamb" id="btnHamb" title="Ir al inicio" aria-label="Ir al menú principal">
+   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v11h14V10"/><path d="M9 21v-7h6v7"/></svg><span class="home-label">Inicio</span>
+ </button>
+      <span class="pill" title="Estado de conexión">
+        <span class="dot info" id="netDot"></span>
+        <span id="netText">En línea</span>
+      </span>
+      <span class="pill" id="userPill" style="display:none;"></span>
+      <button class="secondary" id="btnTheme" type="button" aria-label="Cambiar tema de color" title="Cambiar tema de color">Tema</button>
+    </div>
+  </div>
+  
+</header>
+<div class="container">
+  
+  <div id="app"><section class="access-auth-view" id="initialLoginShell">
+    <article class="access-auth-card">
+      <div class="access-auth-brand">
+        <div class="access-auth-brand-content">
+          <img class="access-auth-shield" src="icon-shield-master.png" alt="Escudo de Caborca Access Control">
+          <div class="access-auth-brand-name"><span>Caborca</span><span>Access Control</span></div>
+          <p class="access-auth-brand-copy">Control seguro para proveedores, visitantes, vales de salida y rondines.</p>
+          <div class="access-auth-features"><span>Acceso seguro</span><span>Control centralizado</span><span>Operación móvil</span></div>
+        </div>
+      </div>
+      <div class="access-auth-form">
+        <h2>Iniciar sesión</h2>
+        <p class="auth-intro">Ingresa tus datos para acceder a Caborca Access Control.</p>
+        <label for="initialLoginEmail">Correo electrónico</label><input id="initialLoginEmail" type="email" autocomplete="email">
+        <label for="initialLoginPass">Contraseña</label><input id="initialLoginPass" type="password" autocomplete="current-password">
+        <button id="initialLoginButton" type="button" disabled>Preparando acceso…</button>
+        <div class="auth-progress"><div class="auth-progress-step active">Preparando conexión segura…</div></div>
+        <p class="auth-admin-help">La pantalla ya está disponible; la conexión segura terminará de prepararse en segundo plano.<br><a href="./diagnostico.html">Diagnóstico del dispositivo</a></p>
+      </div>
+    </article>
+  </section></div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+<div class="app-update-banner" id="appUpdateBanner" role="status" aria-live="polite" hidden>
+  <div class="app-update-copy"><b>Actualización disponible</b><small id="appUpdateMessage">Existe una versión nueva de la aplicación.</small></div>
+  <div class="app-update-actions"><button type="button" data-action="applyAppUpdate">Actualizar ahora</button><button type="button" class="secondary" data-action="dismissAppUpdate" aria-label="Cerrar aviso">Cerrar</button></div>
+</div>
+  </div>
+</div>
+<script>
+  window.setTimeout(function(){
+    var shell=document.getElementById("initialLoginShell");
+    if(!shell) return;
+    var step=shell.querySelector(".auth-progress-step");
+    if(step){ step.classList.remove("active"); step.classList.add("failed"); step.textContent="No se pudo preparar la conexión segura."; }
+    var help=shell.querySelector(".auth-admin-help");
+    if(help) help.textContent="Revisa tu conexión a Internet y vuelve a cargar la página.";
+  },15000);
+</script>
+<script type="module" src="./assets/app.min.js"></script>
+<script>
+window.addEventListener("DOMContentLoaded",()=>setTimeout(()=>{
+  document.title="BETA · Caborca Access Control";
+  const version=document.getElementById("appVersion");
+  if(version&&!version.textContent.toLowerCase().includes("beta")) version.textContent += " · BETA";
+},0));
+</script>
+</body>
+</html>

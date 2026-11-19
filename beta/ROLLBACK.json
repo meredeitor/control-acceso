@@ -1,0 +1,6 @@
+{
+  "description": "Punto de retorno inmediato antes de la beta",
+  "version": "v253",
+  "commit": "9c02cba8d65afd12c5ea45c8468916ab2b8ee20f",
+  "action": "Restaurar este commit únicamente si la beta llegara a sustituir producción."
+}
