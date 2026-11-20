@@ -3859,8 +3859,21 @@ case "volverAEditarCita":
       }
     });
 
-    // Buscar (local inmediato + sync con debounce)
+    // Buscar sin reemplazar el campo mientras se escribe en telefono/tablet.
 let _searchTimer = null;
+function commitDashboardSearch(searchId, cursorPos, restoreFocus = true){
+  if(!isDashboardView()) return;
+  renderActiveDashboard();
+  if(!restoreFocus) return;
+  requestAnimationFrame(() => {
+    const nextInput = document.getElementById(searchId);
+    if(nextInput){
+      nextInput.focus();
+      const pos = Math.min(cursorPos ?? dashboardSearchTerm.length, nextInput.value.length);
+      nextInput.setSelectionRange(pos, pos);
+    }
+  });
+}
 document.addEventListener("input", (e) => {
   const valeSearch = e.target.closest("#valeSearchPersonal, #valeSearchActivos");
   if(valeSearch){
@@ -3892,19 +3905,34 @@ document.addEventListener("input", (e) => {
   dashboardSearchTerm = searchInput.value || "";
   const cursorPos = searchInput.selectionStart ?? dashboardSearchTerm.length;
   if(!dashboardWasActive) return;
-  renderActiveDashboard();
-  requestAnimationFrame(() => {
-    const nextInput = document.getElementById(searchId);
-    if(nextInput){
-      nextInput.focus();
-      nextInput.setSelectionRange(cursorPos, cursorPos);
-    }
-  });
   if(_searchTimer) clearTimeout(_searchTimer);
+  const isTouchLayout = window.matchMedia?.("(max-width: 1024px)")?.matches;
   _searchTimer = setTimeout(async () => {
     updateNet();
-    if(isDashboardView()) renderActiveDashboard();
-  }, 600);
+    // En pantallas tactiles se espera a Enter/Buscar o a que termine la edición;
+    // así el teclado no se cierra ni el campo pierde caracteres.
+    if(!isTouchLayout || document.activeElement !== searchInput){
+      commitDashboardSearch(searchId, cursorPos, !isTouchLayout);
+    }
+  }, isTouchLayout ? 700 : 350);
+});
+
+document.addEventListener("keydown", (e) => {
+  const searchInput = e.target.closest?.("#dashSearch, #qSearch");
+  if(!searchInput || e.key !== "Enter" || !isDashboardView()) return;
+  e.preventDefault();
+  if(_searchTimer) clearTimeout(_searchTimer);
+  dashboardSearchTerm = searchInput.value || "";
+  const isTouchLayout = window.matchMedia?.("(max-width: 1024px)")?.matches;
+  commitDashboardSearch(searchInput.id, dashboardSearchTerm.length, !isTouchLayout);
+});
+
+document.addEventListener("focusout", (e) => {
+  const searchInput = e.target.closest?.("#dashSearch, #qSearch");
+  if(!searchInput || !isDashboardView()) return;
+  if(_searchTimer) clearTimeout(_searchTimer);
+  dashboardSearchTerm = searchInput.value || "";
+  setTimeout(() => commitDashboardSearch(searchInput.id, dashboardSearchTerm.length, false), 0);
 });
 
 document.addEventListener("keydown", (e) => {

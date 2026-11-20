@@ -2,9 +2,15 @@
 
 Aplicacion PWA para control operativo de accesos, citas, vales, bitacora de guardias, reportes y rondines de seguridad.
 
-Version actual de produccion: `v255`.
+Version actual de produccion: `v256`.
 
 Aplicacion publicada: https://meredeitor.github.io/control-acceso/
+
+## Novedades de v256
+
+- El buscador del dashboard de Proveedores ya no reconstruye el campo mientras se escribe en telefono o tablet.
+- La busqueda tactil se confirma con Enter/Buscar o al terminar la captura, conservando el teclado y los caracteres escritos.
+- Facturas y ordenes de compra se acomodan en una columna en telefono y tablet, con ajuste completo de numeros largos.
 
 ## Novedades de v255
 
@@ -357,9 +363,9 @@ Esto fuerza a los equipos a descargar la nueva version de la app.
 
 Version actual:
 
-- Aplicacion visible: `v255`
-- Service Worker: `v255`
-- Cache productiva: `caborca-access-control-v255-20261120`
+- Aplicacion visible: `v256`
+- Service Worker: `v256`
+- Cache productiva: `caborca-access-control-v256-20261120`
 
 ## Mantenimiento recomendado
 

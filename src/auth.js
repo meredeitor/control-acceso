@@ -1,4 +1,4 @@
-  const APP_VERSION = "v255";
+  const APP_VERSION = "v256";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",

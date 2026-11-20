@@ -19,8 +19,10 @@ if(!html.includes('src="./assets/app.min.js"')) throw new Error("index.html no c
 if(css.size < 10000) throw new Error("app.css parece incompleto");
 if(bundle.size < 10000) throw new Error("assets/app.min.js parece incompleto");
 if(/<script type="module">[\s\S]{1000,}<\/script>/.test(html)) throw new Error("index.html aún contiene el módulo monolítico");
-if(version.version !== "v255" || !sourceAuth.includes('APP_VERSION = "v255"')) throw new Error("La versión productiva no está alineada en v255");
-if(!sw.includes('SW_VERSION = "v255"')) throw new Error("El service worker no informa v255");
+if(version.version !== "v256" || !sourceAuth.includes('APP_VERSION = "v256"')) throw new Error("La versión productiva no está alineada en v256");
+if(!sw.includes('SW_VERSION = "v256"')) throw new Error("El service worker no informa v256");
+if(!sourceVisitantes.includes('max-width: 1024px') || !sourceVisitantes.includes('commitDashboardSearch')) throw new Error("Falta la protección del buscador táctil");
+if(!cssText.includes('@media (max-width:1024px)') || !cssText.includes('.factura-oc-readonly .factura-oc-item')) throw new Error("Falta el ajuste móvil de Facturas/OC");
 if(!sourceProveedores.includes('return "devolucion"') || !sourceProveedores.includes('return "Devolución"')) throw new Error("Falta la clasificación Devolución para visitantes");
 if(!sourceVisitantes.includes('<option value="normal" selected>Visita normal</option>')) throw new Error("Visita normal no está seleccionada por defecto");
 if(!sourceVisitantes.includes('<option value="especial">Visita especial</option>') || !sourceVisitantes.includes('<option value="devolucion">Devolución</option>')) throw new Error("El selector de visitantes está incompleto");

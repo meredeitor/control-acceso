@@ -1229,6 +1229,14 @@ height: 100vh;
 }
 .factura-oc-item textarea{ min-height:42px; resize:vertical; }
 .factura-oc-readonly .factura-oc-item{ grid-template-columns: minmax(160px, .85fr) minmax(220px, 1.4fr); }
+.factura-oc-readonly,
+.factura-oc-readonly .factura-oc-list,
+.factura-oc-readonly .factura-oc-item,
+.factura-oc-readonly .factura-oc-item > div{
+  min-width:0;
+  max-width:100%;
+}
+.factura-oc-readonly .qr-detail-row{ width:100%; }
 .factura-oc-remove{
   width:42px;
   height:42px;
@@ -1245,6 +1253,25 @@ height: 100vh;
 @media (max-width:760px){
   .factura-oc-item{ grid-template-columns:1fr; }
   .factura-oc-remove{ width:100%; }
+}
+@media (max-width:1024px){
+  .factura-oc-readonly .factura-oc-item{
+    grid-template-columns:minmax(0,1fr);
+    overflow:hidden;
+  }
+  .factura-oc-readonly .qr-detail-row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:4px;
+  }
+  .factura-oc-readonly .qr-detail-row > span,
+  .factura-oc-readonly .qr-detail-row > b{
+    min-width:0;
+    max-width:100%;
+    text-align:left;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+  }
 }
 /* =========================
    Modal (dialog) genérico

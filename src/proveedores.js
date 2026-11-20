@@ -1839,6 +1839,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v256</b><span>El buscador de Proveedores conserva el teclado y el texto durante la captura en tablet y telefono. Facturas y ordenes de compra se ajustan a una columna y muestran el contenido completo en pantallas tactiles.</span></div>
           <div class="help-release"><b>v255</b><span>Las citas de visitantes permiten elegir Visita normal, Visita especial o Devolución. Cada modalidad se identifica en tarjetas, ficha e historial; Visita especial conserva su autorización y Devolución utiliza el flujo normal.</span></div>
           <div class="help-release"><b>v254</b><span>Nueva aplicación modular con dependencias locales y carga optimizada. Las aduanas Peletería, Avíos y Otros permiten una sola cita por horario.</span></div>
           <div class="help-release"><b>v253</b><span>El tema guardado se aplica antes del primer render para evitar el destello oscuro al abrir la aplicación con el tema claro.</span></div>
