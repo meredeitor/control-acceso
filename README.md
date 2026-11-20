@@ -2,9 +2,16 @@
 
 Aplicacion PWA para control operativo de accesos, citas, vales, bitacora de guardias, reportes y rondines de seguridad.
 
-Version actual de produccion: `v254`.
+Version actual de produccion: `v255`.
 
 Aplicacion publicada: https://meredeitor.github.io/control-acceso/
+
+## Novedades de v255
+
+- El formulario de visitantes permite elegir Visita normal, Visita especial o Devolucion.
+- Visita normal queda seleccionada por defecto.
+- Las tarjetas especiales se muestran en ambar y las devoluciones en violeta, con una etiqueta visible.
+- Visita especial conserva la autorizacion administrativa; Devolucion utiliza el flujo normal de visitantes.
 
 ## Novedades de v254
 
@@ -350,9 +357,9 @@ Esto fuerza a los equipos a descargar la nueva version de la app.
 
 Version actual:
 
-- Aplicacion visible: `v254`
-- Service Worker: `v254`
-- Cache productiva: `caborca-access-control-v254-20261120`
+- Aplicacion visible: `v255`
+- Service Worker: `v255`
+- Cache productiva: `caborca-access-control-v255-20261120`
 
 ## Mantenimiento recomendado
 

@@ -1071,11 +1071,13 @@ async function renderNuevo(tipoCita = "proveedor"){
           <input type="time" id="horaVisitante"/>
         </div>
         ${esVisitanteNuevo ? `
-        <div class="visita-especial-field" style="grid-column:1/-1;">
-          <label class="visita-especial-toggle" for="visitaEspecial">
-            <input type="checkbox" id="visitaEspecial">
-            <span>Visita especial</span>
-          </label>
+        <div class="modalidad-visita-field" style="grid-column:1/-1;">
+          <label for="modalidadVisita">Tipo de visita *</label>
+          <select id="modalidadVisita" class="modalidad-visita-select">
+            <option value="normal" selected>Visita normal</option>
+            <option value="especial">Visita especial</option>
+            <option value="devolucion">Devolución</option>
+          </select>
         </div>
         ` : ""}
         <div>
@@ -1359,7 +1361,10 @@ async function recargarProveedoresNuevaCita(){
 
   const tipoVisita = document.getElementById("tipoVisita")?.value === "visitante" ? "visitante" : "proveedor";
   const esVisitante = tipoVisita === "visitante";
-  const visitaEspecial = esVisitante && !!document.getElementById("visitaEspecial")?.checked;
+  const modalidadCapturada = String(document.getElementById("modalidadVisita")?.value || "normal").toLowerCase();
+  const modalidadVisita = esVisitante && ["normal","especial","devolucion"].includes(modalidadCapturada) ? modalidadCapturada : "normal";
+  const visitaEspecial = esVisitante && modalidadVisita === "especial";
+  const visitaDevolucion = esVisitante && modalidadVisita === "devolucion";
   if(esVisitante && !canCreateVisitanteCita()){
     toast("Acceso denegado","Tu rol no puede crear citas de visitante.","bad",2600);
     return null;
@@ -1453,6 +1458,8 @@ if(!esVisitante && existeCitaEnHorario(fechaHora, area)){
   visitantesTexto: esVisitante ? visitantesTexto : "",
   visitantesLista: esVisitante ? visitantesLista : [],
   visitaEspecial,
+  visitaDevolucion,
+  modalidadVisita: esVisitante ? modalidadVisita : "",
   visitaGrupal,
   requiereAutorizacion: visitaEspecial,
   proveedorCodigo,
@@ -2269,6 +2276,7 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
               <div style="color:var(--muted); margin-top:2px;">${esc(empresaAcceso || tipoLabel)}</div>
               <div class="meta" style="margin-top:10px;">
                 <span class="pill"><span class="dot ${tipo === "visitante" ? "brand" : "info"}"></span>${esc(tipoLabel)}</span>
+                ${isVisitante(v) ? renderModalidadVisitantePill(v) : ""}
                 <span class="pill"><span class="dot ${statusDot}"></span>${esc(statusLabel)}</span>
                 <span class="pill"><span class="dot info"></span>ID: ${esc(v.id)}</span>
                 ${pillCitaCreada(v)}
@@ -3444,6 +3452,10 @@ function renderProveedores(lista){
         case "limpiarNuevaCita":
           document.querySelectorAll(".nueva-cita-card input, .nueva-cita-card textarea, .nueva-cita-card select").forEach(input => {
             if(input.id === "tipoVisita") return;
+            if(input.id === "modalidadVisita"){
+              input.value = "normal";
+              return;
+            }
             if(input.type === "checkbox"){
               input.checked = false;
               return;

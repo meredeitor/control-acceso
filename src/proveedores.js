@@ -711,6 +711,33 @@ function getTipoVisitaLabel(v={}){
   return isVisitante(v) ? "Visitante" : "Proveedor";
 }
 
+function getModalidadVisitante(v={}){
+  if(!isVisitante(v)) return "";
+  const modalidad = String(v.modalidadVisita || "").trim().toLowerCase();
+  if(modalidad === "devolucion" || v.visitaDevolucion === true) return "devolucion";
+  if(modalidad === "especial" || v.visitaEspecial === true) return "especial";
+  return "normal";
+}
+
+function getModalidadVisitanteLabel(v={}){
+  const modalidad = getModalidadVisitante(v);
+  if(modalidad === "especial") return "Visita especial";
+  if(modalidad === "devolucion") return "Devolución";
+  return "Visita normal";
+}
+
+function getModalidadVisitanteClass(v={}){
+  const modalidad = getModalidadVisitante(v);
+  return modalidad === "especial" ? "visita-especial" : modalidad === "devolucion" ? "visita-devolucion" : "";
+}
+
+function renderModalidadVisitantePill(v={}){
+  if(!isVisitante(v)) return "";
+  const modalidad = getModalidadVisitante(v);
+  const cssClass = modalidad === "especial" ? "visita-especial-pill" : modalidad === "devolucion" ? "visita-devolucion-pill" : "visita-normal-pill";
+  return `<span class="pill ${cssClass}"><span class="dot ${modalidad === "especial" ? "warn" : modalidad === "devolucion" ? "brand" : "info"}"></span>${esc(getModalidadVisitanteLabel(v))}</span>`;
+}
+
 function getNombreAcceso(v={}){
   if(!isVisitante(v)) return v.proveedor || "Proveedor";
   const list = getVisitantesLista(v);
@@ -1812,6 +1839,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v255</b><span>Las citas de visitantes permiten elegir Visita normal, Visita especial o Devolución. Cada modalidad se identifica en tarjetas, ficha e historial; Visita especial conserva su autorización y Devolución utiliza el flujo normal.</span></div>
           <div class="help-release"><b>v254</b><span>Nueva aplicación modular con dependencias locales y carga optimizada. Las aduanas Peletería, Avíos y Otros permiten una sola cita por horario.</span></div>
           <div class="help-release"><b>v253</b><span>El tema guardado se aplica antes del primer render para evitar el destello oscuro al abrir la aplicación con el tema claro.</span></div>
           <div class="help-release"><b>v249</b><span>Los vales de personal admiten nóminas de practicantes con formato P más tres dígitos, por ejemplo P064, sin confundirlas con nóminas numéricas; el modal individual aprovecha mejor la altura disponible y evita desplazamiento vertical innecesario.</span></div>
@@ -4997,7 +5025,7 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
           const createdTime = createdDate && !Number.isNaN(createdDate.getTime()) ? createdDate.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}) : "";
           const creatorName = creadorCitaNombre(v);
           return `
-            <article class="tarjeta history-card provider-visit-card provider-kanban-card visitor-kanban-card status-${esc(statusMeta[1])} ${v.visitaEspecial ? "visita-especial" : ""}" data-action="ficha" data-id="${esc(v.id)}" tabindex="0" aria-label="Abrir detalle de ${esc(visitorName)}">
+            <article class="tarjeta history-card provider-visit-card provider-kanban-card visitor-kanban-card status-${esc(statusMeta[1])} ${getModalidadVisitanteClass(v)}" data-action="ficha" data-id="${esc(v.id)}" tabindex="0" aria-label="Abrir detalle de ${esc(visitorName)}">
               <div class="provider-card-top">
                 <span class="provider-avatar" aria-hidden="true">${esc(initials)}</span>
                 <span class="provider-card-name"><strong>${esc(visitorName)}</strong><small>${esc(empresaAcceso || "Visitante")}</small></span>
@@ -5010,7 +5038,7 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
               ${createdTime || (creatorName && creatorName !== "-") ? `<div class="provider-card-created">Creada${createdTime ? ` ${esc(createdTime)}` : ""}${creatorName && creatorName !== "-" ? ` · ${esc(creatorName)}` : ""}</div>` : ""}
               <div class="provider-card-secondary">
                 ${v.motivo ? `<span class="provider-mini-pill">${esc(v.motivo)}</span>` : ""}
-                ${v.visitaEspecial ? `<span class="provider-mini-pill success">Visita especial</span>` : ""}
+                <span class="provider-mini-pill modalidad-${esc(getModalidadVisitante(v))}">${esc(getModalidadVisitanteLabel(v))}</span>
                 ${v.gafeteNo ? `<span class="provider-mini-pill">Gafete ${esc(v.gafeteNo)}</span>` : ""}
                 ${v.status === Status.LLEGADO ? liveTimePill("Espera", v.llegadaTs, 0, true) : ""}
                 ${v.status === Status.DENTRO ? liveTimePill("Dentro", v.entradaTs, 0, false) : ""}
@@ -5066,14 +5094,14 @@ const showInc = !!incLabel && incKey !== "SIN_INCIDENCIAS";
             </article>`;
         }
         return `
-          <div class="tarjeta history-card ${modernDashboard ? "provider-visit-card" : ""} tipo-${esc(tipo)} ${v.visitaEspecial ? "visita-especial" : ""} ${qrVencido ? "qr-vencido" : ""}" data-action="ficha" data-id="${esc(v.id)}">
+          <div class="tarjeta history-card ${modernDashboard ? "provider-visit-card" : ""} tipo-${esc(tipo)} ${getModalidadVisitanteClass(v)} ${qrVencido ? "qr-vencido" : ""}" data-action="ficha" data-id="${esc(v.id)}">
             ${qrVencido ? `<div class="qr-banda-inactivo">QR inactivo por retraso</div>` : ""}
             <strong>${esc(isVisitante(v) ? getVisitanteResumen(v) : nombreAcceso)}</strong>
             <small>${esc(empresaAcceso || tipoLabel)}</small>
             <div class="meta">
               <span class="pill"><span class="dot brand"></span>ID: ${esc(v.id)}</span>
               <span class="pill"><span class="dot ${tipo === "visitante" ? "brand" : "info"}"></span>${esc(tipoLabel)}</span>
-              ${v.visitaEspecial ? `<span class="pill visita-especial-pill"><span class="dot info"></span>Visita especial</span>` : ""}
+              ${isVisitante(v) ? renderModalidadVisitantePill(v) : ""}
               ${tipo === "proveedor" ? `<span class="pill"><span class="dot info"></span>${esc(v.area || "Área")}</span>` : ""}
               <span class="pill"><span class="dot warn"></span>${esc(cita)}</span>
               ${pillCitaCreada(v)}
@@ -5560,7 +5588,7 @@ function paintCitasComprasTable(tableList, baseList){
           return `
             <tr>
               <td>${esc(fecha)}<br>${pillCitaCreada(v)}</td>
-              <td>${esc(getTipoVisitaLabel(v))}</td>
+              <td>${esc(getTipoVisitaLabel(v))}${isVisitante(v) ? `<br><small>${esc(getModalidadVisitanteLabel(v))}</small>` : ""}</td>
               <td><b>${esc(getNombreAcceso(v)||"-")}</b><br><code>${esc(v.id)}</code></td>
               <td>${esc(v.personaVisita||"-")}</td>
               <td>${esc(v.area||"-")}</td>

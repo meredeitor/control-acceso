@@ -3180,6 +3180,15 @@ const esVisitante = isVisitante(v);
           </select>
         </div>
 
+        ${esVisitante ? `<div class="modalidad-visita-field" style="grid-column:1/-1;">
+          <label for="ccModalidadVisita">Tipo de visita *</label>
+          <select id="ccModalidadVisita" class="modalidad-visita-select">
+            <option value="normal" ${getModalidadVisitante(v)==="normal"?"selected":""}>Visita normal</option>
+            <option value="especial" ${getModalidadVisitante(v)==="especial"?"selected":""}>Visita especial</option>
+            <option value="devolucion" ${getModalidadVisitante(v)==="devolucion"?"selected":""}>Devolución</option>
+          </select>
+        </div>` : ""}
+
         ${esVisitante ? "" : `<div style="grid-column:1/-1;">
           ${renderFacturaOcEditor(normalizeFacturasOc(v), "ccFacturasOcEditor")}
         </div>`}
@@ -3256,9 +3265,12 @@ const esVisitante = isVisitante(v);
   const proveedorCodigo = esVisitante ? "" : (provInput?.dataset.codigo || v.proveedorCodigo || "");
   const proveedorNombre = (provInput?.value || "").trim();
   const persona = (document.getElementById("ccPersona")?.value || "").trim();
-  const area = (document.getElementById("ccAreaEdit")?.value || "").trim();
+  const area = esVisitante ? "Visitantes" : (document.getElementById("ccAreaEdit")?.value || "").trim();
   const motivo = (document.getElementById("ccMotivo")?.value || "").trim();
   const fechaHora = (document.getElementById("ccFechaHora")?.value || "").trim();
+  const modalidadAnterior = getModalidadVisitante(v);
+  const modalidadCapturada = String(document.getElementById("ccModalidadVisita")?.value || modalidadAnterior || "normal").toLowerCase();
+  const modalidadVisita = esVisitante && ["normal","especial","devolucion"].includes(modalidadCapturada) ? modalidadCapturada : "normal";
   const docs = esVisitante
     ? { ocNo:"", facturaNo:"", facturasOc:[] }
     : collectFacturaOcFromDom("ccFacturasOcEditor");
@@ -3303,6 +3315,7 @@ const esVisitante = isVisitante(v);
   registrarCambio(v, "personaVisita", v.personaVisita, persona);
   registrarCambio(v, "area", v.area, area);
   registrarCambio(v, "motivo", v.motivo, motivo);
+  if(esVisitante) registrarCambio(v, "modalidadVisita", modalidadAnterior, modalidadVisita);
   registrarCambio(v, "fechaHora", v.fechaHora, fechaHora);
   registrarCambio(v, "ocNo", v.ocNo, ocNo);
   registrarCambio(v, "facturaNo", v.facturaNo, facturaNo);
@@ -3314,6 +3327,19 @@ const esVisitante = isVisitante(v);
   v.tipoVisita = esVisitante ? "visitante" : "proveedor";
   v.tipoAcceso = v.tipoVisita;
   if(esVisitante) v.empresa = "Visitante";
+  if(esVisitante){
+    v.modalidadVisita = modalidadVisita;
+    v.visitaEspecial = modalidadVisita === "especial";
+    v.visitaDevolucion = modalidadVisita === "devolucion";
+    v.requiereAutorizacion = v.visitaEspecial;
+    if(v.visitaEspecial && modalidadAnterior !== "especial"){
+      v.status = Status.PENDIENTE_AUTORIZACION;
+      v.qrActivo = false;
+    }else if(!v.visitaEspecial && v.status === Status.PENDIENTE_AUTORIZACION){
+      v.status = Status.PROGRAMADO;
+      v.qrActivo = true;
+    }
+  }
   v.personaVisita = persona;
   v.area = area;
   v.motivo = motivo;

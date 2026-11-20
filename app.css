@@ -174,40 +174,54 @@
       border-color: rgba(196,181,253,.58);
     }
     .tarjeta.visita-especial{
-      background: linear-gradient(135deg, rgba(0,212,255,.42), rgba(0,82,255,.38) 48%, rgba(6,12,32,.96)) !important;
-      border-color: rgba(103,232,249,.95) !important;
-      box-shadow: 0 0 0 1px rgba(125,249,255,.85), 0 0 26px rgba(0,212,255,.78), 0 0 56px rgba(0,82,255,.46) !important;
+      background: linear-gradient(135deg, rgba(245,158,11,.42), rgba(180,83,9,.34) 48%, rgba(20,12,4,.96)) !important;
+      border-color: rgba(251,191,36,.95) !important;
+      box-shadow: 0 0 0 1px rgba(252,211,77,.72), 0 0 26px rgba(245,158,11,.42) !important;
     }
     .tarjeta.visita-especial:hover{
-      background: linear-gradient(135deg, rgba(0,236,255,.52), rgba(0,112,255,.46) 48%, rgba(7,18,45,.98)) !important;
-      border-color: rgba(207,250,254,1) !important;
-      box-shadow: 0 0 0 1px rgba(207,250,254,1), 0 0 34px rgba(0,236,255,.92), 0 0 74px rgba(0,112,255,.58) !important;
+      background: linear-gradient(135deg, rgba(251,191,36,.52), rgba(217,119,6,.42) 48%, rgba(28,16,4,.98)) !important;
+      border-color: rgba(254,240,138,1) !important;
+      box-shadow: 0 0 0 1px rgba(254,240,138,.88), 0 0 34px rgba(245,158,11,.55) !important;
     }
     .pill.visita-especial-pill{
-      background: rgba(0,212,255,.22);
-      border-color: rgba(103,232,249,.75);
-      color: #cffafe;
-      box-shadow: 0 0 16px rgba(0,212,255,.45);
+      background: rgba(245,158,11,.22);
+      border-color: rgba(251,191,36,.75);
+      color: #fef3c7;
+      box-shadow: 0 0 16px rgba(245,158,11,.30);
       font-weight: 900;
     }
-    .visita-especial-toggle{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      min-height:44px;
-      padding:10px 12px;
-      border:1px solid rgba(103,232,249,.55);
-      border-radius:12px;
-      background:rgba(0,212,255,.10);
-      color:#cffafe;
-      font-weight:900;
-      box-shadow:0 0 18px rgba(0,212,255,.20);
-      cursor:pointer;
+    .tarjeta.visita-devolucion{
+      background: linear-gradient(135deg, rgba(139,92,246,.44), rgba(91,33,182,.36) 48%, rgba(12,7,28,.96)) !important;
+      border-color: rgba(196,181,253,.92) !important;
+      box-shadow: 0 0 0 1px rgba(196,181,253,.70), 0 0 28px rgba(124,58,237,.46) !important;
     }
-    .visita-especial-toggle input{
-      width:18px;
-      height:18px;
-      accent-color:#00d4ff;
+    .tarjeta.visita-devolucion:hover{
+      background: linear-gradient(135deg, rgba(167,139,250,.54), rgba(109,40,217,.44) 48%, rgba(18,9,40,.98)) !important;
+      border-color: rgba(237,233,254,1) !important;
+      box-shadow: 0 0 0 1px rgba(237,233,254,.88), 0 0 36px rgba(124,58,237,.60) !important;
+    }
+    .pill.visita-devolucion-pill{
+      background:rgba(124,58,237,.22);
+      border-color:rgba(167,139,250,.72);
+      color:#ede9fe;
+      box-shadow:0 0 16px rgba(124,58,237,.30);
+      font-weight:900;
+    }
+    .pill.visita-normal-pill{
+      background:rgba(59,130,246,.12);
+      border-color:rgba(96,165,250,.28);
+      font-weight:800;
+    }
+    .modalidad-visita-field{
+      padding:12px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:var(--panel2);
+    }
+    .modalidad-visita-select{
+      width:100%;
+      margin-top:6px;
+      font-weight:850;
     }
     .tarjeta.tipo-proveedor{
       border-left: 3px solid rgba(56,189,248,.65);
@@ -1390,11 +1404,21 @@ html[data-theme="light"] textarea{
   border:1px solid rgba(203,213,245,1);
 }
 
-html[data-theme="light"] .visita-especial-toggle{
-  color:#075985;
-  background:#e0f2fe;
-  border-color:#7dd3fc;
-  box-shadow:0 8px 18px rgba(2,132,199,.12);
+html[data-theme="light"] .pill.visita-especial-pill{
+  color:#92400e;
+  background:#fffbeb;
+  border-color:#fbbf24;
+}
+
+html[data-theme="light"] .pill.visita-devolucion-pill{
+  color:#5b21b6;
+  background:#f5f3ff;
+  border-color:#a78bfa;
+}
+
+html[data-theme="light"] .modalidad-visita-field{
+  background:#f8fafc;
+  border-color:#dbe3ee;
 }
 
 /* Sidebar */
@@ -3097,7 +3121,13 @@ html[data-theme="copper"] .pill .dot.muted{ background:#94a3b8 !important; }
     .provider-card-secondary{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:11px;padding-top:10px;border-top:1px solid var(--border)}
     .provider-card-secondary .provider-mini-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 6px;border-radius:999px;background:var(--panel2);color:var(--muted);font-size:9px;font-weight:700;max-width:100%}
     .provider-card-secondary .provider-mini-pill.alert{background:rgba(245,158,11,.13);color:#b86305}.provider-card-secondary .provider-mini-pill.success{background:rgba(34,197,94,.12);color:#12813f}
+    .provider-card-secondary .provider-mini-pill.modalidad-normal{background:rgba(59,130,246,.12);color:#1d4ed8}
+    .provider-card-secondary .provider-mini-pill.modalidad-especial{background:rgba(245,158,11,.18);color:#a45104}
+    .provider-card-secondary .provider-mini-pill.modalidad-devolucion{background:rgba(124,58,237,.16);color:#6d28d9}
     [data-theme="dark"] .provider-card-secondary .provider-mini-pill.alert{color:#ffd089}
+    [data-theme="dark"] .provider-card-secondary .provider-mini-pill.modalidad-normal{color:#bfdbfe}
+    [data-theme="dark"] .provider-card-secondary .provider-mini-pill.modalidad-especial{color:#fde68a}
+    [data-theme="dark"] .provider-card-secondary .provider-mini-pill.modalidad-devolucion{color:#ddd6fe}
     .provider-card-actions{margin-left:auto;display:flex;gap:4px}.provider-card-actions button{min-width:34px;width:34px;height:34px;padding:0;border-radius:9px;font-size:14px}
     .provider-kanban-card.qr-vencido{padding-top:58px!important;color:#fff}.provider-kanban-card.qr-vencido .qr-banda-inactivo{min-height:41px;display:grid;place-items:center;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.65);font-size:12px;letter-spacing:.9px}.provider-kanban-card.qr-vencido .provider-avatar{background:rgba(255,255,255,.92);color:#c60035}.provider-kanban-card.qr-vencido .provider-card-name strong,.provider-kanban-card.qr-vencido .provider-card-name small,.provider-kanban-card.qr-vencido .provider-card-ops,.provider-kanban-card.qr-vencido .provider-card-created{color:#fff!important}.provider-kanban-card.qr-vencido .provider-card-created{opacity:.9}.provider-kanban-card.qr-vencido .provider-state-chip{background:rgba(255,255,255,.92);color:#0862d9}.provider-kanban-card.qr-vencido .provider-card-secondary{border-top-color:rgba(255,255,255,.28)}.provider-kanban-card.qr-vencido .provider-mini-pill{background:rgba(255,255,255,.9);color:#243047}.provider-kanban-card.qr-vencido .provider-mini-pill.alert{background:#fff0d7;color:#9a4f00}.provider-kanban-card.qr-vencido .provider-mini-pill.success{background:#dcfce7;color:#11733a}.provider-kanban-card.qr-vencido .provider-card-actions button{background:rgba(255,255,255,.94);border-color:rgba(255,255,255,.75);color:#071b3d}.provider-kanban-card.qr-vencido>button[data-action="reactivar"]{background:rgba(255,255,255,.94);border-color:#fff;color:#071b3d;font-weight:900}
     .kanban-details-toggle{display:inline-grid;place-items:center;flex:0 0 34px;width:34px;min-width:34px;height:34px;min-height:34px;padding:0;border-radius:9px;font-size:11px;font-weight:900}
