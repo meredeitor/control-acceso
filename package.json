@@ -1,0 +1,12 @@
+{
+  "name": "caborca-access-control",
+  "private": true,
+  "version": "254.0.0",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/check-build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

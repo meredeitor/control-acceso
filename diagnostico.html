@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f6f8fc">
+  <title>Diagnóstico · Caborca Access Control</title>
+  <script>
+    try{var t=localStorage.getItem("ui_theme")==="dark"?"dark":"light";document.documentElement.dataset.theme=t;document.querySelector('meta[name="theme-color"]').content=t==="dark"?"#0f172a":"#f6f8fc"}catch(e){}
+  </script>
+  <style>
+    :root{--bg:#f6f8fc;--panel:#fff;--text:#0f172a;--muted:#64748b;--line:#dbe3ee;--blue:#0b72f6;--ok:#16813f;--warn:#b96805;--bad:#dc2626;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
+    [data-theme="dark"]{--bg:#0b1220;--panel:#111c33;--text:#eef5ff;--muted:#a9b8d2;--line:#2a3b59;color-scheme:dark}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text)}main{width:min(920px,calc(100% - 24px));margin:0 auto;padding:24px 0 48px}.hero,.panel{border:1px solid var(--line);border-radius:20px;background:var(--panel);box-shadow:0 14px 36px rgba(15,23,42,.08)}.hero{padding:22px}.hero h1{margin:0;font-size:clamp(1.55rem,5vw,2.25rem)}.hero p{margin:8px 0 0;color:var(--muted);line-height:1.5}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}button,a.button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 15px;border:1px solid transparent;border-radius:12px;background:var(--blue);color:#fff;font:inherit;font-weight:800;text-decoration:none;cursor:pointer}button.secondary,a.secondary{border-color:var(--line);background:var(--panel);color:var(--text)}button.danger{border-color:#fecaca;background:#fff1f2;color:#b91c1c}.panel{margin-top:14px;padding:18px}.panel h2{margin:0 0 13px;font-size:1.1rem}.summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.item{min-width:0;padding:12px;border:1px solid var(--line);border-radius:13px}.item span{display:block;color:var(--muted);font-size:.8rem}.item b{display:block;margin-top:5px;font-size:.92rem;overflow-wrap:anywhere}.status{display:inline-flex!important;align-items:center;gap:7px}.status::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--muted)}.status.ok::before{background:var(--ok)}.status.warn::before{background:var(--warn)}.status.bad::before{background:var(--bad)}pre{margin:0;max-height:300px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text);font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}.note{margin-top:12px;color:var(--muted);font-size:.84rem;line-height:1.5}@media(max-width:620px){main{padding-top:12px}.hero,.panel{border-radius:16px}.summary{grid-template-columns:1fr}.actions{display:grid;grid-template-columns:1fr}.actions>*{width:100%}}
+  </style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <h1>Diagnóstico del dispositivo</h1>
+    <p>Revisa versión, conexión, caché y compatibilidad sin acceder a información de proveedores, visitantes o vales.</p>
+    <div class="actions"><button id="run">Ejecutar diagnóstico</button><button id="copy" class="secondary">Copiar resumen</button><button id="repair" class="danger">Reparar aplicación</button><a class="button secondary" href="./index.html">Volver a la aplicación</a></div>
+  </section>
+  <section class="panel"><h2>Estado general</h2><div class="summary" id="summary"><div class="item"><span>Estado</span><b class="status warn">Pendiente de revisión</b></div></div></section>
+  <section class="panel"><h2>Resumen técnico</h2><pre id="report">Pulsa “Ejecutar diagnóstico”.</pre><p class="note">El resumen permanece en este dispositivo. Solo se copiará al portapapeles si pulsas “Copiar resumen”. La reparación no borra documentos de Firebase ni perfiles de usuarios.</p></section>
+</main>
+<script>
+const DIAG_VERSION="v254";
+const $=s=>document.querySelector(s);
+let lastReport="";
+function esc(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function timeoutFetch(url,options={},ms=6000){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),ms);return fetch(url,{...options,signal:controller.signal}).finally(()=>clearTimeout(timer))}
+async function testUrl(url,options={}){const started=performance.now();try{await timeoutFetch(url,options);return{ok:true,ms:Math.round(performance.now()-started)}}catch(error){return{ok:false,ms:Math.round(performance.now()-started),error:error?.name||"Error"}}}
+async function getSwVersion(){if(!("serviceWorker" in navigator))return{supported:false};const base=new URL("./",location.href).href;const registrations=(await navigator.serviceWorker.getRegistrations()).filter(registration=>String(registration.scope||"").startsWith(base));const registration=registrations[0];const result={supported:true,count:registrations.length,controlled:!!navigator.serviceWorker.controller,script:registration?.active?.scriptURL||registration?.waiting?.scriptURL||registration?.installing?.scriptURL||"-"};if(!navigator.serviceWorker.controller)return result;return await new Promise(resolve=>{const timer=setTimeout(()=>resolve(result),1200);const listener=event=>{if(event.data?.type!=="SW_VERSION")return;clearTimeout(timer);navigator.serviceWorker.removeEventListener("message",listener);resolve({...result,version:event.data.version||"-",cache:event.data.cache||"-"})};navigator.serviceWorker.addEventListener("message",listener);navigator.serviceWorker.controller.postMessage({type:"GET_VERSION"})})}
+function item(label,value,state=""){return`<div class="item"><span>${esc(label)}</span><b class="${state?`status ${state}`:""}">${esc(value)}</b></div>`}
+async function runDiagnostic(){
+  $("#run").disabled=true;$("#run").textContent="Revisando…";
+  const checks=[];
+  let published={};try{const response=await timeoutFetch(`./version.json?ts=${Date.now()}`,{cache:"no-store"});published=await response.json();checks.push(["GitHub Pages",response.ok?"Disponible":"Respuesta "+response.status,response.ok?"ok":"bad"])}catch(error){checks.push(["GitHub Pages","Sin respuesta","bad"])}
+  const firebaseLocal=await testUrl("./vendor/firebase-12.11.0/firebase-app.js",{cache:"no-store"});
+  const firebaseAuth=await testUrl("https://control-acceso-cd3db.firebaseapp.com/__/auth/handler",{mode:"no-cors",cache:"no-store"});
+  checks.push(["Firebase SDK local",firebaseLocal.ok?`Disponible · ${firebaseLocal.ms} ms`:"No disponible",firebaseLocal.ok?"ok":"bad"]);
+  checks.push(["Firebase Auth",firebaseAuth.ok?`Disponible · ${firebaseAuth.ms} ms`:"No disponible",firebaseAuth.ok?"ok":"bad"]);
+  const sw=await getSwVersion().catch(error=>({supported:"serviceWorker" in navigator,error:error?.message||"Error"}));
+  const cacheKeys="caches" in window?await caches.keys():[];
+  const appCaches=cacheKeys.filter(key=>key.startsWith("caborca-access-control-"));
+  const storage=navigator.storage?.estimate?await navigator.storage.estimate().catch(()=>null):null;
+  const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+  const version=String(published.version||"No disponible");
+  checks.unshift(["Versión publicada",version,version===DIAG_VERSION?"ok":"warn"]);
+  checks.push(["Service worker",!sw.supported?"No compatible":sw.controlled?`Activo · ${sw.version||"versión no informada"}`:"Instalado sin control",sw.controlled?"ok":"warn"]);
+  checks.push(["Cachés de la app",String(appCaches.length),appCaches.length<=1?"ok":"warn"]);
+  checks.push(["Internet",navigator.onLine?"En línea":"Sin conexión",navigator.onLine?"ok":"bad"]);
+  $("#summary").innerHTML=checks.map(row=>item(...row)).join("");
+  const lines=[
+    "Caborca Access Control · Diagnóstico",`Fecha: ${new Date().toLocaleString()}`,`Versión de diagnóstico: ${DIAG_VERSION}`,`Versión publicada: ${version}`,`Internet: ${navigator.onLine?"En línea":"Sin conexión"}`,`Modo: ${standalone?"Aplicación instalada":"Navegador"}`,`Service worker: ${JSON.stringify(sw)}`,`Cachés Caborca: ${appCaches.join(", ")||"ninguna"}`,`Almacenamiento estimado: ${storage?`${Math.round((storage.usage||0)/1048576)} MB usados de ${Math.round((storage.quota||0)/1048576)} MB`:"No disponible"}`,`Pantalla: ${screen.width}x${screen.height} · viewport ${innerWidth}x${innerHeight}`,`Idioma: ${navigator.language||"-"}`,`Plataforma: ${navigator.platform||"-"}`,`Navegador: ${navigator.userAgent||"-"}`,`Firebase SDK local: ${firebaseLocal.ok?"OK":"FALLÓ"} (${firebaseLocal.ms} ms)`,`Firebase Auth: ${firebaseAuth.ok?"OK":"FALLÓ"} (${firebaseAuth.ms} ms)`
+  ];
+  lastReport=lines.join("\n");$("#report").textContent=lastReport;$("#run").disabled=false;$("#run").textContent="Ejecutar diagnóstico";
+}
+async function copyReport(){if(!lastReport)await runDiagnostic();try{await navigator.clipboard.writeText(lastReport);$("#copy").textContent="Resumen copiado";setTimeout(()=>$("#copy").textContent="Copiar resumen",1800)}catch(error){$("#report").focus?.();alert("No se pudo copiar automáticamente. Mantén presionado el resumen para copiarlo.")}}
+async function repair(){if(!confirm("Se eliminarán únicamente las cachés y service workers de Caborca Access Control. No se borrarán datos de Firebase. ¿Continuar?"))return;$("#repair").disabled=true;$("#repair").textContent="Reparando…";try{if("caches" in window){const keys=(await caches.keys()).filter(key=>key.startsWith("caborca-access-control-"));await Promise.all(keys.map(key=>caches.delete(key)))}if("serviceWorker" in navigator){const base=new URL("./",location.href).href;const registrations=(await navigator.serviceWorker.getRegistrations()).filter(registration=>String(registration.scope||"").startsWith(base));await Promise.all(registrations.map(registration=>registration.unregister()))}location.replace(`./index.html?fresh=${Date.now()}`)}catch(error){alert("No se pudo completar la reparación. Vuelve a ejecutar el diagnóstico.");$("#repair").disabled=false;$("#repair").textContent="Reparar aplicación"}}
+$("#run").onclick=runDiagnostic;$("#copy").onclick=copyReport;$("#repair").onclick=repair;runDiagnostic();
+</script>
+</body>
+</html>

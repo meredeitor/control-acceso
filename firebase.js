@@ -1,9 +1,9 @@
 // firebase.js (ESM)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import { initializeApp } from "./vendor/firebase-12.11.0/firebase-app.js";
+import { getAuth } from "./vendor/firebase-12.11.0/firebase-auth.js";
+import { getFirestore } from "./vendor/firebase-12.11.0/firebase-firestore.js";
 // Si luego usas Storage:
-// import { getStorage } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js";
+// Storage no se utiliza actualmente; si se habilita, debe agregarse desde vendor/.
 
 const firebaseConfig = {
   apiKey: "AIzaSyDmdS1mt12tyWOE48U2As-53vtdQT7esPg",

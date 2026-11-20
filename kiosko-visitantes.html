@@ -4,8 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Caborca Access Control | Kiosko Visitantes</title>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script defer src="./dependency-loader.js"></script>
   <script>
     try{ const t = localStorage.getItem("ui_theme"); document.documentElement.dataset.theme = t === "dark" ? "dark" : "light"; }catch{ document.documentElement.dataset.theme = "light"; }
   </script>
@@ -283,7 +282,8 @@
       };
     }
 
-    function renderQR(cita){
+    async function renderQR(cita){
+      await window.AppDependencies.load("qr");
       currentCita = cita;
       const id = cita.id;
       const f = fmtDate(cita.fechaHora);
@@ -325,6 +325,7 @@
     }
 
     async function passBlob(){
+      await window.AppDependencies.load("capture");
       const pass = document.getElementById("citaPass");
       if(!window.html2canvas) throw new Error("html2canvas no esta disponible.");
       const canvas = await window.html2canvas(pass, {
@@ -416,7 +417,7 @@
           observacionesKiosko: "",
           createdBySource: "kiosko_visitantes"
         });
-        renderQR(cita);
+        await renderQR(cita);
         form.reset();
         toast("Cita creada. QR generado.", "ok");
       }catch(err){

@@ -1,5 +1,5 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-import { getAuth, signInAnonymously, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+import { initializeApp } from "./vendor/firebase-12.11.0/firebase-app.js";
+import { getAuth, signInAnonymously, signInWithEmailAndPassword, signOut } from "./vendor/firebase-12.11.0/firebase-auth.js";
 import {
   collection,
   doc,
@@ -11,7 +11,7 @@ import {
   serverTimestamp,
   setDoc,
   where
-} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+} from "./vendor/firebase-12.11.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDmdS1mt12tyWOE48U2As-53vtdQT7esPg",

@@ -4,8 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Caborca Access Control | Kiosko Vales</title>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script defer src="./dependency-loader.js"></script>
   <script>
     try{ const t = localStorage.getItem("ui_theme"); document.documentElement.dataset.theme = t === "dark" ? "dark" : "light"; }catch{ document.documentElement.dataset.theme = "light"; }
   </script>
@@ -487,7 +486,8 @@
       if(el) el.textContent = value || "";
     }
 
-    function renderSolicitud(prefix, vale){
+    async function renderSolicitud(prefix, vale){
+      await window.AppDependencies.load("qr");
       currentVale = vale;
       currentPrefix = prefix;
       const esPersonal = prefix === "VALE_PERSONAL";
@@ -562,6 +562,7 @@
     }
 
     async function passBlob(){
+      await window.AppDependencies.load("capture");
       const pass = document.getElementById("permisoPass");
       if(!window.html2canvas) throw new Error("html2canvas no esta disponible.");
       const canvas = await window.html2canvas(pass, {
@@ -701,7 +702,7 @@
           autorizadorRole: autorizadorOption?.dataset?.role || "",
           createdBySource: "kiosko_vales_activos"
         });
-        renderSolicitud("VALE_ACTIVO", vale);
+        await renderSolicitud("VALE_ACTIVO", vale);
         formActivo.reset();
         document.getElementById("aFecha").value = today;
         toast("Solicitud enviada. QR generado.", "ok");
@@ -742,7 +743,7 @@
           autorizadorTelefono: autorizadorOption?.dataset?.telefono || "",
           createdBySource: "kiosko_vales_personal"
         });
-        renderSolicitud("VALE_PERSONAL", vale);
+        await renderSolicitud("VALE_PERSONAL", vale);
         formPersonal.reset();
         syncTiempoPersonalPorTipo();
         document.getElementById("pFecha").value = today;

@@ -1,10 +1,16 @@
-const CACHE_NAME = "caborca-access-control-v253-20261119";
+const CACHE_NAME = "caborca-access-control-v254-20261120";
+const SW_VERSION = "v254";
 const NAVIGATION_TIMEOUT_MS = 8000;
 
 // Archivos base que siempre quieres offline
 const STATIC_ASSETS = [
   "./",
   "./index.html",
+  "./version.json",
+  "./diagnostico.html",
+  "./dependency-loader.js",
+  "./app.css",
+  "./assets/app.min.js",
   "./kiosko-common.js",
   "./kiosko-brand-v171.css",
   "./kiosko-proveedores.html",
@@ -65,9 +71,20 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+self.addEventListener("message", (event) => {
+  if(event.data?.type === "SKIP_WAITING") self.skipWaiting();
+  if(event.data?.type === "GET_VERSION") event.source?.postMessage({ type:"SW_VERSION", version:SW_VERSION, cache:CACHE_NAME });
+});
+
 // 🌐 FETCH (estrategia híbrida)
 self.addEventListener("fetch", (event) => {
   const req = event.request;
+  const reqUrl = new URL(req.url);
+
+  if (reqUrl.origin === self.location.origin && reqUrl.pathname.endsWith("/version.json")) {
+    event.respondWith(fetchWithTimeout(req, 5000));
+    return;
+  }
 
   // 🔥 API / Firebase → siempre red primero
   if (req.url.includes("firestore") || req.url.includes("googleapis")) {
@@ -82,7 +99,7 @@ self.addEventListener("fetch", (event) => {
         .then((res) => {
           if (!res || !res.ok) throw new Error("navigation-response-not-ok");
           return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(req, res.clone());
+            cache.put("./index.html", res.clone());
             return res;
           });
         })
@@ -95,8 +112,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Scripts locales: red primero con respaldo en cache. Las librerias CDN
-  // mantienen su propio cache HTTP y no deben impedir instalar la PWA.
+  // Scripts locales: red primero con respaldo en caché.
   if (new URL(req.url).origin === self.location.origin && new URL(req.url).pathname.endsWith(".js")) {
     event.respondWith(
       fetchWithTimeout(req)
