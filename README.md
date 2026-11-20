@@ -2,7 +2,19 @@
 
 Aplicacion PWA para control operativo de accesos, citas, vales, bitacora de guardias, reportes y rondines de seguridad.
 
-Version actual visible en la app: `v190`.
+Version actual de produccion: `v254`.
+
+Aplicacion publicada: https://meredeitor.github.io/control-acceso/
+
+## Novedades de v254
+
+- Aplicacion principal dividida en modulos para facilitar mantenimiento y pruebas.
+- Dependencias de Firebase, QR, camara, Excel, PDF y graficas alojadas en el proyecto con versiones fijas.
+- Carga diferida de camara, QR, Excel, PDF y graficas solamente cuando se necesitan.
+- Pantalla de inicio de sesion disponible mientras se validan credenciales y permisos.
+- Pantalla de recuperacion y diagnostico cuando el dispositivo no puede completar el arranque.
+- Una sola cita por horario para Aduana Peleteria, Avios y Otros.
+- Service Worker, Manifest y control de actualizaciones alineados con v254.
 
 ## Modulos principales
 
@@ -17,18 +29,26 @@ Version actual visible en la app: `v190`.
 
 ## Tecnologia
 
-- HTML, CSS y JavaScript en una sola app principal.
+- HTML, CSS y JavaScript con fuente modular y compilacion optimizada para navegador.
 - Firebase Authentication para sesiones.
 - Firebase Firestore como base de datos.
 - LocalStorage e IndexedDB para soporte local/offline-first.
 - Service Worker y Manifest para funcionamiento PWA.
 - Codigos QR para citas, vales, rondines y tarjetas de guardia.
+- Dependencias locales con versiones fijas; la operacion no depende de unpkg, jsDelivr o cdnjs.
 
 Archivos principales:
 
-- `index.html`: interfaz, estilos y logica principal.
+- `index.html`: estructura principal y pantalla inicial de acceso.
+- `app.css`: estilos de la aplicacion.
+- `src/`: modulos fuente de autenticacion, proveedores, visitantes, vales, rondinero y reportes.
+- `assets/app.min.js`: compilacion productiva generada desde `src/`.
+- `vendor/`: dependencias externas conservadas localmente con versiones fijas.
+- `dependency-loader.js`: carga componentes pesados solo cuando se utilizan.
+- `diagnostico.html`: diagnostico y reparacion de cache por dispositivo.
 - `service-worker.js`: cache PWA.
 - `manifest.json`: configuracion de instalacion.
+- `version.json`: version productiva publicada.
 - `reglas.txt`: reglas sugeridas para Firestore.
 
 ## Roles
@@ -96,6 +116,9 @@ Reglas actuales:
 - No se puede crear una cita a las 5:00 pm o despues.
 - No se puede editar una cita para dejarla a las 5:00 pm o despues.
 - Se valida capacidad por area y horario.
+- Aduana Peleteria, Avios y Otros permiten una sola cita por horario.
+- Las citas canceladas dejan de consumir capacidad.
+- Las citas del mismo dia requieren al menos 30 minutos de anticipacion y se programan en bloques cerrados de 30 minutos.
 
 ## Vales de salida de activo
 
@@ -315,17 +338,21 @@ Si aparece `FirebaseError: Missing or insufficient permissions`, revisar primero
 
 ## PWA y cache
 
-Cuando se modifique `index.html`, tambien se debe actualizar:
+Cuando se publique una nueva version, se debe mantener sincronizado:
 
-1. La version visible en el sidebar.
-2. `CACHE_NAME` en `service-worker.js`.
+1. `APP_VERSION` en `src/auth.js`.
+2. `version.json`.
+3. `SW_VERSION` y `CACHE_NAME` en `service-worker.js`.
+4. La nota de version en Acerca de.
+5. La compilacion `assets/app.min.js` mediante `npm run build`.
 
 Esto fuerza a los equipos a descargar la nueva version de la app.
 
 Version actual:
 
-- Aplicacion visible: `v190`
-- Service Worker: `caborca-access-control-v190`
+- Aplicacion visible: `v254`
+- Service Worker: `v254`
+- Cache productiva: `caborca-access-control-v254-20261120`
 
 ## Mantenimiento recomendado
 
