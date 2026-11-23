@@ -2,9 +2,15 @@
 
 Aplicacion PWA para control operativo de accesos, citas, vales, bitacora de guardias, reportes y rondines de seguridad.
 
-Version actual de produccion: `v256`.
+Version actual de produccion: `v257`.
 
 Aplicacion publicada: https://meredeitor.github.io/control-acceso/
+
+## Novedades de v257
+
+- Jefe de Compras recibe el permiso `crear_cita_visitante` para generar citas y QR de visitantes.
+- Los permisos guardados de versiones anteriores se migran al esquema 8.
+- El cambio no agrega facultades de Guardia, edición, cancelación ni autorización especial.
 
 ## Novedades de v256
 
@@ -363,9 +369,9 @@ Esto fuerza a los equipos a descargar la nueva version de la app.
 
 Version actual:
 
-- Aplicacion visible: `v256`
-- Service Worker: `v256`
-- Cache productiva: `caborca-access-control-v256-20261120`
+- Aplicacion visible: `v257`
+- Service Worker: `v257`
+- Cache productiva: `caborca-access-control-v257-20261123`
 
 ## Mantenimiento recomendado
 

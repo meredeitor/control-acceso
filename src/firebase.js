@@ -229,6 +229,7 @@ const PERMISOS = {
   "ver_historial",
   "ver_reportes",
   "crear_cita",
+  "crear_cita_visitante",
   "ver_citas_compras",
   "exportar_excel",
   "ver_qr",
@@ -335,7 +336,7 @@ let rolePermOverrides = {};
 let rolePermsLoaded = false;
 let _selectedRolePermRole = ROLES.ADMIN;
 const ROLE_PERMS_DOC_ID = "role_permissions";
-const ROLE_PERMS_SCHEMA_VERSION = 7;
+const ROLE_PERMS_SCHEMA_VERSION = 8;
 
 const PERM_LABELS = {
   ver_dashboard_proveedores: "Ver dashboard de proveedores",

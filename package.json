@@ -1,7 +1,7 @@
 {
   "name": "caborca-access-control",
   "private": true,
-  "version": "256.0.0",
+  "version": "257.0.0",
   "scripts": {
     "build": "node scripts/build.mjs",
     "check": "node scripts/check-build.mjs"

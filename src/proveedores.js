@@ -153,6 +153,9 @@ async function loadRolePermsConfig(force=false){
         if(isLegacyConfig && role === ROLES.RECEPCIONISTA && !migrated.includes("autorizar_vale_personal_emergencia")){
           migrated.push("autorizar_vale_personal_emergencia");
         }
+        if(isLegacyConfig && role === ROLES.JEFE_COMPRAS && !migrated.includes("crear_cita_visitante")){
+          migrated.push("crear_cita_visitante");
+        }
         next[role] = migrated;
       }
     });
@@ -1839,6 +1842,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v257</b><span>Jefe de Compras puede crear citas y generar QR de visitantes. La aplicación migra el permiso guardado sin ampliar sus facultades de Guardia, edición, cancelación o autorización especial.</span></div>
           <div class="help-release"><b>v256</b><span>El buscador de Proveedores conserva el teclado y el texto durante la captura en tablet y telefono. Facturas y ordenes de compra se ajustan a una columna y muestran el contenido completo en pantallas tactiles.</span></div>
           <div class="help-release"><b>v255</b><span>Las citas de visitantes permiten elegir Visita normal, Visita especial o Devolución. Cada modalidad se identifica en tarjetas, ficha e historial; Visita especial conserva su autorización y Devolución utiliza el flujo normal.</span></div>
           <div class="help-release"><b>v254</b><span>Nueva aplicación modular con dependencias locales y carga optimizada. Las aduanas Peletería, Avíos y Otros permiten una sola cita por horario.</span></div>
