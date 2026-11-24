@@ -1250,6 +1250,50 @@ height: 100vh;
   font-size:12px;
   line-height:1.35;
 }
+.vale-activo-signatures{
+  width:100%;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:rgba(148,163,184,.07);
+  overflow:hidden;
+}
+.vale-activo-signatures summary{
+  cursor:pointer;
+  padding:10px 12px;
+  font-weight:800;
+  list-style:none;
+}
+.vale-activo-signatures summary::-webkit-details-marker{ display:none; }
+.vale-activo-signatures summary::after{ content:"+"; float:right; color:var(--brand); }
+.vale-activo-signatures[open] summary::after{ content:"−"; }
+.vale-activo-signature-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  padding:0 10px 10px;
+}
+.vale-activo-signature{
+  min-width:0;
+  display:grid;
+  gap:3px;
+  padding:10px;
+  border:1px solid var(--border);
+  border-left:3px solid var(--warn);
+  border-radius:10px;
+  background:var(--panel);
+}
+.vale-activo-signature.is-complete{ border-left-color:var(--ok); }
+.vale-activo-signature small{ color:var(--muted); font-weight:800; text-transform:uppercase; letter-spacing:.03em; }
+.vale-activo-signature b,.vale-activo-signature span,.vale-activo-signature time{ min-width:0; overflow-wrap:anywhere; }
+.vale-activo-signature span,.vale-activo-signature time{ color:var(--muted); font-size:11px; }
+.permit-signatures{ margin-top:14px; padding:12px; background:#f8fafc; color:#0f172a; }
+.permit-signatures h3{ margin:0 0 10px; font-size:15px; }
+.permit-signatures .vale-activo-signature-grid{ padding:0; }
+.permit-signatures .vale-activo-signature{ background:#fff; border-color:#dbe3ee; border-left-color:#f59e0b; }
+.permit-signatures .vale-activo-signature.is-complete{ border-left-color:#16a34a; }
+@media (max-width:760px){
+  .vale-activo-signature-grid{ grid-template-columns:1fr; }
+}
 @media (max-width:760px){
   .factura-oc-item{ grid-template-columns:1fr; }
   .factura-oc-remove{ width:100%; }

@@ -80,6 +80,31 @@ async function renderValesActivos(refresh=true){
   vigilarAutocompletadoEnBuscadoresVales();
 }
 
+function valeActivoFirmaFecha(ts){
+  const n = Number(ts || 0);
+  if(!n) return "Pendiente";
+  return new Date(n).toLocaleString("es-MX", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" });
+}
+
+function renderValeActivoFirmas(v={}, { collapsible=true }={}){
+  const firmas = [
+    { label:"Elaboró", nombre:v.createdByNombre || v.createdByName || v.createdByEmail || "Información no disponible", email:v.createdByEmail || "", ts:v.createdTs, complete:Boolean(v.createdTs) },
+    { label:"Autorizó", nombre:v.autorizadoPorNombre || v.autorizadoPor || "Pendiente de autorización", email:v.autorizadoPor || "", ts:v.autorizadoTs, complete:Boolean(v.autorizadoTs) },
+    { label:"Guardia · salida", nombre:v.salidaPorNombre || "Pendiente de salida", email:v.salidaPorEmail || "", ts:v.salidaTs, complete:Boolean(v.salidaTs && v.salidaPorUid) },
+    { label:"Guardia · regreso", nombre:v.regresoPorNombre || "Pendiente de regreso", email:v.regresoPorEmail || "", ts:v.regresoTs, complete:Boolean(v.regresoTs && v.regresoPorUid) }
+  ];
+  const body = `<div class="vale-activo-signature-grid">${firmas.map(firma=>`
+    <div class="vale-activo-signature ${firma.complete ? "is-complete" : "is-pending"}">
+      <small>${esc(firma.label)}</small>
+      <b>${esc(firma.nombre)}</b>
+      ${firma.email && firma.email !== firma.nombre ? `<span>${esc(firma.email)}</span>` : ""}
+      <time>${esc(valeActivoFirmaFecha(firma.ts))}</time>
+    </div>`).join("")}</div>`;
+  return collapsible
+    ? `<details class="vale-activo-signatures" onclick="event.stopPropagation()"><summary>Firmas y responsables</summary>${body}</details>`
+    : `<section class="vale-activo-signatures permit-signatures"><h3>Firmas y responsables</h3>${body}</section>`;
+}
+
 function renderValeActivoCard(v){
   const fecha = v.fecha ? new Date(v.fecha + "T00:00:00").toLocaleDateString() : "-";
   const autorizadoPor = v.autorizadoPorNombre || "";
@@ -105,6 +130,7 @@ function renderValeActivoCard(v){
         ${autorizadoPor ? `<span class="pill"><span class="dot ok"></span>Autorizado por: ${esc(autorizadoPor)}</span>` : ""}
         ${v.autorizacionEmergencia ? `<span class="pill" style="border-color:rgba(239,68,68,.6);"><span class="dot bad"></span>Autorización de emergencia: ${esc(v.autorizacionEmergenciaMotivo || "Sin detalle")}</span>` : ""}
         ${v.autorizacionPorRespaldo ? `<span class="pill"><span class="dot info"></span>Autorización respaldo</span>` : ""}
+        ${renderValeActivoFirmas(v)}
       </div>
       <div class="row vale-actions">
         ${v.qrActivo ? `<button class="secondary" data-action="verValeQR" data-id="${esc(v.id)}" data-no-sb="true">QR</button>` : `<span class="pill"><span class="dot bad"></span>QR desactivado</span>`}
@@ -271,6 +297,8 @@ function createValeActivoFromModal(){
     qrActivo: true,
     createdByUid: currentUser?.uid || "",
     createdByEmail: currentUser?.email || "",
+    createdByNombre: currentUser?.nombre || currentUser?.email || "",
+    createdByRole: currentUser?.role || "",
     createdTs: Date.now(),
     updatedTs: Date.now()
   };
@@ -451,7 +479,7 @@ function renderValePermisoPass({
   tipo, payload, folio, nombre, dato1, dato2, rol, depto, tipoPermiso, fecha, fechaSub, autoriza,
   instrucciones, volverAction, title = "", kindLabel = "Permiso de", personLabel = "Solicitado por",
   roleLabel = "Rol / relacion", factTypeLabel = "Tipo de permiso", leftSide = "Solicitud\ngenerada",
-  rightSide = "Presentar\nen acceso"
+  rightSide = "Presentar\nen acceso", signaturesHtml = ""
 }){
   return `
     <div class="permit-pass-actions">
@@ -496,6 +524,7 @@ function renderValePermisoPass({
           <div class="permit-qr-card"><div id="qrcode" class="permit-qr"></div><div class="permit-code"><span>${esc(String(payload).replace(/(.{4})/g, "$1 ").trim().toUpperCase())}</span><small>Codigo de verificacion</small></div></div>
           <div class="permit-side"><div class="permit-icon">QR</div><div>${esc(rightSide)}</div><i></i></div>
         </div>
+        ${signaturesHtml}
         <div class="permit-instructions"><div class="permit-icon">i</div><div><b>Instrucciones</b><p>${esc(instrucciones || "Muestra este codigo QR en el acceso.")}</p></div></div>
       </div>
       <div class="permit-footer"><span>Seguridad, control y confianza</span><span>Folio: <b>${esc(folio || "")}</b></span></div>
@@ -628,6 +657,7 @@ async function renderValeQR(id){
     autoriza:v.autorizadorNombre || v.autorizadorEmail || "",
     leftSide:"Vale\ngenerado",
     rightSide:"Salida\nde activo",
+    signaturesHtml:renderValeActivoFirmas(v, { collapsible:false }),
     instrucciones:"Presenta este vale en el acceso al salir. El activo debe coincidir con la descripcion. Este vale es personal e intransferible.",
     volverAction:"valesActivos"
   });

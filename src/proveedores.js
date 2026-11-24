@@ -1842,6 +1842,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v259</b><span>Los vales de activo presentan firmas electrónicas auditables de Elaboró, Autorizó, Guardia de salida y Guardia de regreso. La salida y el regreso continúan exigiendo escanear y validar el gafete del guardia antes de cambiar el estado.</span></div>
           <div class="help-release"><b>v258</b><span>Los vales de personal pendientes muestran por separado Compartir QR para el colaborador y Solicitar autorización para el autorizador. WhatsApp abre la aplicación instalada y conserva la pantalla del QR al regresar, tanto en la aplicación como en el kiosco.</span></div>
           <div class="help-release"><b>v257</b><span>Jefe de Compras puede crear citas y generar QR de visitantes. La aplicación migra el permiso guardado sin ampliar sus facultades de Guardia, edición, cancelación o autorización especial.</span></div>
           <div class="help-release"><b>v256</b><span>El buscador de Proveedores conserva el teclado y el texto durante la captura en tablet y telefono. Facturas y ordenes de compra se ajustan a una columna y muestran el contenido completo en pantallas tactiles.</span></div>

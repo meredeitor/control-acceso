@@ -9,6 +9,7 @@ const sourceFirebase = await readFile(path.join(root, "src", "firebase.js"), "ut
 const sourceProveedores = await readFile(path.join(root, "src", "proveedores.js"), "utf8");
 const sourceVisitantes = await readFile(path.join(root, "src", "visitantes.js"), "utf8");
 const sourceRondinero = await readFile(path.join(root, "src", "rondinero.js"), "utf8");
+const sourceValesActivos = await readFile(path.join(root, "src", "vales-activos.js"), "utf8");
 const kioskVales = await readFile(path.join(root, "kiosko-vales.html"), "utf8");
 const cssText = await readFile(path.join(root, "app.css"), "utf8");
 const version = JSON.parse(await readFile(path.join(root, "version.json"), "utf8"));
@@ -21,8 +22,10 @@ if(!html.includes('src="./assets/app.min.js"')) throw new Error("index.html no c
 if(css.size < 10000) throw new Error("app.css parece incompleto");
 if(bundle.size < 10000) throw new Error("assets/app.min.js parece incompleto");
 if(/<script type="module">[\s\S]{1000,}<\/script>/.test(html)) throw new Error("index.html aún contiene el módulo monolítico");
-if(version.version !== "v258" || !sourceAuth.includes('APP_VERSION = "v258"')) throw new Error("La versión productiva no está alineada en v258");
-if(!sw.includes('SW_VERSION = "v258"')) throw new Error("El service worker no informa v258");
+if(version.version !== "v259" || !sourceAuth.includes('APP_VERSION = "v259"')) throw new Error("La versión productiva no está alineada en v259");
+if(!sw.includes('SW_VERSION = "v259"')) throw new Error("El service worker no informa v259");
+if(!sourceValesActivos.includes('renderValeActivoFirmas') || !sourceValesActivos.includes('Guardia · salida') || !sourceValesActivos.includes('Guardia · regreso')) throw new Error("Faltan las firmas del vale de activo");
+if(!sourceValesActivos.includes('createdByNombre: currentUser?.nombre') || !sourceValesActivos.includes('salidaPorUid = guardiaCred.uid') || !sourceValesActivos.includes('regresoPorUid = guardiaCred.uid')) throw new Error("La auditoría del vale de activo está incompleta");
 if(!sourceRondinero.includes('btnSolicitarAutorizacionVale') || !sourceRondinero.includes('dataset.action = "whatsappValePersonal"')) throw new Error("Falta Solicitar autorización en el QR de personal");
 if(!sourceRondinero.includes('link.target = "_blank"') || !sourceRondinero.includes('whatsapp://send')) throw new Error("WhatsApp no conserva la vista del QR");
 if(!kioskVales.includes('>Solicitar autorización</button>') || !kioskVales.includes('whatsapp://send')) throw new Error("El kiosco no separa Solicitar autorización de Compartir QR");
