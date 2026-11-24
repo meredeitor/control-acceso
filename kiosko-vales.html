@@ -330,7 +330,7 @@
       <div class="pass-actions">
         <button id="btnCompartirQR" type="button">Compartir QR</button>
         <button id="btnGuardarQR" class="theme-btn" type="button">Guardar QR</button>
-        <button id="btnWhatsApp" class="theme-btn" type="button" style="display:none;">Enviar por WhatsApp</button>
+        <button id="btnWhatsApp" class="theme-btn" type="button" style="display:none;">Solicitar autorización</button>
         <button id="btnOtro" class="theme-btn" type="button">Crear otro vale</button>
       </div>
       <div class="permit-pass" id="permisoPass">
@@ -537,8 +537,8 @@
       const btnWhatsApp = document.getElementById("btnWhatsApp");
       if(btnWhatsApp){
         btnWhatsApp.style.display = esPersonal ? "" : "none";
-        btnWhatsApp.disabled = esPersonal && !vale.autorizadorTelefono;
-        btnWhatsApp.title = btnWhatsApp.disabled ? "El autorizador no tiene teléfono registrado" : "";
+        btnWhatsApp.disabled = false;
+        btnWhatsApp.title = esPersonal && !vale.autorizadorTelefono ? "El autorizador no tiene teléfono registrado" : "Enviar solicitud por WhatsApp al autorizador";
       }
       selector.style.display = "none";
       formActivo.classList.remove("show");
@@ -626,7 +626,7 @@
       if(!currentVale || currentPrefix !== "VALE_PERSONAL") return;
       const telefono = normalizarTelefonoWhatsApp(currentVale.autorizadorTelefono);
       if(!telefono){
-        toast("Registra el teléfono del autorizador en Usuarios para enviarle el vale.", "bad");
+        toast("Registra el teléfono del autorizador en Usuarios para solicitar la autorización.", "bad");
         return;
       }
       const enlace = "https://meredeitor.github.io/control-acceso/?abrir=vales_personal";
@@ -640,7 +640,14 @@
         "",
         `Abrir Caborca Access Control: ${enlace}`
       ].join("\n");
-      window.open(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, "_blank", "noopener,noreferrer");
+      const link = document.createElement("a");
+      link.href = `whatsapp://send?phone=${encodeURIComponent(telefono)}&text=${encodeURIComponent(mensaje)}`;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
     }
 
     cards.forEach(card => card.addEventListener("click", () => {

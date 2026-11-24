@@ -2,9 +2,16 @@
 
 Aplicacion PWA para control operativo de accesos, citas, vales, bitacora de guardias, reportes y rondines de seguridad.
 
-Version actual de produccion: `v257`.
+Version actual de produccion: `v258`.
 
 Aplicacion publicada: https://meredeitor.github.io/control-acceso/
+
+## Novedades de v258
+
+- Los vales de personal pendientes separan Compartir QR y Solicitar autorizacion según su destinatario.
+- Solicitar autorizacion abre WhatsApp instalado con los datos del vale y el enlace al modulo del autorizador.
+- La vista del QR permanece abierta para guardar o compartir el pase al regresar de WhatsApp.
+- El mismo comportamiento se aplica en la aplicación principal y en el kiosco de vales de personal.
 
 ## Novedades de v257
 
@@ -369,9 +376,9 @@ Esto fuerza a los equipos a descargar la nueva version de la app.
 
 Version actual:
 
-- Aplicacion visible: `v257`
-- Service Worker: `v257`
-- Cache productiva: `caborca-access-control-v257-20261123`
+- Aplicacion visible: `v258`
+- Service Worker: `v258`
+- Cache productiva: `caborca-access-control-v258-20261124`
 
 ## Mantenimiento recomendado
 

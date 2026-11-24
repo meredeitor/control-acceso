@@ -3021,6 +3021,17 @@ async function renderValePersonalQR(id, { allowCreatedPreview=false }={}){
         <path d="M16.04 3.2A12.7 12.7 0 0 0 5.3 22.67L3.6 28.8l6.28-1.65a12.72 12.72 0 1 0 6.16-23.95Zm0 22.93c-1.93 0-3.82-.52-5.47-1.5l-.39-.23-3.72.98.99-3.62-.25-.37a10.2 10.2 0 1 1 8.84 4.74Zm5.6-7.64c-.3-.15-1.82-.9-2.1-1-.28-.1-.48-.15-.69.15-.2.3-.79 1-.97 1.2-.18.2-.36.23-.66.08-.3-.15-1.3-.48-2.47-1.53a9.2 9.2 0 0 1-1.7-2.12c-.18-.3-.02-.46.13-.61.14-.14.3-.36.46-.54.15-.18.2-.3.3-.51.1-.2.05-.38-.03-.54-.08-.15-.69-1.65-.94-2.26-.25-.6-.5-.52-.69-.53h-.58c-.2 0-.53.08-.81.38-.28.3-1.07 1.05-1.07 2.56s1.1 2.97 1.25 3.18c.15.2 2.16 3.3 5.24 4.63.73.32 1.3.5 1.75.65.74.23 1.4.2 1.93.12.59-.09 1.82-.74 2.08-1.46.25-.71.25-1.33.18-1.46-.08-.13-.28-.2-.59-.36Z"/>
       </svg>
       <span>Compartir QR</span>`;
+    if(v.status === ValeStatus.PENDIENTE && !isPermisoImss(v)){
+      const solicitarButton = document.createElement("button");
+      solicitarButton.id = "btnSolicitarAutorizacionVale";
+      solicitarButton.className = "secondary";
+      solicitarButton.type = "button";
+      solicitarButton.dataset.action = "whatsappValePersonal";
+      solicitarButton.dataset.id = String(v.id);
+      solicitarButton.title = "Enviar solicitud por WhatsApp al autorizador";
+      solicitarButton.textContent = "Solicitar autorización";
+      compartirQrButton.insertAdjacentElement("afterend", solicitarButton);
+    }
   }
   setupValePassActions({
     payload,
@@ -3039,7 +3050,14 @@ function normalizarTelefonoWhatsApp(value=""){
 
 function abrirWhatsAppInstalado(telefono, mensaje){
   const enlace = `whatsapp://send?phone=${encodeURIComponent(telefono)}&text=${encodeURIComponent(mensaje)}`;
-  window.location.assign(enlace);
+  const link = document.createElement("a");
+  link.href = enlace;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 function enviarValePersonalWhatsApp(id){
@@ -3047,7 +3065,7 @@ function enviarValePersonalWhatsApp(id){
   if(!v) return toast("No encontrado","No se encontró el vale de personal.","warn",3200);
   const telefono = normalizarTelefonoWhatsApp(v.autorizadorTelefono);
   if(!telefono){
-    return toast("Teléfono requerido","Registra el teléfono del autorizador en Usuarios para enviarle el vale.","warn",4200);
+    return toast("Teléfono requerido","Registra el teléfono del autorizador en Usuarios para solicitar la autorización.","warn",4200);
   }
   const enlace = "https://meredeitor.github.io/control-acceso/?abrir=vales_personal";
   const mensaje = [

@@ -9,6 +9,7 @@ const sourceFirebase = await readFile(path.join(root, "src", "firebase.js"), "ut
 const sourceProveedores = await readFile(path.join(root, "src", "proveedores.js"), "utf8");
 const sourceVisitantes = await readFile(path.join(root, "src", "visitantes.js"), "utf8");
 const sourceRondinero = await readFile(path.join(root, "src", "rondinero.js"), "utf8");
+const kioskVales = await readFile(path.join(root, "kiosko-vales.html"), "utf8");
 const cssText = await readFile(path.join(root, "app.css"), "utf8");
 const version = JSON.parse(await readFile(path.join(root, "version.json"), "utf8"));
 const sw = await readFile(path.join(root, "service-worker.js"), "utf8");
@@ -20,8 +21,11 @@ if(!html.includes('src="./assets/app.min.js"')) throw new Error("index.html no c
 if(css.size < 10000) throw new Error("app.css parece incompleto");
 if(bundle.size < 10000) throw new Error("assets/app.min.js parece incompleto");
 if(/<script type="module">[\s\S]{1000,}<\/script>/.test(html)) throw new Error("index.html aún contiene el módulo monolítico");
-if(version.version !== "v257" || !sourceAuth.includes('APP_VERSION = "v257"')) throw new Error("La versión productiva no está alineada en v257");
-if(!sw.includes('SW_VERSION = "v257"')) throw new Error("El service worker no informa v257");
+if(version.version !== "v258" || !sourceAuth.includes('APP_VERSION = "v258"')) throw new Error("La versión productiva no está alineada en v258");
+if(!sw.includes('SW_VERSION = "v258"')) throw new Error("El service worker no informa v258");
+if(!sourceRondinero.includes('btnSolicitarAutorizacionVale') || !sourceRondinero.includes('dataset.action = "whatsappValePersonal"')) throw new Error("Falta Solicitar autorización en el QR de personal");
+if(!sourceRondinero.includes('link.target = "_blank"') || !sourceRondinero.includes('whatsapp://send')) throw new Error("WhatsApp no conserva la vista del QR");
+if(!kioskVales.includes('>Solicitar autorización</button>') || !kioskVales.includes('whatsapp://send')) throw new Error("El kiosco no separa Solicitar autorización de Compartir QR");
 if(!sourceFirebase.includes('ROLE_PERMS_SCHEMA_VERSION = 8') || !sourceFirebase.match(/\[ROLES\.JEFE_COMPRAS\]: \[[\s\S]*?"crear_cita_visitante"/)) throw new Error("Jefe de Compras no tiene crear_cita_visitante");
 if(!sourceProveedores.includes('role === ROLES.JEFE_COMPRAS') || !sourceProveedores.includes('migrated.push("crear_cita_visitante")')) throw new Error("Falta migrar el permiso de Jefe de Compras");
 if(!sourceVisitantes.includes('max-width: 1024px') || !sourceVisitantes.includes('commitDashboardSearch')) throw new Error("Falta la protección del buscador táctil");
