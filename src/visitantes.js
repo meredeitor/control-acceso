@@ -4021,7 +4021,7 @@ async function repairAppCache(){
   }catch(error){ console.error(error); toast("No se pudo reparar","Abre Diagnóstico y revisa el estado del dispositivo.","bad",4800); }
 }
 
-if ("serviceWorker" in navigator && location.protocol !== "file:") {
+if ("serviceWorker" in navigator && location.protocol !== "file:" && !window.Capacitor?.isNativePlatform?.()) {
   navigator.serviceWorker.register("./service-worker.js", { updateViaCache:"none" })
     .then(registration => {
       console.log("SW registrado", registration.scope);
