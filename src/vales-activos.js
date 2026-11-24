@@ -109,39 +109,52 @@ function renderValeActivoCard(v){
   const fecha = v.fecha ? new Date(v.fecha + "T00:00:00").toLocaleDateString() : "-";
   const autorizadoPor = v.autorizadoPorNombre || "";
   const autorizador = v.autorizadorNombre || v.autorizadorEmail || "";
-  const activoNombre = v.nombre || v.descripcion || "Activo sin descripción";
+  const activoNombre = v.descripcion || v.nombre || "Activo sin descripción";
   const iniciales = activoNombre.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x.charAt(0)).join("").toUpperCase() || "AC";
-  const estadoTone = v.status === ValeStatus.PENDIENTE ? "is-warn" : v.status === ValeStatus.FUERA ? "is-bad" : v.status === ValeStatus.REGRESO_CANCELADO ? "is-ok" : "";
+  const statusMeta = {
+    [ValeStatus.PENDIENTE]: ["Pendiente", "pendiente"],
+    [ValeStatus.GENERADO]: ["Inicio", "inicio"],
+    [ValeStatus.FUERA]: ["Fuera", "fuera"],
+    [ValeStatus.REGRESO_CANCELADO]: [v.canceladoTs ? "Cancelado" : "Finalizado", v.canceladoTs ? "cancelado" : "finalizado"]
+  }[v.status] || [valeStatusLabel(v.status), ""];
+  const createdTime = Number(v.createdTs || 0) ? new Date(Number(v.createdTs)).toLocaleTimeString("es-MX", {hour:"2-digit", minute:"2-digit"}) : "";
+  const creatorName = v.createdByNombre || v.createdByName || v.createdByEmail || "Usuario no registrado";
+  const firmasRegistradas = [v.createdTs, v.autorizadoTs, v.salidaTs && v.salidaPorUid, v.regresoTs && v.regresoPorUid].filter(Boolean).length;
   return `
-    <div class="tarjeta history-card provider-visit-card vale-personal-card vale-activo-card tipo-proveedor" data-action="verValeQR" data-id="${esc(v.id)}">
-      <div class="vale-personal-card-head">
-        <span class="vale-personal-avatar" aria-hidden="true">${esc(iniciales)}</span>
-        <span class="vale-personal-identity"><strong>${esc(activoNombre)}</strong><small>${esc(v.descripcion || v.tipoActivo || "Activo")}</small></span>
-        <span class="vale-personal-status ${estadoTone}">${esc(valeStatusLabel(v.status))}</span>
+    <article class="tarjeta history-card provider-visit-card provider-kanban-card vale-activo-card status-${esc(statusMeta[1])}" data-action="verValeQR" data-id="${esc(v.id)}" tabindex="0" aria-label="Abrir vale ${esc(v.folio || v.id)}">
+      <div class="provider-card-top">
+        <span class="provider-avatar" aria-hidden="true">${esc(iniciales)}</span>
+        <span class="provider-card-name"><strong>${esc(activoNombre)}</strong><small>${esc(v.tipoActivo || "Activo")} · ${esc(v.nombre || "Solicitante no indicado")}</small></span>
+        <span class="provider-state-chip">${esc(statusMeta[0])}</span>
       </div>
-      <div class="vale-personal-folio">Folio ${esc(v.folio || v.id)}</div>
-      <div class="vale-personal-facts">
-        <div class="vale-personal-fact"><small>Departamento</small><b>${esc(v.departamento || "Sin departamento")}</b></div>
-        <div class="vale-personal-fact"><small>Fecha</small><b>${esc(fecha)}</b></div>
-        <div class="vale-personal-fact"><small>Tipo / Serie</small><b>${esc([v.tipoActivo,v.noSerie].filter(Boolean).join(" · ") || "Sin identificar")}</b></div>
-        <div class="vale-personal-fact"><small>Autoriza</small><b>${esc(autorizador || "Pendiente de asignar")}</b></div>
+      <div class="provider-card-ops">
+        <span title="Folio del vale">▣ &nbsp;<b>${esc(v.folio || v.id)}</b></span>
+        <span title="Departamento">⌖ &nbsp;${esc(v.departamento || "Sin departamento")}</span>
       </div>
-      <div class="meta vale-card-details">
-        ${autorizadoPor ? `<span class="pill"><span class="dot ok"></span>Autorizado por: ${esc(autorizadoPor)}</span>` : ""}
-        ${v.autorizacionEmergencia ? `<span class="pill" style="border-color:rgba(239,68,68,.6);"><span class="dot bad"></span>Autorización de emergencia: ${esc(v.autorizacionEmergenciaMotivo || "Sin detalle")}</span>` : ""}
-        ${v.autorizacionPorRespaldo ? `<span class="pill"><span class="dot info"></span>Autorización respaldo</span>` : ""}
-        ${renderValeActivoFirmas(v)}
+      <div class="provider-card-created">Elaborado${createdTime ? ` ${esc(createdTime)}` : ""} · ${esc(creatorName)}</div>
+      <div class="provider-card-secondary">
+        <span class="provider-mini-pill">Fecha ${esc(fecha)}</span>
+        ${v.noSerie ? `<span class="provider-mini-pill" title="Número de serie">Serie ${esc(v.noSerie)}</span>` : ""}
+        ${v.motivo ? `<span class="provider-mini-pill">${esc(v.motivo)}</span>` : ""}
+        ${v.fechaRetorno ? `<span class="provider-mini-pill">Retorno ${esc(valePassDate(v.fechaRetorno))}</span>` : ""}
+        <span class="provider-mini-pill ${autorizadoPor ? "success" : "alert"}" title="Autorizador asignado">${autorizadoPor ? "✓" : "◷"} ${esc(autorizadoPor || autorizador || "Pendiente de autorización")}</span>
+        <span class="provider-mini-pill ${firmasRegistradas === 4 ? "success" : ""}">Firmas ${firmasRegistradas}/4</span>
+        ${v.autorizacionPorRespaldo ? `<span class="provider-mini-pill">Autorización respaldo</span>` : ""}
+        <span class="provider-card-actions">
+          ${v.qrActivo ? `<button class="secondary" data-action="verValeQR" data-id="${esc(v.id)}" data-no-sb="true" aria-label="Ver QR" title="Ver QR"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"></rect><rect x="15" y="3" width="6" height="6" rx="1"></rect><rect x="3" y="15" width="6" height="6" rx="1"></rect><path d="M15 15h2v2h-2zM19 15h2v4h-2M15 19h2v2h-2M19 21h2"></path></svg></button>` : ""}
+          ${renderKanbanDetailsButton()}
+        </span>
       </div>
+      ${renderValeActivoFirmas(v)}
       <div class="row vale-actions">
-        ${v.qrActivo ? `<button class="secondary" data-action="verValeQR" data-id="${esc(v.id)}" data-no-sb="true">QR</button>` : `<span class="pill"><span class="dot bad"></span>QR desactivado</span>`}
+        ${!v.qrActivo ? `<span class="pill"><span class="dot bad"></span>QR desactivado</span>` : ""}
         ${v.status === ValeStatus.PENDIENTE && canCurrentUserAuthorizeValeActivo(v) ? `<button class="ok" data-action="autorizarVale" data-id="${esc(v.id)}" data-no-sb="true">Autorizar</button>` : ""}
         ${v.status === ValeStatus.GENERADO && v.autorizadoTs && hasPerm("registrar_salida_activo") ? `<button class="danger" data-action="setValeStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.FUERA}" data-no-sb="true">Marcar fuera</button>` : ""}
         ${v.status === ValeStatus.FUERA && hasPerm("registrar_regreso_activo") ? `<button class="ok" data-action="setValeStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar regreso</button>` : ""}
         ${v.status !== ValeStatus.REGRESO_CANCELADO && hasPerm("crear_vale_activo") ? `<button class="secondary" data-action="cancelarVale" data-id="${esc(v.id)}" data-no-sb="true">Cancelar</button>` : ""}
-        ${renderKanbanDetailsButton()}
       </div>
       ${renderKanbanMovementPanel(valeActivoHistoryEvents(v))}
-    </div>
+    </article>
   `;
 }
 

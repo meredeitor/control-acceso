@@ -2,9 +2,16 @@
 
 Aplicacion PWA para control operativo de accesos, citas, vales, bitacora de guardias, reportes y rondines de seguridad.
 
-Version actual de produccion: `v259`.
+Version actual de produccion: `v260`.
 
 Aplicacion publicada: https://meredeitor.github.io/control-acceso/
+
+## Novedades de v260
+
+- El Kanban de Vales de activo adopta la estructura visual compacta de las tarjetas de Proveedores.
+- Las tarjetas muestran estado, folio, departamento, elaboración, activo, autorizador y progreso de firmas.
+- QR y movimientos utilizan iconos alineados; las acciones operativas permanecen como botones visibles.
+- Firmas y responsables permanece plegado y utiliza fuentes compactas congruentes con la tarjeta.
 
 ## Novedades de v259
 
@@ -383,9 +390,9 @@ Esto fuerza a los equipos a descargar la nueva version de la app.
 
 Version actual:
 
-- Aplicacion visible: `v259`
-- Service Worker: `v259`
-- Cache productiva: `caborca-access-control-v259-20261124`
+- Aplicacion visible: `v260`
+- Service Worker: `v260`
+- Cache productiva: `caborca-access-control-v260-20261124`
 
 ## Mantenimiento recomendado
 

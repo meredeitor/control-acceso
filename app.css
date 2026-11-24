@@ -1261,6 +1261,8 @@ height: 100vh;
   cursor:pointer;
   padding:10px 12px;
   font-weight:800;
+  font-size:12px;
+  line-height:1.2;
   list-style:none;
 }
 .vale-activo-signatures summary::-webkit-details-marker{ display:none; }
@@ -1276,23 +1278,35 @@ height: 100vh;
   min-width:0;
   display:grid;
   gap:3px;
-  padding:10px;
+  padding:8px;
   border:1px solid var(--border);
   border-left:3px solid var(--warn);
   border-radius:10px;
   background:var(--panel);
 }
 .vale-activo-signature.is-complete{ border-left-color:var(--ok); }
-.vale-activo-signature small{ color:var(--muted); font-weight:800; text-transform:uppercase; letter-spacing:.03em; }
+.vale-activo-signature small{ color:var(--muted); font-size:9px; line-height:1.2; font-weight:800; text-transform:uppercase; letter-spacing:.03em; }
+.vale-activo-signature b{ font-size:12px; line-height:1.25; }
 .vale-activo-signature b,.vale-activo-signature span,.vale-activo-signature time{ min-width:0; overflow-wrap:anywhere; }
-.vale-activo-signature span,.vale-activo-signature time{ color:var(--muted); font-size:11px; }
+.vale-activo-signature span,.vale-activo-signature time{ color:var(--muted); font-size:9px; line-height:1.25; }
 .permit-signatures{ margin-top:14px; padding:12px; background:#f8fafc; color:#0f172a; }
 .permit-signatures h3{ margin:0 0 10px; font-size:15px; }
 .permit-signatures .vale-activo-signature-grid{ padding:0; }
 .permit-signatures .vale-activo-signature{ background:#fff; border-color:#dbe3ee; border-left-color:#f59e0b; }
 .permit-signatures .vale-activo-signature.is-complete{ border-left-color:#16a34a; }
+.vale-activo-card.status-pendiente{ border-left-color:var(--warn)!important; }
+.vale-activo-card.status-inicio{ border-left-color:var(--info)!important; }
+.vale-activo-card.status-fuera{ border-left-color:var(--bad)!important; }
+.vale-activo-card.status-finalizado{ border-left-color:var(--ok)!important; }
+.vale-activo-card.status-cancelado{ border-left-color:var(--muted)!important; }
+.vale-activo-card .vale-activo-signatures{ margin-top:10px; }
+.vale-activo-card .vale-actions{ margin-top:10px; }
+.vale-activo-card .vale-actions:empty{ display:none; }
+.vale-activo-card .provider-card-name small{ overflow-wrap:anywhere; }
 @media (max-width:760px){
   .vale-activo-signature-grid{ grid-template-columns:1fr; }
+  .vale-activo-card .vale-actions{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .vale-activo-card .vale-actions button{ width:100%; min-width:0; }
 }
 @media (max-width:760px){
   .factura-oc-item{ grid-template-columns:1fr; }
