@@ -91,7 +91,7 @@ function renderValeActivoFirmas(v={}, { collapsible=true }={}){
     { label:"Elaboró", nombre:v.createdByNombre || v.createdByName || v.createdByEmail || "Información no disponible", email:v.createdByEmail || "", ts:v.createdTs, complete:Boolean(v.createdTs) },
     { label:"Autorizó", nombre:v.autorizadoPorNombre || v.autorizadoPor || "Pendiente de autorización", email:v.autorizadoPor || "", ts:v.autorizadoTs, complete:Boolean(v.autorizadoTs) },
     { label:"Guardia · salida", nombre:v.salidaPorNombre || "Pendiente de salida", email:v.salidaPorEmail || "", ts:v.salidaTs, complete:Boolean(v.salidaTs && v.salidaPorUid) },
-    { label:"Guardia · regreso", nombre:v.regresoPorNombre || "Pendiente de regreso", email:v.regresoPorEmail || "", ts:v.regresoTs, complete:Boolean(v.regresoTs && v.regresoPorUid) }
+    { label:"Guardia · regreso", nombre:v.salidaSinRegreso === true ? "No aplica" : v.regresoPorNombre || "Pendiente de regreso", email:v.regresoPorEmail || "", ts:v.regresoTs, complete:v.salidaSinRegreso === true || Boolean(v.regresoTs && v.regresoPorUid) }
   ];
   const body = `<div class="vale-activo-signature-grid">${firmas.map(firma=>`
     <div class="vale-activo-signature ${firma.complete ? "is-complete" : "is-pending"}">
@@ -103,6 +103,10 @@ function renderValeActivoFirmas(v={}, { collapsible=true }={}){
   return collapsible
     ? `<details class="vale-activo-signatures" onclick="event.stopPropagation()"><summary>Firmas y responsables</summary>${body}</details>`
     : `<section class="vale-activo-signatures permit-signatures"><h3>Firmas y responsables</h3>${body}</section>`;
+}
+
+function renderValeActivoAction(v, action, label, path){
+  return `<button type="button" class="secondary" data-action="${action}" data-id="${esc(v.id)}" data-no-sb="true" title="${label}" aria-label="${label}"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"></path></svg></button>`;
 }
 
 function renderValeActivoCard(v){
@@ -119,9 +123,11 @@ function renderValeActivoCard(v){
   }[v.status] || [valeStatusLabel(v.status), ""];
   const createdTime = Number(v.createdTs || 0) ? new Date(Number(v.createdTs)).toLocaleTimeString("es-MX", {hour:"2-digit", minute:"2-digit"}) : "";
   const creatorName = v.createdByNombre || v.createdByName || v.createdByEmail || "Usuario no registrado";
-  const firmasRegistradas = [v.createdTs, v.autorizadoTs, v.salidaTs && v.salidaPorUid, v.regresoTs && v.regresoPorUid].filter(Boolean).length;
+  const firmas = [v.createdTs, v.autorizadoTs, v.salidaTs && v.salidaPorUid];
+  if(v.salidaSinRegreso !== true) firmas.push(v.regresoTs && v.regresoPorUid);
+  const firmasRegistradas = firmas.filter(Boolean).length;
   return `
-    <article class="tarjeta history-card provider-visit-card provider-kanban-card vale-activo-card status-${esc(statusMeta[1])}" data-action="verValeQR" data-id="${esc(v.id)}" tabindex="0" aria-label="Abrir vale ${esc(v.folio || v.id)}">
+    <article class="tarjeta history-card provider-visit-card provider-kanban-card vale-activo-card status-${esc(statusMeta[1])}" data-action="verDetalleValeActivo" data-id="${esc(v.id)}" tabindex="0" aria-label="Ver detalle del vale ${esc(v.folio || v.id)}">
       <div class="provider-card-top">
         <span class="provider-avatar" aria-hidden="true">${esc(iniciales)}</span>
         <span class="provider-card-name"><strong>${esc(activoNombre)}</strong><small>${esc(v.tipoActivo || "Activo")} · ${esc(v.nombre || "Solicitante no indicado")}</small></span>
@@ -135,27 +141,87 @@ function renderValeActivoCard(v){
       <div class="provider-card-secondary">
         <span class="provider-mini-pill">Fecha ${esc(fecha)}</span>
         ${v.noSerie ? `<span class="provider-mini-pill" title="Número de serie">Serie ${esc(v.noSerie)}</span>` : ""}
-        ${v.motivo ? `<span class="provider-mini-pill">${esc(v.motivo)}</span>` : ""}
-        ${v.fechaRetorno ? `<span class="provider-mini-pill">Retorno ${esc(valePassDate(v.fechaRetorno))}</span>` : ""}
-        <span class="provider-mini-pill ${autorizadoPor ? "success" : "alert"}" title="Autorizador asignado">${autorizadoPor ? "✓" : "◷"} ${esc(autorizadoPor || autorizador || "Pendiente de autorización")}</span>
-        <span class="provider-mini-pill ${firmasRegistradas === 4 ? "success" : ""}">Firmas ${firmasRegistradas}/4</span>
+        ${v.codigoLote ? `<span class="provider-mini-pill">Código / lote: ${esc(v.codigoLote)}</span>` : ""}
+        ${v.motivo ? `<span class="provider-mini-pill">Motivo: ${esc(v.motivo)}</span>` : ""}
+        <span class="provider-mini-pill">${v.salidaSinRegreso === true ? "Salida sin regreso" : `Retorno: ${esc(valePassDate(v.fechaRetorno) || "Sin fecha indicada")}`}</span>
+        <span class="provider-mini-pill alert">Autorizador: ${esc(autorizador || "Sin asignar")}</span>
+        ${autorizadoPor ? `<span class="provider-mini-pill success">Autorizó: ${esc(autorizadoPor)}</span>` : ""}
+        <span class="provider-mini-pill ${firmasRegistradas === firmas.length ? "success" : ""}">Firmas ${firmasRegistradas}/${firmas.length}</span>
         ${v.autorizacionPorRespaldo ? `<span class="provider-mini-pill">Autorización respaldo</span>` : ""}
         <span class="provider-card-actions">
-          ${v.qrActivo ? `<button class="secondary" data-action="verValeQR" data-id="${esc(v.id)}" data-no-sb="true" aria-label="Ver QR" title="Ver QR"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"></rect><rect x="15" y="3" width="6" height="6" rx="1"></rect><rect x="3" y="15" width="6" height="6" rx="1"></rect><path d="M15 15h2v2h-2zM19 15h2v4h-2M15 19h2v2h-2M19 21h2"></path></svg></button>` : ""}
+          ${v.qrActivo ? renderValeActivoAction(v,"verValeQR","Ver QR","M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h2v2h-2zM21 15v4h-2v2h-4") : ""}
           ${renderKanbanDetailsButton()}
         </span>
       </div>
       ${renderValeActivoFirmas(v)}
-      <div class="row vale-actions">
-        ${!v.qrActivo ? `<span class="pill"><span class="dot bad"></span>QR desactivado</span>` : ""}
-        ${v.status === ValeStatus.PENDIENTE && canCurrentUserAuthorizeValeActivo(v) ? `<button class="ok" data-action="autorizarVale" data-id="${esc(v.id)}" data-no-sb="true">Autorizar</button>` : ""}
-        ${v.status === ValeStatus.GENERADO && v.autorizadoTs && hasPerm("registrar_salida_activo") ? `<button class="danger" data-action="setValeStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.FUERA}" data-no-sb="true">Marcar fuera</button>` : ""}
-        ${v.status === ValeStatus.FUERA && hasPerm("registrar_regreso_activo") ? `<button class="ok" data-action="setValeStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar regreso</button>` : ""}
-        ${v.status !== ValeStatus.REGRESO_CANCELADO && hasPerm("crear_vale_activo") ? `<button class="secondary" data-action="cancelarVale" data-id="${esc(v.id)}" data-no-sb="true">Cancelar</button>` : ""}
-      </div>
+      ${canCancelValeActivo(v) ? `<div class="provider-card-actions vale-activo-actions">
+        ${canEditValeActivo(v) ? renderValeActivoAction(v,"editarValeActivo","Editar","M12 20h9M16 4l4 4L9 19l-5 1 1-5Z") : ""}
+        ${renderValeActivoAction(v,"cancelarVale","Cancelar","M7 7l10 10M17 7L7 17M22 12a10 10 0 1 1-20 0 10 10 0 1 1 20 0")}
+        ${canDeleteValeActivo(v) ? renderValeActivoAction(v,"eliminarValeActivo","Eliminar","M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7") : ""}
+      </div>` : ""}
       ${renderKanbanMovementPanel(valeActivoHistoryEvents(v))}
     </article>
   `;
+}
+
+function valeActivoMovement(v){
+  if(!v.qrActivo) return null;
+  if(v.status === ValeStatus.GENERADO && v.autorizadoTs && hasPerm("registrar_salida_activo")){
+    return { id:v.id, status:ValeStatus.FUERA, label:"Registrar salida" };
+  }
+  if(v.status === ValeStatus.FUERA && hasPerm("registrar_regreso_activo")){
+    return { id:v.id, status:ValeStatus.REGRESO_CANCELADO, label:"Registrar regreso" };
+  }
+  return null;
+}
+
+function valeActivoDetailStatus(v){
+  if(v.status === ValeStatus.REGRESO_CANCELADO) return v.canceladoTs ? "Cancelado" : "Finalizado";
+  if(v.status === ValeStatus.GENERADO) return "Inicio";
+  return valeStatusLabel(v.status);
+}
+
+function abrirDetalleValeActivo(id){
+  if(!requirePerm("ver_vales_activos","Tu rol no puede ver vales.")) return;
+  const v = valesActivos.find(row => String(row.id) === String(id));
+  if(!v) return toast("Vale no encontrado","Actualiza el tablero y vuelve a intentarlo.","warn");
+  const movement = valeActivoMovement(v);
+  const fields = [
+    ["Solicitante", v.nombre], ["Departamento", v.departamento],
+    ["Tipo de activo", v.tipoActivo], ["Motivo", v.motivo],
+    ["Número de serie", v.noSerie], ["Código / lote", v.codigoLote],
+    ["Fecha", valePassDate(v.fecha)],
+    ["Retorno", v.salidaSinRegreso === true ? "Salida sin regreso" : valePassDate(v.fechaRetorno) || "Sin fecha indicada"],
+    ["Autorizador asignado", v.autorizadorNombre || v.autorizadorEmail], ["QR", v.qrActivo ? "Activo" : "Desactivado"],
+    ...(v.planta ? [["Planta", v.planta]] : [])
+  ];
+  const dialog = document.createElement("dialog");
+  dialog.id = "detalleValeActivo";
+  dialog.className = "vale-activo-detail-dialog";
+  dialog.setAttribute("aria-labelledby", "detalleValeActivoTitulo");
+  dialog.innerHTML = `
+    <div class="vale-activo-detail-head">
+      <div><h3 id="detalleValeActivoTitulo">Detalle del vale de activo</h3><div class="vale-activo-detail-meta"><strong>${esc(v.folio || v.id)}</strong><span class="pill"><span class="dot info"></span>${esc(valeActivoDetailStatus(v))}</span></div></div>
+      <form method="dialog"><button class="secondary" aria-label="Cerrar detalle" title="Cerrar detalle" autofocus>✕</button></form>
+    </div>
+    <div class="vale-activo-detail-body">
+      <div class="vale-activo-detail-description"><h4>Descripción del activo</h4><p>${esc(v.descripcion || "Sin descripción")}</p></div>
+      <dl class="vale-activo-detail-fields">${fields.map(([label,value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value || "—")}</dd></div>`).join("")}</dl>
+      <div class="vale-activo-detail-expand">
+        ${renderValeActivoFirmas(v)}
+        <details class="vale-activo-signatures"><summary>Movimientos</summary>${renderKanbanMovementPanel(valeActivoHistoryEvents(v), false)}</details>
+      </div>
+      <div class="row vale-activo-detail-actions">
+        ${v.status === ValeStatus.PENDIENTE && canCurrentUserAuthorizeValeActivo(v) ? `<button class="ok" type="button" data-action="autorizarVale" data-id="${esc(v.id)}">Autorizar</button>` : ""}
+        ${movement ? `<button class="ok" type="button" data-action="setValeStatus" data-id="${esc(v.id)}" data-status="${esc(movement.status)}">${esc(movement.label)}</button>` : ""}
+      </div>
+    </div>`;
+  dialog.addEventListener("close", () => dialog.remove(), { once:true });
+  dialog.addEventListener("click", event => {
+    if(event.target.closest('[data-action="autorizarVale"], [data-action="setValeStatus"]')) dialog.close();
+  });
+  appEl.append(dialog);
+  dialog.showModal();
 }
 
 function renderValeActivoModal(){
@@ -164,7 +230,7 @@ function renderValeActivoModal(){
       <div class="modal">
         <div class="modal-head">
           <div>
-            <h3 style="margin:0;">Nuevo vale de salida</h3>
+            <h3 id="valeActivoModalTitle" style="margin:0;">Nuevo vale de salida</h3>
             <small>Formato basado en Salida Activo.xlsx</small>
           </div>
           <div class="modal-actions">
@@ -195,6 +261,7 @@ function renderValeActivoModal(){
                 <option>Equipo de Cómputo</option>
                 <option>Mobiliario y equipo de oficina</option>
                 <option>Herramientas</option>
+                <option>Residuos</option>
                 <option>Otro</option>
               </select>
             </div>
@@ -207,6 +274,7 @@ function renderValeActivoModal(){
                 <option>Devolución</option>
                 <option>Venta</option>
                 <option>Traspaso a otra planta</option>
+                <option>Salida de Residuos</option>
                 <option>Otro</option>
               </select>
             </div>
@@ -229,6 +297,7 @@ function renderValeActivoModal(){
             <div>
               <label>Fecha de retorno</label>
               <input id="valeFechaRetorno" type="date">
+              <label><input id="valeSalidaSinRegreso" type="checkbox" style="width:auto" onchange="document.getElementById('valeFechaRetorno').disabled = this.checked"> Salida sin regreso</label>
             </div>
             <div>
               <label>Autoriza *</label>
@@ -248,14 +317,52 @@ function renderValeActivoModal(){
   `;
 }
 
-async function openValeModal(){
-  if(hasPerm("crear_vale_activo")){
-    await ensureValeActivoAutorizadores();
-    const sel = document.getElementById("valeAutorizador");
-    if(sel) sel.innerHTML = renderValeActivoAutorizadorOptions();
-  }
+function canEditValeActivo(v){
+  return v?.status === ValeStatus.PENDIENTE && canCancelValeActivo(v);
+}
+
+function canCancelValeActivo(v){
+  return [ValeStatus.PENDIENTE, ValeStatus.GENERADO].includes(v?.status) &&
+    (currentUser?.role === ROLES.ADMIN || Boolean(currentUser?.uid && v.createdByUid === currentUser.uid));
+}
+
+function canDeleteValeActivo(v){
+  return currentUser?.role === ROLES.ADMIN && canCancelValeActivo(v);
+}
+
+async function openValeModal(id=""){
   const modal = document.getElementById("valeModal");
-  if(modal) modal.style.display = "flex";
+  if(!modal) return;
+  const v = id ? valesActivos.find(row => String(row.id) === String(id)) : null;
+  if(id && !canEditValeActivo(v)) return toast("Sin permiso","Solo quien creó el vale o un administrador puede editarlo mientras esté pendiente.","warn");
+  if(!id && !hasPerm("crear_vale_activo")) return;
+  await ensureValeActivoAutorizadores(Boolean(v));
+  modal.dataset.editId = v ? String(v.id) : "";
+  modal.dataset.editRevision = String(v?.updatedTs || 0);
+  document.getElementById("valeActivoModalTitle").textContent = v ? "Editar vale de activo" : "Nuevo vale de salida";
+  const save = modal.querySelector('[data-action="guardarValeActivo"]');
+  save.textContent = v ? "Guardar cambios" : "Guardar y generar QR";
+  document.getElementById("valeFolio").readOnly = Boolean(v);
+  const fields = {
+    valeFecha:v?.fecha || todayISO(), valeFolio:v ? v.folio || v.id : "", valeDepartamento:v?.departamento,
+    valeTipoActivo:v?.tipoActivo, valeMotivo:v?.motivo, valeNombre:v?.nombre,
+    valeDescripcion:v?.descripcion, valeSerie:v?.noSerie, valeCodigoLote:v?.codigoLote,
+    valeFechaRetorno:v?.fechaRetorno
+  };
+  for(const [key,value] of Object.entries(fields)){
+    const field = document.getElementById(key);
+    if(field.tagName === "SELECT" && value && !Array.from(field.options).some(option => option.value === value)){
+      field.add(new Option(value, value), field.options[field.options.length - 1]);
+    }
+    field.value = value || "";
+  }
+  const sinRegreso = v?.salidaSinRegreso === true;
+  document.getElementById("valeSalidaSinRegreso").checked = sinRegreso;
+  document.getElementById("valeFechaRetorno").disabled = sinRegreso;
+  const sel = document.getElementById("valeAutorizador");
+  sel.innerHTML = renderValeActivoAutorizadorOptions();
+  sel.value = v?.autorizadorUid || "";
+  modal.style.display = "flex";
 }
 
 function closeValeModal(){
@@ -263,9 +370,8 @@ function closeValeModal(){
   if(modal) modal.style.display = "none";
 }
 
-function createValeActivoFromModal(){
+function readValeActivoForm(){
   const fecha = document.getElementById("valeFecha")?.value || "";
-  const folioRaw = document.getElementById("valeFolio")?.value.trim() || "";
   const departamento = document.getElementById("valeDepartamento")?.value.trim() || "";
   const tipoActivo = document.getElementById("valeTipoActivo")?.value || "";
   const motivo = document.getElementById("valeMotivo")?.value || "";
@@ -273,7 +379,8 @@ function createValeActivoFromModal(){
   const descripcion = document.getElementById("valeDescripcion")?.value.trim() || "";
   const noSerie = document.getElementById("valeSerie")?.value.trim() || "";
   const codigoLote = document.getElementById("valeCodigoLote")?.value.trim() || "";
-  const fechaRetorno = document.getElementById("valeFechaRetorno")?.value || "";
+  const salidaSinRegreso = document.getElementById("valeSalidaSinRegreso")?.checked === true;
+  const fechaRetorno = salidaSinRegreso ? "" : document.getElementById("valeFechaRetorno")?.value || "";
   const autorizadorSelect = document.getElementById("valeAutorizador");
   const autorizadorOption = autorizadorSelect?.selectedOptions?.[0] || null;
   const autorizadorUid = autorizadorSelect?.value || "";
@@ -286,14 +393,8 @@ function createValeActivoFromModal(){
     return null;
   }
 
-  const id = Date.now().toString();
-  const folio = folioRaw || `VA-${new Date().getFullYear()}-${String(valesActivos.length + 1).padStart(4,"0")}`;
-
   return {
-    id,
-    folio,
     fecha,
-    planta: "",
     departamento,
     tipoActivo,
     motivo,
@@ -302,10 +403,26 @@ function createValeActivoFromModal(){
     noSerie,
     codigoLote,
     fechaRetorno,
+    salidaSinRegreso,
     autorizadorUid,
     autorizadorEmail,
     autorizadorNombre,
-    autorizadorRole,
+    autorizadorRole
+  };
+}
+
+async function guardarValeActivo(){
+  const modal = document.getElementById("valeModal");
+  if(modal?.dataset.editId) return guardarEdicionValeActivo(modal);
+  if(!requirePerm("crear_vale_activo","Tu rol no puede crear vales.")) return;
+  const fields = readValeActivoForm();
+  if(!fields) return;
+  const folioRaw = document.getElementById("valeFolio")?.value.trim() || "";
+  const v = {
+    ...fields,
+    id:Date.now().toString(),
+    folio:folioRaw || `VA-${new Date().getFullYear()}-${String(valesActivos.length + 1).padStart(4,"0")}`,
+    planta:"",
     status: ValeStatus.PENDIENTE,
     qrActivo: true,
     createdByUid: currentUser?.uid || "",
@@ -315,12 +432,6 @@ function createValeActivoFromModal(){
     createdTs: Date.now(),
     updatedTs: Date.now()
   };
-}
-
-async function guardarValeActivo(){
-  if(!requirePerm("crear_vale_activo","Tu rol no puede crear vales.")) return;
-  const v = createValeActivoFromModal();
-  if(!v) return;
   valesActivos.unshift(v);
   await saveValesActivos();
   if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
@@ -329,6 +440,52 @@ async function guardarValeActivo(){
   toast("Vale generado","Vale guardado y QR generado.","ok",2400);
   closeValeModal();
   await renderValeQR(v.id);
+}
+
+async function updatePendingValeActivo(id, revision, canUpdate, changes){
+  const ref = doc(db, COL_VALES_ACTIVOS, String(id));
+  return runTransaction(db, async tx => {
+    const snap = await tx.get(ref);
+    const current = snap.data();
+    if(current?.status !== ValeStatus.PENDIENTE || Number(current.updatedTs || 0) !== revision || !canUpdate(current)){
+      throw new Error("El vale cambió o dejó de estar disponible. Actualiza el tablero y vuelve a revisarlo.");
+    }
+    const patch = {
+      ...changes,
+      updatedTs:Math.max(Date.now(), revision + 1),
+      updatedAt:serverTimestamp(),
+      updatedByUid:currentUser.uid,
+      updatedByEmail:currentUser.email || ""
+    };
+    tx.update(ref, patch);
+    return patch;
+  });
+}
+
+async function guardarEdicionValeActivo(modal){
+  const { editId, editRevision } = modal.dataset;
+  const v = valesActivos.find(row => String(row.id) === editId);
+  if(!canEditValeActivo(v)) return toast("Sin permiso","El vale ya no se puede editar.","warn");
+  const fields = readValeActivoForm();
+  if(!fields) return;
+  const save = modal.querySelector('[data-action="guardarValeActivo"]');
+  if(save.disabled) return;
+  save.disabled = true;
+  try{
+    await updatePendingValeActivo(editId, Number(editRevision), canEditValeActivo, {
+      ...fields,
+      editedTs:Date.now(),
+      editedByUid:currentUser.uid,
+      editedByNombre:currentUser.nombre || currentUser.email || ""
+    });
+  }catch(error){
+    return toast("No se guardó la edición", error.message || "Revisa la conexión y los permisos.","bad",4800);
+  }finally{
+    save.disabled = false;
+  }
+  closeValeModal();
+  toast("Vale actualizado","Los cambios quedaron guardados. El vale sigue pendiente de autorización.","ok",3200);
+  await renderValesActivos();
 }
 
 async function validarCredencialGuardiaValeActivo(cred){
@@ -348,6 +505,7 @@ async function iniciarRegistroValeActivo(id, status){
   if(status === ValeStatus.FUERA && !hasPerm("registrar_salida_activo")) return toast("Sin permiso","Tu rol no puede registrar salidas de activos.","warn");
   if(status === ValeStatus.REGRESO_CANCELADO && !hasPerm("registrar_regreso_activo")) return toast("Sin permiso","Tu rol no puede registrar el regreso de activos.","warn");
   if(!navigator.onLine) return toast("Conexión requerida","La credencial del guardia debe validarse en Firebase.","warn",4200);
+  if(!await loadFeatureDependencies("camera", "el escáner de cámara")) return;
   currentView = "vale_activo_guardia_scanner";
   moduleReturnView = "vales_activos";
   cleanup();
@@ -389,6 +547,34 @@ async function updateValeActivoStatus(id, status, guardiaCred=null){
     return toast("Credencial requerida","Escanea el QR del guardia responsable.","warn",3800);
   }
 
+  if(status === ValeStatus.FUERA && v.salidaSinRegreso === true){
+    if(v.status !== ValeStatus.GENERADO || !v.autorizadoTs) return toast("Vale actualizado","El vale debe estar autorizado y pendiente de salida.","warn");
+    const now = Date.now();
+    const finalizado = {
+      ...v,
+      status: ValeStatus.REGRESO_CANCELADO,
+      salidaTs: now,
+      salidaPorUid: guardiaCred.uid,
+      salidaPorEmail: guardiaCred.email || "",
+      salidaPorNombre: guardiaCred.nombre || "Guardia",
+      qrActivo: false,
+      qrDesactivadoTs: now,
+      qrDesactivadoMotivo: "SALIDA_SIN_REGRESO",
+      updatedTs: now
+    };
+    try{
+      await cloudUpsertValeActivo(finalizado);
+    }catch(error){
+      console.warn(error);
+      toast("Salida sin confirmar","Firebase no guardó la salida sin regreso. Revisa la conexión y los permisos antes de reintentar.","bad",4800);
+      return renderValesActivos();
+    }
+    Object.assign(v, finalizado);
+    await saveValesActivos();
+    toast("Salida sin regreso","El vale pasó a Finalizado.","ok",2400);
+    return renderValesActivos();
+  }
+
   v.status = status;
   v.updatedTs = Date.now();
   if(status === ValeStatus.FUERA){
@@ -418,6 +604,7 @@ async function updateValeActivoStatus(id, status, guardiaCred=null){
 async function autorizarValeActivo(id){
   const v = valesActivos.find(x => String(x.id) === String(id));
   if(!v) return toast("No encontrado","No se encontró el vale.","warn");
+  if(v.status !== ValeStatus.PENDIENTE) return toast("Vale actualizado","Este vale ya no está pendiente de autorización.","warn");
   if(!canCurrentUserAuthorizeValeActivo(v)){
     toast(
       "No permitido",
@@ -427,47 +614,67 @@ async function autorizarValeActivo(id){
     );
     return;
   }
+  const revision = Number(v.updatedTs || 0);
   if(!(await requireUserPin("autorizar este vale de activo"))) return;
-  v.status = ValeStatus.GENERADO;
-  v.qrActivo = true;
-  v.autorizadoTs = Date.now();
-  v.autorizadoPor = currentUser?.email || "";
-  v.autorizadoPorUid = currentUser?.uid || "";
-  v.autorizadoPorNombre = currentUser?.nombre || "";
-  v.autorizadoPorRol = currentUser?.role || "";
   const esAutorizadorAsignado = (
     (v.autorizadorUid && String(v.autorizadorUid) === String(currentUser?.uid || "")) ||
     (v.autorizadorEmail && String(v.autorizadorEmail).toLowerCase() === String(currentUser?.email || "").toLowerCase())
   );
-  v.autorizacionPorRespaldo = Boolean(
+  const autorizacionPorRespaldo = Boolean(
     (v.autorizadorUid || v.autorizadorEmail) &&
     isValeActivoBackupAuthorizer() &&
     !esAutorizadorAsignado
   );
-  v.updatedTs = Date.now();
-  await saveValesActivos();
-  if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
-    try{ await cloudUpsertValeActivo(v); }catch(e){ console.warn(e); }
+  try{
+    await updatePendingValeActivo(id, revision, canCurrentUserAuthorizeValeActivo, {
+      status:ValeStatus.GENERADO,
+      qrActivo:true,
+      autorizadoTs:Date.now(),
+      autorizadoPor:currentUser.email || "",
+      autorizadoPorUid:currentUser.uid,
+      autorizadoPorNombre:currentUser.nombre || "",
+      autorizadoPorRol:currentUser.role || "",
+      autorizacionPorRespaldo
+    });
+  }catch(error){
+    toast("No se autorizó el vale",error.message || "Revisa la conexión y los permisos.","bad",4800);
+    return renderValesActivos();
   }
   toast("Autorizado","El vale quedó autorizado para salida.","ok",2400);
   await renderValesActivos();
 }
 
-async function cancelarValeActivo(id){
-  if(!hasPerm("crear_vale_activo") && !hasPerm("autorizar_vale_activo")) return;
-  if(!confirm("¿Cancelar este vale?")) return;
+async function gestionarBajaValeActivo(id, eliminar=false){
   const v = valesActivos.find(x => String(x.id) === String(id));
-  if(!v) return;
-  v.status = ValeStatus.REGRESO_CANCELADO;
-  v.canceladoTs = Date.now();
-  v.canceladoPor = currentUser?.email || "";
-  v.qrActivo = false;
-  v.updatedTs = Date.now();
-  await saveValesActivos();
-  if(navigator.onLine && currentUser?.role !== ROLES.PENDIENTE){
-    try{ await cloudUpsertValeActivo(v); }catch(e){ console.warn(e); }
+  const permitido = eliminar ? canDeleteValeActivo : canCancelValeActivo;
+  if(!permitido(v)) return toast("Acción no disponible","Revisa el estado del vale y tus permisos.","warn");
+  if(!confirm(eliminar ? `¿Eliminar permanentemente el vale ${v.folio || v.id}?` : `¿Cancelar el vale ${v.folio || v.id}?`)) return;
+  const ref = doc(db, COL_VALES_ACTIVOS, String(id));
+  try{
+    const changes = await runTransaction(db, async tx => {
+      const actual = (await tx.get(ref)).data();
+      if(!permitido(actual) || actual.status !== v.status) throw new Error("El estado del vale cambió. Actualiza el tablero antes de continuar.");
+      if(eliminar){ tx.delete(ref); return null; }
+      const patch = {
+        status:ValeStatus.REGRESO_CANCELADO,
+        canceladoTs:Date.now(),
+        canceladoPor:currentUser.email || "",
+        canceladoPorNombre:currentUser.nombre || "",
+        qrActivo:false,
+        updatedTs:Date.now(),
+        updatedByUid:currentUser.uid,
+        updatedByEmail:currentUser.email || ""
+      };
+      tx.update(ref, { ...patch, updatedAt:serverTimestamp() });
+      return patch;
+    });
+    if(changes) Object.assign(v, changes);
+  }catch(error){
+    return toast("No se completó la acción",error.message || "Revisa la conexión y tus permisos.","bad",4800);
   }
-  toast("Cancelado","El vale fue cancelado.","ok",2200);
+  if(eliminar) valesActivos = valesActivos.filter(row => String(row.id) !== String(id));
+  await saveValesActivos();
+  toast(eliminar ? "Vale eliminado" : "Vale cancelado","","ok",2200);
   await renderValesActivos();
 }
 
@@ -492,14 +699,17 @@ function renderValePermisoPass({
   tipo, payload, folio, nombre, dato1, dato2, rol, depto, tipoPermiso, fecha, fechaSub, autoriza,
   instrucciones, volverAction, title = "", kindLabel = "Permiso de", personLabel = "Solicitado por",
   roleLabel = "Rol / relacion", factTypeLabel = "Tipo de permiso", leftSide = "Solicitud\ngenerada",
-  rightSide = "Presentar\nen acceso", signaturesHtml = ""
+  rightSide = "Presentar\nen acceso", signaturesHtml = "", authorizeAssetId = "", requestAssetAuthorizationId = "", showQr = true, assetMovement = null
 }){
   return `
     <div class="permit-pass-actions">
       <button class="secondary" data-action="${esc(volverAction)}">Volver</button>
       <button class="secondary" data-action="print">Imprimir</button>
-      <button id="btnGuardarValePass" class="secondary" type="button">Guardar pase</button>
-      <button id="btnCompartirValePass" class="secondary" type="button">Compartir QR</button>
+      ${showQr ? `<button id="btnGuardarValePass" class="secondary" type="button">Guardar pase</button>
+      <button id="btnCompartirValePass" class="secondary" type="button">Compartir QR</button>` : ""}
+      ${requestAssetAuthorizationId ? `<button class="secondary" type="button" data-action="whatsappValeActivo" data-id="${esc(requestAssetAuthorizationId)}" title="Enviar solicitud por WhatsApp al autorizador">Solicitar autorización</button>` : ""}
+      ${authorizeAssetId ? `<button class="ok" type="button" data-action="autorizarVale" data-id="${esc(authorizeAssetId)}">Autorizar</button>` : ""}
+      ${assetMovement ? `<button class="ok" type="button" data-action="setValeStatus" data-id="${esc(assetMovement.id)}" data-status="${esc(assetMovement.status)}">${esc(assetMovement.label)}</button>` : ""}
     </div>
     <div class="permit-pass printable" id="valePermisoPass">
       <div class="permit-hero">
@@ -532,11 +742,11 @@ function renderValePermisoPass({
           <div class="permit-fact"><div class="permit-icon">CAL</div><div><div class="permit-label">Fecha</div><b>${esc(fecha || "")}</b><span>${esc(fechaSub || "")}</span></div></div>
           <div class="permit-fact"><div class="permit-icon">OK</div><div><div class="permit-label">Autoriza</div><b>${esc(autoriza || "")}</b><span></span></div></div>
         </div>
-        <div class="permit-qr-zone">
+        ${showQr ? `<div class="permit-qr-zone">
           <div class="permit-side"><div class="permit-icon">OK</div><div>${esc(leftSide)}</div><i></i></div>
           <div class="permit-qr-card"><div id="qrcode" class="permit-qr"></div><div class="permit-code"><span>${esc(String(payload).replace(/(.{4})/g, "$1 ").trim().toUpperCase())}</span><small>Codigo de verificacion</small></div></div>
           <div class="permit-side"><div class="permit-icon">QR</div><div>${esc(rightSide)}</div><i></i></div>
-        </div>
+        </div>` : ""}
         ${signaturesHtml}
         <div class="permit-instructions"><div class="permit-icon">i</div><div><b>Instrucciones</b><p>${esc(instrucciones || "Muestra este codigo QR en el acceso.")}</p></div></div>
       </div>
@@ -627,28 +837,33 @@ function setupValePassActions({ payload, folio, filename, shareText }){
 
 async function renderValeQR(id){
   if(!requirePerm("ver_vales_activos","Tu rol no puede ver vales.")) return;
-  if(!await loadFeatureDependencies("qr", "el código QR")) return renderValesActivos();
   currentView = "vale_qr";
   rememberModuleReturn(currentView);
   const v = valesActivos.find(x => String(x.id) === String(id));
   if(!v) return renderValesActivos();
-  if(!v.qrActivo){
-    toast("QR desactivado","Este vale ya está en Regreso o fue cancelado.","warn",3200);
-    return renderValesActivos();
-  }
 
   const payload = `VALE_ACTIVO:${String(v.id)}`;
   const folio = v.folio || v.id;
   const depto = v.departamento || "";
+  const status = valeActivoDetailStatus(v);
+  const pendiente = v.status === ValeStatus.PENDIENTE;
+  const assetMovement = valeActivoMovement(v);
+  const retorno = v.salidaSinRegreso === true ? "Salida sin regreso" : valePassDate(v.fechaRetorno) || "Sin fecha indicada";
   const shareText = [
     "Vale de salida de activo",
     `Folio: ${folio}`,
     `Solicitante: ${v.nombre || ""}`,
-    `Activo: ${v.tipoActivo || ""}`,
-    `Descripcion: ${v.descripcion || ""}`,
+    `Departamento: ${depto}`,
+    `Tipo de activo: ${v.tipoActivo || ""}`,
+    `Descripción: ${v.descripcion || ""}`,
+    v.noSerie ? `Número de serie: ${v.noSerie}` : "",
+    v.codigoLote ? `Código / lote: ${v.codigoLote}` : "",
+    `Motivo: ${v.motivo || ""}`,
     `Fecha: ${valePassDate(v.fecha)}`,
+    `Retorno: ${retorno}`,
+    `Estado: ${status}`,
     `Autoriza: ${v.autorizadorNombre || v.autorizadorEmail || ""}`
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 
   appEl.innerHTML = renderValePermisoPass({
     title:"Vale de activo",
@@ -659,27 +874,63 @@ async function renderValeQR(id){
     personLabel:"Descripcion del activo",
     nombre:v.descripcion || "Vale de activo",
     dato1:v.noSerie ? `Numero de serie: ${v.noSerie}` : "",
-    dato2:[v.tipoActivo, v.codigoLote ? `Codigo/Lote: ${v.codigoLote}` : ""].filter(Boolean).join(" | "),
+    dato2:[v.tipoActivo ? `Tipo: ${v.tipoActivo}` : "", v.codigoLote ? `Código / lote: ${v.codigoLote}` : ""].filter(Boolean).join(" | "),
     roleLabel:"Solicitado por",
     rol:v.nombre || "",
     depto,
     factTypeLabel:"Motivo",
     tipoPermiso:v.motivo || "Salida de activo",
     fecha:valePassDate(v.fecha),
-    fechaSub:v.fechaRetorno ? `Retorno: ${valePassDate(v.fechaRetorno)}` : "",
+    fechaSub:`Retorno: ${retorno}`,
     autoriza:v.autorizadorNombre || v.autorizadorEmail || "",
-    leftSide:"Vale\ngenerado",
+    leftSide:status,
     rightSide:"Salida\nde activo",
-    signaturesHtml:renderValeActivoFirmas(v, { collapsible:false }),
-    instrucciones:"Presenta este vale en el acceso al salir. El activo debe coincidir con la descripcion. Este vale es personal e intransferible.",
+    signaturesHtml:renderValeActivoFirmas(v, { collapsible:false }) + `<details class="vale-activo-signatures"><summary>Movimientos</summary>${renderKanbanMovementPanel(valeActivoHistoryEvents(v), false)}</details>`,
+    showQr:Boolean(v.qrActivo),
+    assetMovement,
+    authorizeAssetId:pendiente && canCurrentUserAuthorizeValeActivo(v) ? String(v.id) : "",
+    requestAssetAuthorizationId:pendiente ? String(v.id) : "",
+    instrucciones:!v.qrActivo ? `${status}. QR desactivado.` : pendiente
+      ? "Revisa los datos del activo antes de autorizar. El vale debe estar autorizado para registrar la salida."
+      : "Presenta este vale en el acceso al salir. El activo debe coincidir con la descripción. Este vale es personal e intransferible.",
     volverAction:"valesActivos"
   });
+  if(!v.qrActivo || !await loadFeatureDependencies("qr", "el código QR")) return;
   setupValePassActions({
     payload,
     folio,
     filename:`PERMISO-ACTIVO-${String(folio)}.png`,
     shareText
   });
+}
+
+async function enviarValeActivoWhatsApp(id){
+  const v = valesActivos.find(row => String(row.id) === String(id));
+  if(v?.status !== ValeStatus.PENDIENTE) return toast("Solicitud no disponible","El vale ya no está pendiente de autorización.","warn");
+  const uid = v.autorizadorUid;
+  let telefono = normalizarTelefonoWhatsApp(valeActivoAutorizadoresCache.find(u => String(u.uid || u.id) === String(uid))?.telefono);
+  if(!telefono && uid){
+    try{
+      const perfil = await getDoc(doc(db, COL_USERS, String(uid)));
+      telefono = normalizarTelefonoWhatsApp(perfil.data()?.telefono);
+    }catch(error){
+      console.warn(error);
+      return toast("No se pudo consultar el teléfono","Revisa la conexión y los permisos antes de reintentar.","warn",4200);
+    }
+  }
+  if(!telefono) return toast("Teléfono requerido","Registra el teléfono del autorizador en Usuarios para solicitar la autorización.","warn",4200);
+  const mensaje = [
+    `Hola ${v.autorizadorNombre || ""}, tienes un vale de activo pendiente de autorización.`,
+    `Folio: ${v.folio || v.id}`,
+    `Solicitante: ${v.nombre || ""}`,
+    `Activo: ${[v.tipoActivo, v.descripcion].filter(Boolean).join(" · ")}`,
+    `Motivo: ${v.motivo || ""}`,
+    `Fecha: ${valePassDate(v.fecha)}`,
+    `Retorno: ${v.salidaSinRegreso === true ? "Salida sin regreso" : valePassDate(v.fechaRetorno) || "Sin fecha indicada"}`,
+    "",
+    "Abrir Vales de activo: https://meredeitor.github.io/control-acceso/?abrir=vales_activos"
+  ].join("\n");
+  abrirWhatsAppInstalado(telefono, mensaje);
 }
 
 function parseTiempoAutorizadoMin(value=""){

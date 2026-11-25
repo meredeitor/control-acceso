@@ -100,6 +100,19 @@ async function renderValesPersonal(refresh=true){
   vigilarAutocompletadoEnBuscadoresVales();
 }
 
+function valePersonalIconAction(v, action, label, icon, tone="secondary", status=""){
+  const paths = {
+    qr:"M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h2v2h-2zM21 15v4h-2v2h-4",
+    authorize:"M5 12l4 4L19 6",
+    urgent:"M12 3l10 17H2zM12 9v4m0 3v.1",
+    enter:"M14 4h6v16h-6M3 12h12m-5-5 5 5-5 5",
+    exit:"M10 4H4v16h6m-1-8h12m-5-5 5 5-5 5",
+    return:"M9 10l-5 5 5 5M4 15h11a5 5 0 0 0 0-10h-3",
+    cancel:"M7 7l10 10M17 7 7 17M22 12a10 10 0 1 1-20 0 10 10 0 1 1 20 0"
+  };
+  return `<button type="button" class="${tone}" data-action="${action}" data-id="${esc(v.id)}" ${status ? `data-status="${esc(status)}"` : ""} data-no-sb="true" title="${esc(label)}" aria-label="${esc(label)}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[icon]}"></path></svg></button>`;
+}
+
 function renderValePersonalCard(v){
   const esGrupal = esValePersonalGrupal(v);
   const estadoGrupo = esGrupal ? estadoIntegrantesValePersonal(v) : null;
@@ -153,19 +166,19 @@ function renderValePersonalCard(v){
         ${esEntrada ? `<span class="pill"><span class="dot info"></span>Entrada posterior a 8:15</span>` : ""}
       </div>
       <div class="row vale-actions">
-        ${v.qrActivo && !esFuturo ? `<button class="secondary" data-action="verValePersonalQR" data-id="${esc(v.id)}" data-no-sb="true">QR</button>` : esFuturo ? `<span class="pill"><span class="dot warn"></span>QR habilitado el día del vale</span>` : `<span class="pill"><span class="dot bad"></span>QR desactivado</span>`}
-        ${v.status === ValeStatus.PENDIENTE && canCurrentUserAuthorizeValePersonal(v) ? `<button class="ok" data-action="autorizarValePersonal" data-id="${esc(v.id)}" data-no-sb="true">Autorizar</button>` : ""}
-        ${v.status === ValeStatus.PENDIENTE && hasPerm("autorizar_vale_personal_emergencia") && !isValePersonalEntrada(v) && !isPermisoImss(v) ? `<button class="danger" data-action="autorizarValePersonalEmergencia" data-id="${esc(v.id)}" data-no-sb="true">Autorizar por urgencia</button>` : ""}
+        ${v.qrActivo && !esFuturo ? valePersonalIconAction(v,"verValePersonalQR","Ver QR","qr","secondary") : esFuturo ? `<span class="pill"><span class="dot warn"></span>QR habilitado el día del vale</span>` : `<span class="pill"><span class="dot bad"></span>QR desactivado</span>`}
+        ${v.status === ValeStatus.PENDIENTE && canCurrentUserAuthorizeValePersonal(v) ? valePersonalIconAction(v,"autorizarValePersonal","Autorizar","authorize","ok") : ""}
+        ${v.status === ValeStatus.PENDIENTE && hasPerm("autorizar_vale_personal_emergencia") && !isValePersonalEntrada(v) && !isPermisoImss(v) ? valePersonalIconAction(v,"autorizarValePersonalEmergencia","Autorizar por urgencia","urgent","danger") : ""}
         ${esGrupal && mostrarRegistroManual && v.autorizadoTs && estadoGrupo.inicio > 0 && hasPerm("registrar_salida_personal") ? (esEntrada
-          ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar ingresos</button>`
-          : `<button class="danger" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.FUERA}" data-no-sb="true">Registrar salidas</button>`) : ""}
-        ${esGrupal && mostrarRegistroManual && estadoGrupo.fuera > 0 && hasPerm("registrar_regreso_personal") ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar regresos</button>` : ""}
+          ? valePersonalIconAction(v,"setValePersonalStatus","Registrar ingresos","enter","ok",ValeStatus.REGRESO_CANCELADO)
+          : valePersonalIconAction(v,"setValePersonalStatus","Registrar salidas","exit","danger",ValeStatus.FUERA)) : ""}
+        ${esGrupal && mostrarRegistroManual && estadoGrupo.fuera > 0 && hasPerm("registrar_regreso_personal") ? valePersonalIconAction(v,"setValePersonalStatus","Registrar regresos","return","ok",ValeStatus.REGRESO_CANCELADO) : ""}
         ${!esGrupal && mostrarRegistroManual && v.status === ValeStatus.GENERADO && v.autorizadoTs && hasPerm("registrar_salida_personal") ? (esEntrada
-          ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar ingreso</button>`
-          : `<button class="danger" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.FUERA}" data-no-sb="true">Marcar salida</button>`) : ""}
-        ${!esGrupal && mostrarRegistroManual && v.status === ValeStatus.FUERA && hasPerm("registrar_regreso_personal") ? `<button class="ok" data-action="setValePersonalStatus" data-id="${esc(v.id)}" data-status="${ValeStatus.REGRESO_CANCELADO}" data-no-sb="true">Registrar regreso</button>` : ""}
-        ${v.status !== ValeStatus.REGRESO_CANCELADO && (hasPerm("crear_vale_personal") || (isPermisoImss(v) && hasPerm("crear_permiso_imss"))) ? `<button class="secondary" data-action="cancelarValePersonal" data-id="${esc(v.id)}" data-no-sb="true">Cancelar</button>` : ""}
-        ${excedido && !esGrupal ? `<button class="ok" data-action="alertaTiempoExcedidoWhatsApp" data-id="${esc(v.id)}" data-no-sb="true" aria-label="Avisar tiempo excedido por WhatsApp" title="Avisar tiempo excedido por WhatsApp"><svg aria-hidden="true" viewBox="0 0 32 32" width="18" height="18" fill="currentColor" focusable="false"><path d="M16.04 3.2A12.7 12.7 0 0 0 5.3 22.67L3.6 28.8l6.28-1.65a12.72 12.72 0 1 0 6.16-23.95Zm0 22.93c-1.93 0-3.82-.52-5.47-1.5l-.39-.23-3.72.98.99-3.62-.25-.37a10.2 10.2 0 1 1 8.84 4.74Zm5.6-7.64c-.3-.15-1.82-.9-2.1-1-.28-.1-.48-.15-.69.15-.2.3-.79 1-.97 1.2-.18.2-.36.23-.66.08-.3-.15-1.3-.48-2.47-1.53a9.2 9.2 0 0 1-1.7-2.12c-.18-.3-.02-.46.13-.61.14-.14.3-.36.46-.54.15-.18.2-.3.3-.51.1-.2.05-.38-.03-.54-.08-.15-.69-1.65-.94-2.26-.25-.6-.5-.52-.69-.53h-.58c-.2 0-.53.08-.81.38-.28.3-1.07 1.05-1.07 2.56s1.1 2.97 1.25 3.18c.15.2 2.16 3.3 5.24 4.63.73.32 1.3.5 1.75.65.74.23 1.4.2 1.93.12.59-.09 1.82-.74 2.08-1.46.25-.71.25-1.33.18-1.46-.08-.13-.28-.2-.59-.36Z"/></svg><span>Avisar</span></button>` : ""}
+          ? valePersonalIconAction(v,"setValePersonalStatus","Registrar ingreso","enter","ok",ValeStatus.REGRESO_CANCELADO)
+          : valePersonalIconAction(v,"setValePersonalStatus","Marcar salida","exit","danger",ValeStatus.FUERA)) : ""}
+        ${!esGrupal && mostrarRegistroManual && v.status === ValeStatus.FUERA && hasPerm("registrar_regreso_personal") ? valePersonalIconAction(v,"setValePersonalStatus","Registrar regreso","return","ok",ValeStatus.REGRESO_CANCELADO) : ""}
+        ${v.status !== ValeStatus.REGRESO_CANCELADO && (hasPerm("crear_vale_personal") || (isPermisoImss(v) && hasPerm("crear_permiso_imss"))) ? valePersonalIconAction(v,"cancelarValePersonal","Cancelar","cancel","secondary") : ""}
+        ${excedido && !esGrupal ? `<button class="ok" data-action="alertaTiempoExcedidoWhatsApp" data-id="${esc(v.id)}" data-no-sb="true" aria-label="Avisar tiempo excedido por WhatsApp" title="Avisar tiempo excedido por WhatsApp"><svg aria-hidden="true" viewBox="0 0 32 32" width="18" height="18" fill="currentColor" focusable="false"><path d="M16.04 3.2A12.7 12.7 0 0 0 5.3 22.67L3.6 28.8l6.28-1.65a12.72 12.72 0 1 0 6.16-23.95Zm0 22.93c-1.93 0-3.82-.52-5.47-1.5l-.39-.23-3.72.98.99-3.62-.25-.37a10.2 10.2 0 1 1 8.84 4.74Zm5.6-7.64c-.3-.15-1.82-.9-2.1-1-.28-.1-.48-.15-.69.15-.2.3-.79 1-.97 1.2-.18.2-.36.23-.66.08-.3-.15-1.3-.48-2.47-1.53a9.2 9.2 0 0 1-1.7-2.12c-.18-.3-.02-.46.13-.61.14-.14.3-.36.46-.54.15-.18.2-.3.3-.51.1-.2.05-.38-.03-.54-.08-.15-.69-1.65-.94-2.26-.25-.6-.5-.52-.69-.53h-.58c-.2 0-.53.08-.81.38-.28.3-1.07 1.05-1.07 2.56s1.1 2.97 1.25 3.18c.15.2 2.16 3.3 5.24 4.63.73.32 1.3.5 1.75.65.74.23 1.4.2 1.93.12.59-.09 1.82-.74 2.08-1.46.25-.71.25-1.33.18-1.46-.08-.13-.28-.2-.59-.36Z"/></svg></button>` : ""}
         ${renderKanbanDetailsButton()}
       </div>
       ${renderKanbanMovementPanel(valeHistoryEvents(v))}
@@ -349,8 +362,9 @@ function valeActivoHistoryEvents(v={}){
   const events=[];
   const push=(ts,title,detail="",tone="")=>{ const n=Number(ts||0); if(n) events.push({ts:n,title,detail,tone}); };
   push(v.createdTs,"Vale creado",[v.createdByNombre,v.createdByName,v.createdByEmail].filter(Boolean).join(" · ")||"Usuario no registrado");
+  push(v.editedTs,"Vale editado",v.editedByNombre || "Usuario no registrado");
   push(v.autorizadoTs,"Vale autorizado",[v.autorizadoPorNombre,v.autorizadoPor].filter(Boolean).join(" · ")||"Autorizador no registrado","ok");
-  push(v.salidaTs,"Salida del activo",[v.salidaPorNombre,v.salidaPorEmail].filter(Boolean).join(" · ")||"Guardia no registrado","warn");
+  push(v.salidaTs,v.salidaSinRegreso === true ? "Salida sin regreso" : "Salida del activo",[v.salidaPorNombre,v.salidaPorEmail].filter(Boolean).join(" · ")||"Guardia no registrado","warn");
   push(v.regresoTs,"Regreso del activo",[v.regresoPorNombre,v.regresoPorEmail].filter(Boolean).join(" · ")||"Guardia no registrado","ok");
   push(v.canceladoTs,"Vale cancelado",v.canceladoPorNombre||v.canceladoPor||"Usuario no registrado","bad");
   return events.sort((a,b)=>a.ts-b.ts);

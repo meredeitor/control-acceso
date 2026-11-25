@@ -1842,6 +1842,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v262</b><span>Vales de activo incorpora el detalle del vale, edición antes de autorizar, salida sin regreso, solicitud por WhatsApp y opciones de residuos. Las tarjetas de Vales de personal usan iconos con tooltip.</span></div>
           <div class="help-release"><b>v261</b><span>El inicio de sesión carga el permiso individual para autorizar vales de activo asignados.</span></div>
           <div class="help-release"><b>v260</b><span>El Kanban de Vales de activo adopta el diseño compacto de Proveedores: estado, folio, departamento, datos del activo, autorizador, progreso de firmas e iconos alineados. Firmas y responsables utiliza tipografía proporcional y permanece plegado para ahorrar espacio.</span></div>
           <div class="help-release"><b>v259</b><span>Los vales de activo presentan firmas electrónicas auditables de Elaboró, Autorizó, Guardia de salida y Guardia de regreso. La salida y el regreso continúan exigiendo escanear y validar el gafete del guardia antes de cambiar el estado.</span></div>
@@ -4814,10 +4815,10 @@ function renderRegisterForm(){
       </button>`;
     }
 
-    function renderKanbanMovementPanel(events=[]){
+    function renderKanbanMovementPanel(events=[], hidden=true){
       const list = Array.isArray(events) ? events : [];
       return `
-        <div class="kanban-movement-details" data-action="kanbanDetailsNoop" data-no-sb="true" hidden>
+        <div class="kanban-movement-details" data-action="kanbanDetailsNoop" data-no-sb="true" ${hidden ? "hidden" : ""}>
           ${list.length ? `<ol class="kanban-movement-list">${list.map(event=>`
             <li class="kanban-movement-item"><div><strong>${esc(event.title)}</strong><small>${esc(kanbanDateTime(event.ts))}${event.detail ? ` · ${esc(event.detail)}` : ""}</small></div></li>
           `).join("")}</ol>` : `<small style="color:var(--muted)">Aún no hay movimientos registrados.</small>`}

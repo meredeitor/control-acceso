@@ -1300,13 +1300,36 @@ height: 100vh;
 .vale-activo-card.status-finalizado{ border-left-color:var(--ok)!important; }
 .vale-activo-card.status-cancelado{ border-left-color:var(--muted)!important; }
 .vale-activo-card .vale-activo-signatures{ margin-top:10px; }
-.vale-activo-card .vale-actions{ margin-top:10px; }
-.vale-activo-card .vale-actions:empty{ display:none; }
+.vale-activo-card .vale-activo-actions{ display:flex; justify-content:flex-end; gap:6px; margin-top:10px; }
+.vale-personal-card .vale-actions button[data-action]{ display:inline-grid; place-items:center; flex:0 0 40px; width:40px; min-width:40px; height:40px; padding:0; }
+.vale-activo-detail-dialog{ width:min(860px,calc(100% - 24px)); max-height:calc(100dvh - 24px); padding:0; border:1px solid var(--line); border-radius:18px; background:var(--panel); color:var(--text); overflow:auto; box-shadow:0 22px 60px rgba(0,0,0,.24); }
+.vale-activo-detail-dialog::backdrop{ background:rgba(0,0,0,.5); }
+.vale-activo-detail-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:14px 20px; background:var(--panel2); border-bottom:1px solid var(--line); }
+.vale-activo-detail-head h3{ margin:0 0 5px; font-size:1.1rem; }
+.vale-activo-detail-head button{ padding:6px; min-width:36px; min-height:36px; }
+.vale-activo-detail-meta{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; font-size:.86rem; }
+.vale-activo-detail-meta .pill{ padding:3px 8px; }
+.vale-activo-detail-body{ padding:14px 20px 18px; overflow-wrap:anywhere; }
+.vale-activo-detail-description{ border-inline-start:3px solid var(--info); border-radius:8px; padding:8px 12px; background:var(--panel2); }
+.vale-activo-detail-description h4{ margin:0 0 3px; color:var(--muted); font-size:.8rem; }
+.vale-activo-detail-description p{ margin:0; font-weight:650; white-space:pre-wrap; }
+.vale-activo-detail-fields{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px 12px; margin:10px 0; }
+.vale-activo-detail-fields > div{ padding:6px 8px; border-bottom:1px solid var(--line); }
+.vale-activo-detail-fields dt{ color:var(--muted); font-size:.85rem; }
+.vale-activo-detail-fields dd{ margin:2px 0 0; font-size:.91rem; font-weight:600; }
+.vale-activo-detail-expand{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; align-items:start; }
+.vale-activo-detail-expand > details{ margin:0; }
+.vale-activo-detail-expand > details[open]{ grid-column:1/-1; }
+.vale-activo-detail-actions:not(:empty){ margin-top:10px; justify-content:flex-end; }
+@media (max-width:560px){
+  .vale-activo-detail-head,.vale-activo-detail-body{ padding:10px 12px; }
+  .vale-activo-detail-fields{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; }
+}
 .vale-activo-card .provider-card-name small{ overflow-wrap:anywhere; }
+.vale-activo-card .provider-card-name strong,
+.vale-activo-card .provider-mini-pill{ overflow-wrap:anywhere; white-space:normal; }
 @media (max-width:760px){
   .vale-activo-signature-grid{ grid-template-columns:1fr; }
-  .vale-activo-card .vale-actions{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .vale-activo-card .vale-actions button{ width:100%; min-width:0; }
 }
 @media (max-width:760px){
   .factura-oc-item{ grid-template-columns:1fr; }

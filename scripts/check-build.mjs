@@ -22,11 +22,11 @@ if(!html.includes('src="./assets/app.min.js"')) throw new Error("index.html no c
 if(css.size < 10000) throw new Error("app.css parece incompleto");
 if(bundle.size < 10000) throw new Error("assets/app.min.js parece incompleto");
 if(/<script type="module">[\s\S]{1000,}<\/script>/.test(html)) throw new Error("index.html aún contiene el módulo monolítico");
-if(version.version !== "v261" || !sourceAuth.includes('APP_VERSION = "v261"')) throw new Error("La versión productiva no está alineada en v261");
-if(!sw.includes('SW_VERSION = "v261"')) throw new Error("El service worker no informa v261");
+if(version.version !== "v262" || !sourceAuth.includes('APP_VERSION = "v262"')) throw new Error("La versión productiva no está alineada en v262");
+if(!sw.includes('SW_VERSION = "v262"')) throw new Error("El service worker no informa v262");
 if(!sourceValesActivos.includes('renderValeActivoFirmas') || !sourceValesActivos.includes('Guardia · salida') || !sourceValesActivos.includes('Guardia · regreso')) throw new Error("Faltan las firmas del vale de activo");
 if(!sourceValesActivos.includes('createdByNombre: currentUser?.nombre') || !sourceValesActivos.includes('salidaPorUid = guardiaCred.uid') || !sourceValesActivos.includes('regresoPorUid = guardiaCred.uid')) throw new Error("La auditoría del vale de activo está incompleta");
-if(!sourceValesActivos.includes('provider-kanban-card vale-activo-card') || !sourceValesActivos.includes('Firmas ${firmasRegistradas}/4')) throw new Error("Falta el Kanban compacto de Vales de activo");
+if(!sourceValesActivos.includes('provider-kanban-card vale-activo-card') || !sourceValesActivos.includes('Firmas ${firmasRegistradas}/${firmas.length}')) throw new Error("Falta el Kanban compacto de Vales de activo");
 if(!sourceRondinero.includes('btnSolicitarAutorizacionVale') || !sourceRondinero.includes('dataset.action = "whatsappValePersonal"')) throw new Error("Falta Solicitar autorización en el QR de personal");
 if(!sourceRondinero.includes('link.target = "_blank"') || !sourceRondinero.includes('whatsapp://send')) throw new Error("WhatsApp no conserva la vista del QR");
 if(!kioskVales.includes('>Solicitar autorización</button>') || !kioskVales.includes('whatsapp://send')) throw new Error("El kiosco no separa Solicitar autorización de Compartir QR");

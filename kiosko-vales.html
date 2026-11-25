@@ -295,6 +295,7 @@
             <option>Equipo de Computo</option>
             <option>Mobiliario y equipo de oficina</option>
             <option>Herramientas</option>
+            <option>Residuos</option>
             <option>Otro</option>
           </select>
         </div>
@@ -307,13 +308,14 @@
             <option>Devolucion</option>
             <option>Venta</option>
             <option>Traspaso a otra planta</option>
+            <option>Salida de Residuos</option>
             <option>Otro</option>
           </select>
         </div>
         <div style="grid-column:1/-1;"><label>Descripcion *</label><textarea id="aDescripcion" required></textarea></div>
         <div><label>No. serie</label><input id="aNoSerie"></div>
         <div><label>Codigo / Lote</label><input id="aCodigoLote"></div>
-        <div><label>Fecha de retorno</label><input id="aFechaRetorno" type="date"></div>
+        <div><label>Fecha de retorno</label><input id="aFechaRetorno" type="date"><label><input id="aSalidaSinRegreso" type="checkbox" style="width:auto" onchange="document.getElementById('aFechaRetorno').disabled = this.checked"> Salida sin regreso</label></div>
         <div>
           <label>Autoriza *</label>
           <select id="aAutorizador" required>
@@ -524,7 +526,7 @@
       setText("passTipo", esPersonal ? tipo : (vale.motivo || "Salida de activo"));
       setText("passTipoEstado", "");
       setText("passFecha", fmtDate(vale.fecha));
-      setText("passFechaSub", esPersonal ? (vale.tiempoAutorizado || "") : (vale.fechaRetorno ? `Retorno: ${fmtDate(vale.fechaRetorno)}` : ""));
+      setText("passFechaSub", esPersonal ? (vale.tiempoAutorizado || "") : (vale.salidaSinRegreso === true ? "Salida sin regreso" : (vale.fechaRetorno ? `Retorno: ${fmtDate(vale.fechaRetorno)}` : "")));
       setText("passAutoriza", vale.autorizadorNombre || vale.autorizadorEmail || "");
       setText("passAutorizaSub", "");
       setText("passCodigo", String(payload).replace(/(.{4})/g, "$1 ").trim().toUpperCase());
@@ -536,9 +538,9 @@
       setText("passFolio", folio);
       const btnWhatsApp = document.getElementById("btnWhatsApp");
       if(btnWhatsApp){
-        btnWhatsApp.style.display = esPersonal ? "" : "none";
+        btnWhatsApp.style.display = vale.status === "pendiente_autorizacion" ? "" : "none";
         btnWhatsApp.disabled = false;
-        btnWhatsApp.title = esPersonal && !vale.autorizadorTelefono ? "El autorizador no tiene teléfono registrado" : "Enviar solicitud por WhatsApp al autorizador";
+        btnWhatsApp.title = !vale.autorizadorTelefono ? "El autorizador no tiene teléfono registrado" : "Enviar solicitud por WhatsApp al autorizador";
       }
       selector.style.display = "none";
       formActivo.classList.remove("show");
@@ -623,19 +625,28 @@
     }
 
     function enviarPorWhatsApp(){
-      if(!currentVale || currentPrefix !== "VALE_PERSONAL") return;
+      if(!currentVale || currentVale.status !== "pendiente_autorizacion") return;
+      const esPersonal = currentPrefix === "VALE_PERSONAL";
       const telefono = normalizarTelefonoWhatsApp(currentVale.autorizadorTelefono);
       if(!telefono){
         toast("Registra el teléfono del autorizador en Usuarios para solicitar la autorización.", "bad");
         return;
       }
-      const enlace = "https://meredeitor.github.io/control-acceso/?abrir=vales_personal";
+      const enlace = `https://meredeitor.github.io/control-acceso/?abrir=${esPersonal ? "vales_personal" : "vales_activos"}`;
       const mensaje = [
         `Hola ${currentVale.autorizadorNombre || ""}, tienes un vale pendiente de autorización.`,
         `Folio: ${currentVale.folio || currentVale.id}`,
-        `Colaborador: ${currentVale.nombreColaborador || ""}`,
-        `Tipo: ${currentVale.tipoPermiso || ""}`,
-        `Tiempo autorizado: ${currentVale.tiempoAutorizado || ""}`,
+        ...(esPersonal ? [
+          `Colaborador: ${currentVale.nombreColaborador || ""}`,
+          `Tipo: ${currentVale.tipoPermiso || ""}`,
+          `Tiempo autorizado: ${currentVale.tiempoAutorizado || ""}`
+        ] : [
+          `Solicitante: ${currentVale.nombre || ""}`,
+          `Activo: ${[currentVale.tipoActivo, currentVale.descripcion].filter(Boolean).join(" · ")}`,
+          `Motivo: ${currentVale.motivo || ""}`,
+          `Fecha: ${fmtDate(currentVale.fecha)}`,
+          `Retorno: ${currentVale.salidaSinRegreso === true ? "Salida sin regreso" : fmtDate(currentVale.fechaRetorno) || "Sin fecha indicada"}`
+        ]),
         `Departamento: ${currentVale.departamento || ""}`,
         "",
         `Abrir Caborca Access Control: ${enlace}`
@@ -702,14 +713,15 @@
           descripcion: value("aDescripcion"),
           noSerie: value("aNoSerie"),
           codigoLote: value("aCodigoLote"),
-          fechaRetorno: value("aFechaRetorno"),
+          fechaRetorno: document.getElementById("aSalidaSinRegreso").checked ? "" : value("aFechaRetorno"),
+          salidaSinRegreso: document.getElementById("aSalidaSinRegreso").checked,
           autorizadorUid,
           autorizadorEmail: autorizadorOption?.dataset?.email || "",
           autorizadorNombre: autorizadorOption?.dataset?.nombre || "",
           autorizadorRole: autorizadorOption?.dataset?.role || "",
           createdBySource: "kiosko_vales_activos"
         });
-        await renderSolicitud("VALE_ACTIVO", vale);
+        await renderSolicitud("VALE_ACTIVO", { ...vale, autorizadorTelefono: autorizadorOption?.dataset?.telefono || "" });
         formActivo.reset();
         document.getElementById("aFecha").value = today;
         toast("Solicitud enviada. QR generado.", "ok");

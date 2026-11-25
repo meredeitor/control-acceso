@@ -3419,6 +3419,7 @@ function renderProveedores(lista){
         case "kanbanDetailsNoop": break;
         case "logout": await doLogout(); break;
         case "whatsappValePersonal": enviarValePersonalWhatsApp(id); break;
+        case "whatsappValeActivo": await enviarValeActivoWhatsApp(id); break;
         case "alertaTiempoExcedidoWhatsApp": await enviarAlertaTiempoExcedidoWhatsApp(id); break;
         case "abrirMenuInicio": btnHamb?.click(); break;
         case "homeModulo": {
@@ -3496,12 +3497,15 @@ function renderProveedores(lista){
           break;
         }
         case "openValeModal": await openValeModal(); break;
+        case "editarValeActivo": await openValeModal(id); break;
         case "closeValeModal": closeValeModal(); break;
         case "guardarValeActivo": await guardarValeActivo(); break;
+        case "verDetalleValeActivo": abrirDetalleValeActivo(id); break;
         case "verValeQR": await renderValeQR(id); break;
         case "setValeStatus": await iniciarRegistroValeActivo(id, el.dataset.status); break;
         case "autorizarVale": await autorizarValeActivo(id); break;
-        case "cancelarVale": await cancelarValeActivo(id); break;
+        case "cancelarVale": await gestionarBajaValeActivo(id); break;
+        case "eliminarValeActivo": await gestionarBajaValeActivo(id,true); break;
         case "valesPersonal": await renderValesPersonal(); break;
         case "refrescarProximosValesPersonal": await renderProximosValesPersonal(true); break;
         case "filtrarHistorialValesPersonal": await renderHistorialValesPersonal(false); break;
@@ -3936,9 +3940,9 @@ document.addEventListener("focusout", (e) => {
 });
 
 document.addEventListener("keydown", (e) => {
-  const providerCard = e.target.closest?.(".provider-kanban-card[data-action='ficha']");
+  const providerCard = e.target.closest?.(".provider-kanban-card[data-action='ficha'],.vale-activo-card[data-action='verDetalleValeActivo']");
   if(!providerCard || (e.key !== "Enter" && e.key !== " ")) return;
-  if(e.target.closest?.("button,a,input,select,textarea,[data-action='kanbanDetailsNoop']")) return;
+  if(e.target.closest?.("button,a,input,select,textarea,summary,[data-action='kanbanDetailsNoop']")) return;
   e.preventDefault();
   providerCard.click();
 });
@@ -4125,6 +4129,9 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
       if(abrir === "vales_personal" && hasPerm("ver_vales_personal")){
         try{ history.replaceState({}, "", location.pathname); }catch{}
         await renderValesPersonal();
+      }else if(abrir === "vales_activos" && hasPerm("ver_vales_activos")){
+        try{ history.replaceState({}, "", location.pathname); }catch{}
+        await renderValesActivos();
       }else{
         renderHome();
       }
