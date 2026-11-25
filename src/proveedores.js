@@ -1842,6 +1842,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v261</b><span>El inicio de sesión carga el permiso individual para autorizar vales de activo asignados.</span></div>
           <div class="help-release"><b>v260</b><span>El Kanban de Vales de activo adopta el diseño compacto de Proveedores: estado, folio, departamento, datos del activo, autorizador, progreso de firmas e iconos alineados. Firmas y responsables utiliza tipografía proporcional y permanece plegado para ahorrar espacio.</span></div>
           <div class="help-release"><b>v259</b><span>Los vales de activo presentan firmas electrónicas auditables de Elaboró, Autorizó, Guardia de salida y Guardia de regreso. La salida y el regreso continúan exigiendo escanear y validar el gafete del guardia antes de cambiar el estado.</span></div>
           <div class="help-release"><b>v258</b><span>Los vales de personal pendientes muestran por separado Compartir QR para el colaborador y Solicitar autorización para el autorizador. WhatsApp abre la aplicación instalada y conserva la pantalla del QR al regresar, tanto en la aplicación como en el kiosco.</span></div>
