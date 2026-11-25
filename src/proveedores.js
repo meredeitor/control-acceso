@@ -1842,6 +1842,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v264</b><span>Los iconos de acción de Vales de personal se alinean horizontalmente en teléfonos.</span></div>
           <div class="help-release"><b>v263</b><span>Los iconos de las tarjetas de Vales de personal tienen el tamaño compacto de Proveedores en teléfonos.</span></div>
           <div class="help-release"><b>v262</b><span>Vales de activo incorpora el detalle del vale, edición antes de autorizar, salida sin regreso, solicitud por WhatsApp y opciones de residuos. Las tarjetas de Vales de personal usan iconos con tooltip.</span></div>
           <div class="help-release"><b>v261</b><span>El inicio de sesión carga el permiso individual para autorizar vales de activo asignados.</span></div>
