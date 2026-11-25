@@ -4087,6 +4087,7 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
         nombre: prof.nombre || prof.email,
         nomina: prof.nomina || prof.noNomina || prof.numeroNomina || "",
         telefono: prof.telefono || "",
+        puedeAutorizarValeActivo: prof.puedeAutorizarValeActivo === true,
         createdTs: prof.createdTs || 0,
         solicitadoTs: prof.solicitadoTs || 0,
         passwordChangedTs: prof.passwordChangedTs || 0,
