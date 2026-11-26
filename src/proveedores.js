@@ -1842,6 +1842,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v265</b><span>Agrega los roles Desarrollo y Jefe de Desarrollo para agendar proveedores y crear vales de activo. Jefe de Desarrollo también puede crear vales de personal.</span></div>
           <div class="help-release"><b>v264</b><span>Los iconos de acción de Vales de personal se alinean horizontalmente en teléfonos.</span></div>
           <div class="help-release"><b>v263</b><span>Los iconos de las tarjetas de Vales de personal tienen el tamaño compacto de Proveedores en teléfonos.</span></div>
           <div class="help-release"><b>v262</b><span>Vales de activo incorpora el detalle del vale, edición antes de autorizar, salida sin regreso, solicitud por WhatsApp y opciones de residuos. Las tarjetas de Vales de personal usan iconos con tooltip.</span></div>
@@ -2733,7 +2734,18 @@ function fmt(ts){
       return d.getTime();
     }
 
+    function isRolDesarrollo(role=currentUser?.role){
+      return [ROLES.DESARROLLO, ROLES.JEFE_DESARROLLO].includes(role);
+    }
+
+    async function cloudFetchValesPropios(collectionName){
+      if(!currentUser?.uid) return [];
+      const snap = await getDocs(query(collection(db, collectionName), where("createdByUid", "==", currentUser.uid), limit(300)));
+      return snap.docs.map(d => ({ ...d.data(), id:d.id }));
+    }
+
     function isValeActivoVisible(v={}){
+      if(isRolDesarrollo() && v.createdByUid !== currentUser.uid) return false;
       if(currentUser?.role === ROLES.JEFE_COMPRAS){
         const currentUid = String(currentUser?.uid || "");
         const currentEmail = String(currentUser?.email || "").trim().toLowerCase();
@@ -2819,6 +2831,7 @@ function fmt(ts){
     }
 
     async function cloudFetchValesActivos(){
+      if(isRolDesarrollo()) return cloudFetchValesPropios(COL_VALES_ACTIVOS);
       if(currentUser?.role === ROLES.JEFE_COMPRAS){
         const currentUid = String(currentUser?.uid || "");
         const currentEmail = String(currentUser?.email || "").trim();
@@ -2994,6 +3007,9 @@ function fmt(ts){
     }
 
     async function cloudFetchValesPersonal(){
+      if(currentUser?.role === ROLES.JEFE_DESARROLLO){
+        return (await cloudFetchValesPropios(COL_VALES_PERSONAL)).filter(v => v.fecha === todayISO());
+      }
       if([ROLES.JEFE_COMPRAS, ROLES.JEFE_RESTRINGIDO].includes(currentUser?.role)){
         const currentUid = String(currentUser?.uid || "");
         const currentEmail = String(currentUser?.email || "").trim().toLowerCase();
@@ -3024,6 +3040,9 @@ function fmt(ts){
     }
 
     async function cloudFetchProximosValesPersonal(){
+      if(currentUser?.role === ROLES.JEFE_DESARROLLO){
+        return (await cloudFetchValesPropios(COL_VALES_PERSONAL)).filter(v => v.fecha > todayISO());
+      }
       const currentUid = String(currentUser?.uid || "");
       const currentEmail = String(currentUser?.email || "").trim().toLowerCase();
       if([ROLES.JEFE, ROLES.JEFE_RESTRINGIDO, ROLES.JEFE_COMPRAS].includes(currentUser?.role)){

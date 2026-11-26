@@ -131,6 +131,8 @@
     COORDINADOR: "coordinador",
     JEFE: "jefe",
     JEFE_RESTRINGIDO: "jefe_restringido",
+    DESARROLLO: "desarrollo",
+    JEFE_DESARROLLO: "jefe_desarrollo",
     JEFE_COMPRAS: "jefe_compras",
     JEFE_TI: "jefe_ti",
     COMPRAS: "compras",
@@ -323,6 +325,10 @@ const PERMISOS = {
     "autorizar_vale_personal"
   ],
 
+  [ROLES.DESARROLLO]: ["ver_dashboard_proveedores", "crear_cita", "ver_qr", "ver_vales_activos", "crear_vale_activo"],
+
+  [ROLES.JEFE_DESARROLLO]: ["ver_dashboard_proveedores", "crear_cita", "ver_qr", "ver_vales_activos", "crear_vale_activo", "ver_vales_personal", "crear_vale_personal"],
+
   [ROLES.PROVEEDOR]: [
     "ver_qr",
     "buscar_proveedor"
@@ -411,6 +417,8 @@ function normalizePermList(perms, role=""){
 function roleLabel(role){
   if(role === ROLES.JEFE_TI) return "Jefe de TI";
   if(role === ROLES.JEFE_RESTRINGIDO) return "Jefe restringido";
+  if(role === ROLES.DESARROLLO) return "Desarrollo";
+  if(role === ROLES.JEFE_DESARROLLO) return "Jefe de Desarrollo";
   if(role === ROLES.SERVICIO_MEDICO) return "Servicio M\u00e9dico";
   if(role === ROLES.RECEPCIONISTA) return "Recepcionista";
   return String(role || "").replace(/_/g, " ").toUpperCase();

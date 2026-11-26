@@ -2,9 +2,13 @@
 
 Aplicacion PWA para control operativo de accesos, citas, vales, bitacora de guardias, reportes y rondines de seguridad.
 
-Version actual de produccion: `v264`.
+Version actual de produccion: `v265`.
 
 Aplicacion publicada: https://meredeitor.github.io/control-acceso/
+
+## Novedades de v265
+
+- Nuevos roles Desarrollo y Jefe de Desarrollo para citas de proveedores y vales de activo. Jefe de Desarrollo también puede crear vales de personal.
 
 ## Novedades de v264
 
@@ -407,9 +411,9 @@ Esto fuerza a los equipos a descargar la nueva version de la app.
 
 Version actual:
 
-- Aplicacion visible: `v264`
-- Service Worker: `v264`
-- Cache productiva: `caborca-access-control-v264-20261125`
+- Aplicacion visible: `v265`
+- Service Worker: `v265`
+- Cache productiva: `caborca-access-control-v265-20261126`
 
 ## Mantenimiento recomendado
 

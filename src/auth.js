@@ -1,4 +1,4 @@
-  const APP_VERSION = "v264";
+  const APP_VERSION = "v265";
   const THEMES = ["dark", "light"];
   const THEME_LABELS = {
     dark: "Tema: Oscuro",

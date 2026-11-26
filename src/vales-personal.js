@@ -15,6 +15,7 @@ async function renderValesPersonal(refresh=true){
   const allList = valesPersonal
     .filter(v => {
       if(currentUser?.role === ROLES.SERVICIO_MEDICO) return isPermisoImss(v);
+      if(currentUser?.role === ROLES.JEFE_DESARROLLO) return v.createdByUid === currentUser.uid;
       if(![ROLES.JEFE, ROLES.JEFE_RESTRINGIDO, ROLES.JEFE_COMPRAS].includes(currentUser?.role)) return true;
       const currentUid = String(currentUser?.uid || "");
       const currentEmail = String(currentUser?.email || "").trim().toLowerCase();
@@ -202,6 +203,7 @@ async function renderProximosValesPersonal(refresh=true){
   }
   const list = valesPersonal.filter(v => String(v.fecha || "") > todayISO()).filter(v => {
     if(currentUser?.role === ROLES.SERVICIO_MEDICO) return isPermisoImss(v);
+    if(currentUser?.role === ROLES.JEFE_DESARROLLO) return v.createdByUid === currentUser.uid;
     if(![ROLES.JEFE,ROLES.JEFE_RESTRINGIDO,ROLES.JEFE_COMPRAS].includes(currentUser?.role)) return true;
     const uid = String(currentUser?.uid || "");
     const email = String(currentUser?.email || "").trim().toLowerCase();
