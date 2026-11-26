@@ -274,7 +274,7 @@ const VALE_AUTH_PERMISSION = {
 
 const DEFAULT_VALE_AUTH_ROLES = {
   autorizar_vale_activo: new Set(["admin", "jefe", "jefe_ti", "contraloria"]),
-  autorizar_vale_personal: new Set(["admin", "jefe", "jefe_compras", "contraloria"])
+  autorizar_vale_personal: new Set(["admin", "jefe", "jefe_compras", "jefe_desarrollo", "contraloria"])
 };
 
 async function fetchRolePermissionOverrides(){

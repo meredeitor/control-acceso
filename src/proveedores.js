@@ -1842,6 +1842,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v266</b><span>Jefe de Desarrollo puede recibir y autorizar vales de personal asignados.</span></div>
           <div class="help-release"><b>v265</b><span>Agrega los roles Desarrollo y Jefe de Desarrollo para agendar proveedores y crear vales de activo. Jefe de Desarrollo también puede crear vales de personal.</span></div>
           <div class="help-release"><b>v264</b><span>Los iconos de acción de Vales de personal se alinean horizontalmente en teléfonos.</span></div>
           <div class="help-release"><b>v263</b><span>Los iconos de las tarjetas de Vales de personal tienen el tamaño compacto de Proveedores en teléfonos.</span></div>
@@ -3006,9 +3007,30 @@ function fmt(ts){
       return Array.from(map.values());
     }
 
+    function esAutorizadorAsignadoValePersonal(v){
+      const uid = currentUser?.uid;
+      const email = String(currentUser?.email || "").trim().toLowerCase();
+      return Boolean((uid && v.autorizadorUid === uid) || (email && String(v.autorizadorEmail || "").trim().toLowerCase() === email));
+    }
+
+    async function cloudFetchValesPersonalJefeDesarrollo(){
+      const uid = currentUser?.uid;
+      if(!uid) return [];
+      const ref = collection(db, COL_VALES_PERSONAL);
+      const reads = [cloudFetchValesPropios(COL_VALES_PERSONAL)];
+      if(hasPerm("autorizar_vale_personal")){
+        const assignments = [["autorizadorUid", uid], ["autorizadorEmail", String(currentUser.email || "").trim().toLowerCase()]];
+        for(const [field,value] of assignments){
+          if(value) reads.push(getDocs(query(ref, where(field, "==", value), limit(300))).then(snap => snap.docs.map(d => ({ ...d.data(), id:d.id }))));
+        }
+      }
+      const rows = (await Promise.all(reads)).flat();
+      return Array.from(new Map(rows.map(v => [v.id,v])).values());
+    }
+
     async function cloudFetchValesPersonal(){
       if(currentUser?.role === ROLES.JEFE_DESARROLLO){
-        return (await cloudFetchValesPropios(COL_VALES_PERSONAL)).filter(v => v.fecha === todayISO());
+        return (await cloudFetchValesPersonalJefeDesarrollo()).filter(v => v.fecha === todayISO());
       }
       if([ROLES.JEFE_COMPRAS, ROLES.JEFE_RESTRINGIDO].includes(currentUser?.role)){
         const currentUid = String(currentUser?.uid || "");
@@ -3041,7 +3063,7 @@ function fmt(ts){
 
     async function cloudFetchProximosValesPersonal(){
       if(currentUser?.role === ROLES.JEFE_DESARROLLO){
-        return (await cloudFetchValesPropios(COL_VALES_PERSONAL)).filter(v => v.fecha > todayISO());
+        return (await cloudFetchValesPersonalJefeDesarrollo()).filter(v => v.fecha > todayISO());
       }
       const currentUid = String(currentUser?.uid || "");
       const currentEmail = String(currentUser?.email || "").trim().toLowerCase();
@@ -5881,6 +5903,7 @@ function renderValePersonalAutorizadorOptions(perfilColaborador=null){
 function canCurrentUserAuthorizeValePersonal(v={}){
   if(!hasPerm("autorizar_vale_personal")) return false;
   if(!canRoleAuthorizeValePersonal(currentUser?.role)) return false;
+  if(currentUser?.role === ROLES.JEFE_DESARROLLO && (v.status !== ValeStatus.PENDIENTE || !esAutorizadorAsignadoValePersonal(v))) return false;
   if(esValeDeJefeRestringido(v) && !puedeGestionarValeDeJefeRestringido()) return false;
   return !isValePersonalDelUsuarioActual(v);
 }

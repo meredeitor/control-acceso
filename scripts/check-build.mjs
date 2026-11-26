@@ -22,8 +22,8 @@ if(!html.includes('src="./assets/app.min.js"')) throw new Error("index.html no c
 if(css.size < 10000) throw new Error("app.css parece incompleto");
 if(bundle.size < 10000) throw new Error("assets/app.min.js parece incompleto");
 if(/<script type="module">[\s\S]{1000,}<\/script>/.test(html)) throw new Error("index.html aún contiene el módulo monolítico");
-if(version.version !== "v265" || !sourceAuth.includes('APP_VERSION = "v265"')) throw new Error("La versión productiva no está alineada en v265");
-if(!sw.includes('SW_VERSION = "v265"')) throw new Error("El service worker no informa v265");
+if(version.version !== "v266" || !sourceAuth.includes('APP_VERSION = "v266"')) throw new Error("La versión productiva no está alineada en v266");
+if(!sw.includes('SW_VERSION = "v266"')) throw new Error("El service worker no informa v266");
 if(!sourceValesActivos.includes('renderValeActivoFirmas') || !sourceValesActivos.includes('Guardia · salida') || !sourceValesActivos.includes('Guardia · regreso')) throw new Error("Faltan las firmas del vale de activo");
 if(!sourceValesActivos.includes('createdByNombre: currentUser?.nombre') || !sourceValesActivos.includes('salidaPorUid = guardiaCred.uid') || !sourceValesActivos.includes('regresoPorUid = guardiaCred.uid')) throw new Error("La auditoría del vale de activo está incompleta");
 if(!sourceValesActivos.includes('provider-kanban-card vale-activo-card') || !sourceValesActivos.includes('Firmas ${firmasRegistradas}/${firmas.length}')) throw new Error("Falta el Kanban compacto de Vales de activo");

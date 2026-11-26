@@ -15,7 +15,7 @@ async function renderValesPersonal(refresh=true){
   const allList = valesPersonal
     .filter(v => {
       if(currentUser?.role === ROLES.SERVICIO_MEDICO) return isPermisoImss(v);
-      if(currentUser?.role === ROLES.JEFE_DESARROLLO) return v.createdByUid === currentUser.uid;
+      if(currentUser?.role === ROLES.JEFE_DESARROLLO) return v.createdByUid === currentUser.uid || (hasPerm("autorizar_vale_personal") && esAutorizadorAsignadoValePersonal(v));
       if(![ROLES.JEFE, ROLES.JEFE_RESTRINGIDO, ROLES.JEFE_COMPRAS].includes(currentUser?.role)) return true;
       const currentUid = String(currentUser?.uid || "");
       const currentEmail = String(currentUser?.email || "").trim().toLowerCase();
@@ -178,7 +178,7 @@ function renderValePersonalCard(v){
           ? valePersonalIconAction(v,"setValePersonalStatus","Registrar ingreso","enter","ok",ValeStatus.REGRESO_CANCELADO)
           : valePersonalIconAction(v,"setValePersonalStatus","Marcar salida","exit","danger",ValeStatus.FUERA)) : ""}
         ${!esGrupal && mostrarRegistroManual && v.status === ValeStatus.FUERA && hasPerm("registrar_regreso_personal") ? valePersonalIconAction(v,"setValePersonalStatus","Registrar regreso","return","ok",ValeStatus.REGRESO_CANCELADO) : ""}
-        ${v.status !== ValeStatus.REGRESO_CANCELADO && (hasPerm("crear_vale_personal") || (isPermisoImss(v) && hasPerm("crear_permiso_imss"))) ? valePersonalIconAction(v,"cancelarValePersonal","Cancelar","cancel","secondary") : ""}
+        ${v.status !== ValeStatus.REGRESO_CANCELADO && (currentUser?.role !== ROLES.JEFE_DESARROLLO || v.createdByUid === currentUser.uid) && (hasPerm("crear_vale_personal") || (isPermisoImss(v) && hasPerm("crear_permiso_imss"))) ? valePersonalIconAction(v,"cancelarValePersonal","Cancelar","cancel","secondary") : ""}
         ${excedido && !esGrupal ? `<button class="ok" data-action="alertaTiempoExcedidoWhatsApp" data-id="${esc(v.id)}" data-no-sb="true" aria-label="Avisar tiempo excedido por WhatsApp" title="Avisar tiempo excedido por WhatsApp"><svg aria-hidden="true" viewBox="0 0 32 32" width="18" height="18" fill="currentColor" focusable="false"><path d="M16.04 3.2A12.7 12.7 0 0 0 5.3 22.67L3.6 28.8l6.28-1.65a12.72 12.72 0 1 0 6.16-23.95Zm0 22.93c-1.93 0-3.82-.52-5.47-1.5l-.39-.23-3.72.98.99-3.62-.25-.37a10.2 10.2 0 1 1 8.84 4.74Zm5.6-7.64c-.3-.15-1.82-.9-2.1-1-.28-.1-.48-.15-.69.15-.2.3-.79 1-.97 1.2-.18.2-.36.23-.66.08-.3-.15-1.3-.48-2.47-1.53a9.2 9.2 0 0 1-1.7-2.12c-.18-.3-.02-.46.13-.61.14-.14.3-.36.46-.54.15-.18.2-.3.3-.51.1-.2.05-.38-.03-.54-.08-.15-.69-1.65-.94-2.26-.25-.6-.5-.52-.69-.53h-.58c-.2 0-.53.08-.81.38-.28.3-1.07 1.05-1.07 2.56s1.1 2.97 1.25 3.18c.15.2 2.16 3.3 5.24 4.63.73.32 1.3.5 1.75.65.74.23 1.4.2 1.93.12.59-.09 1.82-.74 2.08-1.46.25-.71.25-1.33.18-1.46-.08-.13-.28-.2-.59-.36Z"/></svg></button>` : ""}
         ${renderKanbanDetailsButton()}
       </div>
@@ -203,7 +203,7 @@ async function renderProximosValesPersonal(refresh=true){
   }
   const list = valesPersonal.filter(v => String(v.fecha || "") > todayISO()).filter(v => {
     if(currentUser?.role === ROLES.SERVICIO_MEDICO) return isPermisoImss(v);
-    if(currentUser?.role === ROLES.JEFE_DESARROLLO) return v.createdByUid === currentUser.uid;
+    if(currentUser?.role === ROLES.JEFE_DESARROLLO) return v.createdByUid === currentUser.uid || (hasPerm("autorizar_vale_personal") && esAutorizadorAsignadoValePersonal(v));
     if(![ROLES.JEFE,ROLES.JEFE_RESTRINGIDO,ROLES.JEFE_COMPRAS].includes(currentUser?.role)) return true;
     const uid = String(currentUser?.uid || "");
     const email = String(currentUser?.email || "").trim().toLowerCase();

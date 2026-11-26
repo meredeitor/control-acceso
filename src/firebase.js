@@ -327,7 +327,7 @@ const PERMISOS = {
 
   [ROLES.DESARROLLO]: ["ver_dashboard_proveedores", "crear_cita", "ver_qr", "ver_vales_activos", "crear_vale_activo"],
 
-  [ROLES.JEFE_DESARROLLO]: ["ver_dashboard_proveedores", "crear_cita", "ver_qr", "ver_vales_activos", "crear_vale_activo", "ver_vales_personal", "crear_vale_personal"],
+  [ROLES.JEFE_DESARROLLO]: ["ver_dashboard_proveedores", "crear_cita", "ver_qr", "ver_vales_activos", "crear_vale_activo", "ver_vales_personal", "crear_vale_personal", "autorizar_vale_personal"],
 
   [ROLES.PROVEEDOR]: [
     "ver_qr",
