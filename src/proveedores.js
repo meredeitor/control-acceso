@@ -1213,6 +1213,7 @@ function toast(title, msg, type="info", ttl=2600){
 
     function hasPerm(perm){
       if(!currentUser) return false;
+      if(perm === "ver_vales_activos" && currentUser.role !== ROLES.PENDIENTE && currentUser.puedeAutorizarValeActivo === true) return true;
       const perms = getPermsForRole(currentUser.role);
       return perms.includes(perm);
     }
@@ -1842,6 +1843,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v269</b><span>Los autorizadores de vales de activo pueden ver sus vales propios y los pendientes que les asignaron.</span></div>
           <div class="help-release"><b>v268</b><span>Administración puede registrar la hora real de regreso de un vale de personal abierto desde el historial, con PIN y motivo.</span></div>
           <div class="help-release"><b>v267</b><span>Vales de activo incorpora un menú de retorno y amplía las opciones de tipo y motivo en la app y el kiosco.</span></div>
           <div class="help-release"><b>v266</b><span>Jefe de Desarrollo puede recibir y autorizar vales de personal asignados.</span></div>
@@ -2748,7 +2750,9 @@ function fmt(ts){
     }
 
     function isValeActivoVisible(v={}){
-      if(isRolDesarrollo() && v.createdByUid !== currentUser.uid) return false;
+      const asignado = esPendienteAsignadoValeActivo(v);
+      if(usaBandejaPropiaValeActivo() && !esValeActivoCreadoPorMi(v) && !asignado) return false;
+      if(isRolDesarrollo() && v.createdByUid !== currentUser.uid && !asignado) return false;
       if(currentUser?.role === ROLES.JEFE_COMPRAS){
         const currentUid = String(currentUser?.uid || "");
         const currentEmail = String(currentUser?.email || "").trim().toLowerCase();
@@ -2756,7 +2760,7 @@ function fmt(ts){
           (v.createdByUid && String(v.createdByUid) === currentUid) ||
           (v.createdByEmail && String(v.createdByEmail).trim().toLowerCase() === currentEmail)
         );
-        if(!isOwn) return false;
+        if(!isOwn && !asignado) return false;
       }
       const activeStatuses = [ValeStatus.GENERADO, ValeStatus.PENDIENTE, ValeStatus.FUERA];
       if(activeStatuses.includes(v.status)) return true;
@@ -2834,7 +2838,18 @@ function fmt(ts){
     }
 
     async function cloudFetchValesActivos(){
-      if(isRolDesarrollo()) return cloudFetchValesPropios(COL_VALES_ACTIVOS);
+      const asignados = [];
+      if(currentUser?.puedeAutorizarValeActivo === true){
+        const ref = collection(db, COL_VALES_ACTIVOS);
+        const identificadores = [["autorizadorUid", currentUser.uid], ["autorizadorEmail", String(currentUser.email || "").trim()]];
+        for(const [field,value] of identificadores){
+          if(value) asignados.push(getDocs(query(ref, where(field, "==", value), where("status", "==", ValeStatus.PENDIENTE), limit(150))).then(snap => snap.docs.map(d => ({ ...d.data(), id:d.id }))));
+        }
+      }
+      if(usaBandejaPropiaValeActivo() && currentUser.role !== ROLES.JEFE_COMPRAS){
+        return combinarConsultasValesActivos([cloudFetchValesPropios(COL_VALES_ACTIVOS), ...asignados]);
+      }
+      if(isRolDesarrollo()) return combinarConsultasValesActivos([cloudFetchValesPropios(COL_VALES_ACTIVOS), ...asignados]);
       if(currentUser?.role === ROLES.JEFE_COMPRAS){
         const currentUid = String(currentUser?.uid || "");
         const currentEmail = String(currentUser?.email || "").trim();
@@ -2846,10 +2861,8 @@ function fmt(ts){
           scopedQueries.push(query(collection(db, COL_VALES_ACTIVOS), where("createdByEmail", "==", currentEmail), limit(200)));
         }
         if(!scopedQueries.length) return [];
-        const results = await Promise.all(scopedQueries.map(q => getDocs(q)));
-        const scopedMap = new Map();
-        results.forEach(snap => snap.forEach(d => scopedMap.set(d.id, { id:d.id, ...d.data() })));
-        return Array.from(scopedMap.values()).filter(isValeActivoVisible);
+        const propias = scopedQueries.map(q => getDocs(q).then(snap => snap.docs.map(d => ({ ...d.data(), id:d.id }))));
+        return combinarConsultasValesActivos([...propias, ...asignados]);
       }
 
       const activeStatuses = [ValeStatus.GENERADO, ValeStatus.PENDIENTE, ValeStatus.FUERA];
@@ -2865,11 +2878,17 @@ function fmt(ts){
         orderBy("createdTs", "desc"),
         limit(150)
       );
-      const [activeSnap, recentSnap] = await Promise.all([getDocs(activeQ), getDocs(recentQ)]);
-      const map = new Map();
-      activeSnap.forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
-      recentSnap.forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
-      return Array.from(map.values());
+      const generales = [activeQ, recentQ].map(q => getDocs(q).then(snap => snap.docs.map(d => ({ ...d.data(), id:d.id }))));
+      return combinarConsultasValesActivos([...generales, ...asignados]);
+    }
+
+    async function combinarConsultasValesActivos(reads){
+      const results = await Promise.allSettled(reads);
+      const completed = results.filter(result => result.status === "fulfilled");
+      if(!completed.length) throw results[0]?.reason || new Error("No hay consultas de vales disponibles.");
+      const failures = results.filter(result => result.status === "rejected");
+      if(failures.length) console.warn("Lectura parcial de vales de activo", failures.map(result => result.reason));
+      return Array.from(new Map(completed.flatMap(result => result.value).map(v => [v.id,v])).values()).filter(isValeActivoVisible);
     }
 
     async function cloudFetchHistorialValesActivos(){
@@ -5781,17 +5800,32 @@ function isValeActivoBackupAuthorizer(){
   return currentUser?.role === ROLES.CONTRALORIA;
 }
 
-function canCurrentUserAuthorizeValeActivo(v={}){
-  if(isValeActivoBackupAuthorizer()) return true;
-  if(currentUser?.puedeAutorizarValeActivo !== true) return false;
-  if(!v.autorizadorUid && !v.autorizadorEmail) return true;
+function usaBandejaPropiaValeActivo(){
+  return currentUser?.puedeAutorizarValeActivo === true && ![ROLES.ADMIN, ROLES.GUARDIA, ROLES.CONTRALORIA].includes(currentUser.role);
+}
 
+function esValeActivoCreadoPorMi(v){
+  if(currentUser?.uid && v.createdByUid === currentUser.uid) return true;
+  return currentUser?.role === ROLES.JEFE_COMPRAS && Boolean(currentUser.email && String(v.createdByEmail || "").trim().toLowerCase() === currentUser.email.trim().toLowerCase());
+}
+
+function esPendienteAsignadoValeActivo(v){
+  return currentUser?.puedeAutorizarValeActivo === true && v.status === ValeStatus.PENDIENTE && esAutorizadorAsignadoValeActivo(v);
+}
+
+function esAutorizadorAsignadoValeActivo(v){
   const currentUid = String(currentUser?.uid || "");
   const currentEmail = String(currentUser?.email || "").toLowerCase();
   return (
     (v.autorizadorUid && String(v.autorizadorUid) === currentUid) ||
     (v.autorizadorEmail && String(v.autorizadorEmail).toLowerCase() === currentEmail)
   );
+}
+
+function canCurrentUserAuthorizeValeActivo(v={}){
+  if(isValeActivoBackupAuthorizer()) return true;
+  if(currentUser?.puedeAutorizarValeActivo !== true) return false;
+  return (!v.autorizadorUid && !v.autorizadorEmail) || esAutorizadorAsignadoValeActivo(v);
 }
 
 function normalizarNominaPerfil(value){

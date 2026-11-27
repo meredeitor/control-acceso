@@ -2,9 +2,13 @@
 
 Aplicacion PWA para control operativo de accesos, citas, vales, bitacora de guardias, reportes y rondines de seguridad.
 
-Version actual de produccion: `v268`.
+Version actual de produccion: `v269`.
 
 Aplicacion publicada: https://meredeitor.github.io/control-acceso/
+
+## Novedades de v269
+
+- El tablero de Vales de activo muestra a los autorizadores sus vales propios y los pendientes asignados.
 
 ## Novedades de v268
 
@@ -423,9 +427,9 @@ Esto fuerza a los equipos a descargar la nueva version de la app.
 
 Version actual:
 
-- Aplicacion visible: `v268`
-- Service Worker: `v268`
-- Cache productiva: `caborca-access-control-v268-20261127`
+- Aplicacion visible: `v269`
+- Service Worker: `v269`
+- Cache productiva: `caborca-access-control-v269-20261127`
 
 ## Mantenimiento recomendado
 
