@@ -245,7 +245,9 @@ function valeHistoryEvents(v={}){
   push(v.reautorizacionAtendidaTs, "Reautorización aprobada", v.reautorizacionAtendidaPorNombre || v.reautorizacionAtendidaPor || "Autorizador", "ok");
   push(v.salidaTs, isValePersonalSalidaSinRegreso(v) ? "Salida sin regreso registrada · vale finalizado" : "Salida registrada", [v.salidaGuardiaNombre,v.salidaGuardiaEmail,v.imssSalidaGuardiaNombre,v.imssSalidaGuardiaEmail].filter(Boolean).join(" · ") || "Guardia no registrado", isValePersonalSalidaSinRegreso(v) ? "ok" : "warn");
   push(v.llegadaTs, "Ingreso registrado", v.regresoGuardiaNombre || v.regresoGuardiaEmail || v.registroIngresoPor || "Guardia no registrado", "ok");
-  push(v.regresoTs, "Regreso registrado", v.regresoGuardiaNombre || v.regresoGuardiaEmail || "Guardia no registrado", "ok");
+  const correcciones = Array.isArray(v.historialCorreccionRegreso) ? v.historialCorreccionRegreso : [];
+  push(v.regresoTs, "Regreso registrado", correcciones.some(c => !c.integranteId) ? "Hora real capturada por Administración" : v.regresoGuardiaNombre || v.regresoGuardiaEmail || "Guardia no registrado", "ok");
+  correcciones.forEach(c => push(c.ts, "Regreso corregido", `${c.nombre || c.email || "Administrador"}${c.integranteNombre ? ` · ${c.integranteNombre}` : ""} · Regreso real: ${valeHistoryDateTime(c.regresoTs)} · ${c.motivo}`, "warn"));
   if(esValePersonalGrupal(v)){
     const movimientos = new Map();
     const agregarMovimiento = (item, ts, tipo, title, tone) => {
@@ -271,6 +273,97 @@ function valeHistoryEvents(v={}){
   }
   push(v.canceladoTs, "Vale cancelado", v.canceladoPor || "Usuario no registrado", "bad");
   return events.sort((a,b)=>a.ts-b.ts);
+}
+
+function salidasPendientesCorreccion(v){
+  if(!v || v.status !== ValeStatus.FUERA || v.canceladoTs || isValePersonalEntrada(v) || isValePersonalSalidaSinRegreso(v)) return [];
+  const salidas = esValePersonalGrupal(v) ? v.integrantes : [v];
+  return salidas.filter(item => item.status === ValeStatus.FUERA && Number(item.salidaTs) > 0 && !item.regresoTs && !item.canceladoTs);
+}
+
+async function abrirCorreccionRegresoValePersonal(id){
+  if(currentUser?.role !== ROLES.ADMIN || !hasPerm("ver_historial_vales_personal")) return;
+  const vale = historialValesPersonalCache.find(v => String(v.id) === String(id));
+  const salidas = salidasPendientesCorreccion(vale);
+  if(!salidas.length) return toast("Corrección no disponible","El vale debe tener una salida registrada y un regreso pendiente.","warn");
+  const dialog = document.createElement("dialog");
+  dialog.className = "vale-activo-detail-dialog";
+  dialog.setAttribute("aria-labelledby", "corregirRegresoTitulo");
+  const grupal = esValePersonalGrupal(vale);
+  dialog.innerHTML = `<div class="vale-activo-detail-head"><div><h3 id="corregirRegresoTitulo">Corregir regreso</h3><strong>${esc(vale.folio || vale.id)}</strong> · ${esc(vale.nombreColaborador || "Vale grupal")}</div></div>
+    <form class="vale-activo-detail-body">
+      ${grupal ? `<label for="correccionIntegrante">Integrante *</label><select id="correccionIntegrante" name="integrante" required><option value="">Selecciona un integrante</option>${salidas.map(item => `<option value="${esc(item.id)}">${esc(item.nombre || item.nomina)} · Salida: ${esc(valeHistoryDateTime(item.salidaTs))}</option>`).join("")}</select>` : `<p>Salida registrada: <strong>${esc(valeHistoryDateTime(vale.salidaTs))}</strong></p>`}
+      <label for="correccionFecha">Fecha y hora reales de regreso *</label><input type="datetime-local" id="correccionFecha" name="fecha" required>
+      <label for="correccionMotivo">Motivo de la corrección *</label><textarea id="correccionMotivo" name="motivo" maxlength="300" rows="2" required></textarea>
+      <p data-error role="alert" style="color:var(--bad)" hidden></p>
+      <div class="row"><button type="submit" class="ok">Guardar corrección</button><button type="button" class="secondary" data-close>Cancelar</button></div>
+    </form>`;
+  dialog.addEventListener("close", () => dialog.remove(), { once:true });
+  dialog.querySelector("[data-close]").onclick = () => dialog.close();
+  dialog.querySelector("form").onsubmit = async event => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const regresoTs = new Date(String(data.get("fecha"))).getTime();
+    const motivo = String(data.get("motivo") || "").trim();
+    const integranteId = String(data.get("integrante") || "");
+    const salida = grupal ? salidas.find(item => String(item.id) === integranteId) : salidas[0];
+    if(!salida || !regresoCorreccionValido(regresoTs, salida.salidaTs) || !motivo){
+      const error = dialog.querySelector("[data-error]");
+      error.textContent = "Captura el motivo y una hora de regreso igual o posterior a la salida y no posterior a la hora actual.";
+      error.hidden = false;
+      return;
+    }
+    dialog.close();
+    await guardarCorreccionRegresoValePersonal(id, integranteId, regresoTs, motivo);
+  };
+  appEl.append(dialog);
+  dialog.showModal();
+}
+
+function regresoCorreccionValido(regresoTs, salidaTs){
+  return Number.isFinite(regresoTs) && regresoTs >= Number(salidaTs) && regresoTs <= Date.now();
+}
+
+async function guardarCorreccionRegresoValePersonal(id, integranteId, regresoTs, motivo){
+  if(currentUser?.role !== ROLES.ADMIN || !await requireAdminPin("corregir el regreso de este vale")) return;
+  const admin = currentUser;
+  const ref = doc(db, COL_VALES_PERSONAL, String(id));
+  try{
+    const actualizado = await runTransaction(db, async tx => {
+      const vale = (await tx.get(ref)).data();
+      const candidatos = salidasPendientesCorreccion(vale);
+      const grupal = esValePersonalGrupal(vale || {});
+      const salida = grupal ? candidatos.find(item => String(item.id) === integranteId) : candidatos[0];
+      if(!salida || !regresoCorreccionValido(regresoTs, salida.salidaTs)) throw new Error("El vale cambió o la hora de regreso ya no es válida. Revisa el historial.");
+      const ts = Date.now();
+      const auditoria = { ts, regresoTs, motivo, uid:admin.uid, email:admin.email || "", nombre:admin.nombre || "", integranteId, integranteNombre:grupal ? salida.nombre || "" : "" };
+      const patch = {
+        historialCorreccionRegreso:[...(Array.isArray(vale.historialCorreccionRegreso) ? vale.historialCorreccionRegreso : []), auditoria],
+        ultimoRegistroOrigen:"manual", updatedTs:ts, updatedByUid:admin.uid, updatedByEmail:admin.email || ""
+      };
+      if(grupal){
+        const grupo = { ...vale, integrantes:vale.integrantes.map(item => item === salida ? { ...item, status:ValeStatus.REGRESO_CANCELADO, regresoTs, updatedTs:ts, movimientoPorUid:admin.uid, movimientoPorEmail:admin.email || "", movimientoPorNombre:admin.nombre || "" } : item) };
+        recalcularEstadoValeGrupal(grupo);
+        Object.assign(patch, { integrantes:grupo.integrantes, status:grupo.status, qrActivo:grupo.qrActivo });
+        if(!grupo.qrActivo) Object.assign(patch, { qrDesactivadoTs:ts, qrDesactivadoMotivo:"GRUPO_FINALIZADO" });
+      }else{
+        Object.assign(patch, {
+          status:ValeStatus.REGRESO_CANCELADO, regresoTs,
+          tiempoUsadoMin:calcValePersonalTiempo({ ...vale, regresoTs }),
+          qrActivo:false, qrDesactivadoTs:ts, qrDesactivadoMotivo:"REGRESO_CANCELADO", reautorizacionPendiente:false
+        });
+      }
+      tx.update(ref, { ...patch, updatedAt:serverTimestamp() });
+      return { ...vale, ...patch, id:String(id) };
+    });
+    historialValesPersonalCache = mergeById(historialValesPersonalCache, [actualizado]);
+    valesPersonal = mergeById(valesPersonal, [actualizado]);
+    saveValesPersonalLocal();
+    toast("Regreso corregido","Se guardó la fecha y hora real del regreso.","ok");
+    await renderHistorialValesPersonal(false);
+  }catch(error){
+    toast("No se guardó la corrección",error.message || "Revisa la conexión y los permisos.","bad",5200);
+  }
 }
 
 function renderValePersonalHistoryCard(v){
@@ -305,6 +398,7 @@ function renderValePersonalHistoryCard(v){
         `).join("") : `<div class="vale-timeline-meta">Sin eventos registrados.</div>`}
       </div>
       ${v.observaciones ? `<div class="pill" style="display:block;margin-top:12px;white-space:normal;"><b>Observaciones:</b> ${esc(v.observaciones)}</div>` : ""}
+      ${currentUser?.role === ROLES.ADMIN && salidasPendientesCorreccion(v).length ? `<div class="row" style="margin-top:10px"><button type="button" class="secondary" data-action="corregirRegresoValePersonal" data-id="${esc(v.id)}">Corregir regreso</button></div>` : ""}
       ${finalizado ? `<div style="margin-top:10px;color:var(--ok);font-size:12px;font-weight:900;">Recorrido finalizado</div>` : ""}
     </article>
   `;

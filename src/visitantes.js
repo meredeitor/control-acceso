@@ -3510,6 +3510,7 @@ function renderProveedores(lista){
         case "refrescarProximosValesPersonal": await renderProximosValesPersonal(true); break;
         case "filtrarHistorialValesPersonal": await renderHistorialValesPersonal(false); break;
         case "refrescarHistorialValesPersonal": await renderHistorialValesPersonal(true); break;
+        case "corregirRegresoValePersonal": await abrirCorreccionRegresoValePersonal(id); break;
         case "filtrarHistorialValesActivos": await renderHistorialValesActivos(false); break;
         case "refrescarHistorialValesActivos": await renderHistorialValesActivos(true); break;
         case "aplicarReporteNominas": await aplicarReporteNominas(); break;

@@ -1842,6 +1842,7 @@ function helpAboutHtml(){
       <section class="help-panel">
         <h4>Versiones recientes</h4>
         <div class="help-changelog">
+          <div class="help-release"><b>v268</b><span>Administración puede registrar la hora real de regreso de un vale de personal abierto desde el historial, con PIN y motivo.</span></div>
           <div class="help-release"><b>v267</b><span>Vales de activo incorpora un menú de retorno y amplía las opciones de tipo y motivo en la app y el kiosco.</span></div>
           <div class="help-release"><b>v266</b><span>Jefe de Desarrollo puede recibir y autorizar vales de personal asignados.</span></div>
           <div class="help-release"><b>v265</b><span>Agrega los roles Desarrollo y Jefe de Desarrollo para agendar proveedores y crear vales de activo. Jefe de Desarrollo también puede crear vales de personal.</span></div>
