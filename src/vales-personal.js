@@ -366,7 +366,7 @@ function valeActivoHistoryEvents(v={}){
   push(v.createdTs,"Vale creado",[v.createdByNombre,v.createdByName,v.createdByEmail].filter(Boolean).join(" · ")||"Usuario no registrado");
   push(v.editedTs,"Vale editado",v.editedByNombre || "Usuario no registrado");
   push(v.autorizadoTs,"Vale autorizado",[v.autorizadoPorNombre,v.autorizadoPor].filter(Boolean).join(" · ")||"Autorizador no registrado","ok");
-  push(v.salidaTs,v.salidaSinRegreso === true ? "Salida sin regreso" : "Salida del activo",[v.salidaPorNombre,v.salidaPorEmail].filter(Boolean).join(" · ")||"Guardia no registrado","warn");
+  push(v.salidaTs,v.salidaSinRegreso === true ? valeActivoRetornoLabel(v) : "Salida del activo",[v.salidaPorNombre,v.salidaPorEmail].filter(Boolean).join(" · ")||"Guardia no registrado","warn");
   push(v.regresoTs,"Regreso del activo",[v.regresoPorNombre,v.regresoPorEmail].filter(Boolean).join(" · ")||"Guardia no registrado","ok");
   push(v.canceladoTs,"Vale cancelado",v.canceladoPorNombre||v.canceladoPor||"Usuario no registrado","bad");
   return events.sort((a,b)=>a.ts-b.ts);

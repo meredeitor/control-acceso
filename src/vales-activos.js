@@ -109,6 +109,12 @@ function renderValeActivoAction(v, action, label, path){
   return `<button type="button" class="secondary" data-action="${action}" data-id="${esc(v.id)}" data-no-sb="true" title="${label}" aria-label="${label}"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"></path></svg></button>`;
 }
 
+function valeActivoRetornoLabel(v){
+  if(v.modalidadRetorno === "regresa_con_suajes") return "Regresa con suajes";
+  if(v.salidaSinRegreso === true) return "Sin retorno";
+  return valePassDate(v.fechaRetorno) || "Sin fecha indicada";
+}
+
 function renderValeActivoCard(v){
   const fecha = v.fecha ? new Date(v.fecha + "T00:00:00").toLocaleDateString() : "-";
   const autorizadoPor = v.autorizadoPorNombre || "";
@@ -143,7 +149,7 @@ function renderValeActivoCard(v){
         ${v.noSerie ? `<span class="provider-mini-pill" title="Número de serie">Serie ${esc(v.noSerie)}</span>` : ""}
         ${v.codigoLote ? `<span class="provider-mini-pill">Código / lote: ${esc(v.codigoLote)}</span>` : ""}
         ${v.motivo ? `<span class="provider-mini-pill">Motivo: ${esc(v.motivo)}</span>` : ""}
-        <span class="provider-mini-pill">${v.salidaSinRegreso === true ? "Salida sin regreso" : `Retorno: ${esc(valePassDate(v.fechaRetorno) || "Sin fecha indicada")}`}</span>
+        <span class="provider-mini-pill">Retorno: ${esc(valeActivoRetornoLabel(v))}</span>
         <span class="provider-mini-pill alert">Autorizador: ${esc(autorizador || "Sin asignar")}</span>
         ${autorizadoPor ? `<span class="provider-mini-pill success">Autorizó: ${esc(autorizadoPor)}</span>` : ""}
         <span class="provider-mini-pill ${firmasRegistradas === firmas.length ? "success" : ""}">Firmas ${firmasRegistradas}/${firmas.length}</span>
@@ -191,7 +197,7 @@ function abrirDetalleValeActivo(id){
     ["Tipo de activo", v.tipoActivo], ["Motivo", v.motivo],
     ["Número de serie", v.noSerie], ["Código / lote", v.codigoLote],
     ["Fecha", valePassDate(v.fecha)],
-    ["Retorno", v.salidaSinRegreso === true ? "Salida sin regreso" : valePassDate(v.fechaRetorno) || "Sin fecha indicada"],
+    ["Retorno", valeActivoRetornoLabel(v)],
     ["Autorizador asignado", v.autorizadorNombre || v.autorizadorEmail], ["QR", v.qrActivo ? "Activo" : "Desactivado"],
     ...(v.planta ? [["Planta", v.planta]] : [])
   ];
@@ -262,6 +268,9 @@ function renderValeActivoModal(){
                 <option>Mobiliario y equipo de oficina</option>
                 <option>Herramientas</option>
                 <option>Residuos</option>
+                <option>Caple</option>
+                <option>Muestra</option>
+                <option>Master</option>
                 <option>Otro</option>
               </select>
             </div>
@@ -275,6 +284,8 @@ function renderValeActivoModal(){
                 <option>Venta</option>
                 <option>Traspaso a otra planta</option>
                 <option>Salida de Residuos</option>
+                <option>Muestra</option>
+                <option>Referencia</option>
                 <option>Otro</option>
               </select>
             </div>
@@ -295,9 +306,14 @@ function renderValeActivoModal(){
               <input id="valeCodigoLote" placeholder="Código o lote">
             </div>
             <div>
-              <label>Fecha de retorno</label>
-              <input id="valeFechaRetorno" type="date">
-              <label><input id="valeSalidaSinRegreso" type="checkbox" style="width:auto" onchange="document.getElementById('valeFechaRetorno').disabled = this.checked"> Salida sin regreso</label>
+              <label for="valeModalidadRetorno">Retorno *</label>
+              <select id="valeModalidadRetorno">
+                <option value="">— Selecciona —</option>
+                <option value="sin_retorno">Sin retorno</option>
+                <option value="fecha_definida">Con fecha definida de retorno</option>
+                <option value="regresa_con_suajes">Regresa con suajes</option>
+              </select>
+              <div id="valeFechaRetornoCampo" hidden><label for="valeFechaRetorno">Fecha de retorno *</label><input id="valeFechaRetorno" type="date" disabled></div>
             </div>
             <div>
               <label>Autoriza *</label>
@@ -356,9 +372,12 @@ async function openValeModal(id=""){
     }
     field.value = value || "";
   }
-  const sinRegreso = v?.salidaSinRegreso === true;
-  document.getElementById("valeSalidaSinRegreso").checked = sinRegreso;
-  document.getElementById("valeFechaRetorno").disabled = sinRegreso;
+  const retornoSelect = document.getElementById("valeModalidadRetorno");
+  retornoSelect.onchange = syncValeActivoRetornoForm;
+  retornoSelect.querySelector('[value="sin_fecha_anterior"]')?.remove();
+  if(v && !v.salidaSinRegreso && !v.fechaRetorno) retornoSelect.add(new Option("Sin fecha indicada (vale existente)", "sin_fecha_anterior"));
+  retornoSelect.value = v?.modalidadRetorno || (v?.salidaSinRegreso ? "sin_retorno" : v?.fechaRetorno ? "fecha_definida" : v ? "sin_fecha_anterior" : "");
+  syncValeActivoRetornoForm();
   const sel = document.getElementById("valeAutorizador");
   sel.innerHTML = renderValeActivoAutorizadorOptions();
   sel.value = v?.autorizadorUid || "";
@@ -370,6 +389,12 @@ function closeValeModal(){
   if(modal) modal.style.display = "none";
 }
 
+function syncValeActivoRetornoForm(){
+  const conFecha = document.getElementById("valeModalidadRetorno").value === "fecha_definida";
+  document.getElementById("valeFechaRetornoCampo").hidden = !conFecha;
+  document.getElementById("valeFechaRetorno").disabled = !conFecha;
+}
+
 function readValeActivoForm(){
   const fecha = document.getElementById("valeFecha")?.value || "";
   const departamento = document.getElementById("valeDepartamento")?.value.trim() || "";
@@ -379,8 +404,9 @@ function readValeActivoForm(){
   const descripcion = document.getElementById("valeDescripcion")?.value.trim() || "";
   const noSerie = document.getElementById("valeSerie")?.value.trim() || "";
   const codigoLote = document.getElementById("valeCodigoLote")?.value.trim() || "";
-  const salidaSinRegreso = document.getElementById("valeSalidaSinRegreso")?.checked === true;
-  const fechaRetorno = salidaSinRegreso ? "" : document.getElementById("valeFechaRetorno")?.value || "";
+  const modalidadRetorno = document.getElementById("valeModalidadRetorno")?.value || "";
+  const salidaSinRegreso = ["sin_retorno", "regresa_con_suajes"].includes(modalidadRetorno);
+  const fechaRetorno = modalidadRetorno === "fecha_definida" ? document.getElementById("valeFechaRetorno")?.value || "" : "";
   const autorizadorSelect = document.getElementById("valeAutorizador");
   const autorizadorOption = autorizadorSelect?.selectedOptions?.[0] || null;
   const autorizadorUid = autorizadorSelect?.value || "";
@@ -390,6 +416,10 @@ function readValeActivoForm(){
 
   if(!fecha || !departamento || !tipoActivo || !motivo || !nombre || !descripcion || !autorizadorUid){
     toast("Campos obligatorios","Fecha, departamento, tipo, motivo, nombre, descripción y autorizador.","warn");
+    return null;
+  }
+  if(!modalidadRetorno || (modalidadRetorno === "fecha_definida" && !fechaRetorno)){
+    toast("Retorno requerido","Selecciona el tipo de retorno y captura la fecha si corresponde.","warn");
     return null;
   }
 
@@ -403,6 +433,7 @@ function readValeActivoForm(){
     noSerie,
     codigoLote,
     fechaRetorno,
+    modalidadRetorno,
     salidaSinRegreso,
     autorizadorUid,
     autorizadorEmail,
@@ -571,7 +602,7 @@ async function updateValeActivoStatus(id, status, guardiaCred=null){
     }
     Object.assign(v, finalizado);
     await saveValesActivos();
-    toast("Salida sin regreso","El vale pasó a Finalizado.","ok",2400);
+    toast(valeActivoRetornoLabel(v),"El vale pasó a Finalizado.","ok",2400);
     return renderValesActivos();
   }
 
@@ -848,7 +879,7 @@ async function renderValeQR(id){
   const status = valeActivoDetailStatus(v);
   const pendiente = v.status === ValeStatus.PENDIENTE;
   const assetMovement = valeActivoMovement(v);
-  const retorno = v.salidaSinRegreso === true ? "Salida sin regreso" : valePassDate(v.fechaRetorno) || "Sin fecha indicada";
+  const retorno = valeActivoRetornoLabel(v);
   const shareText = [
     "Vale de salida de activo",
     `Folio: ${folio}`,
@@ -926,7 +957,7 @@ async function enviarValeActivoWhatsApp(id){
     `Activo: ${[v.tipoActivo, v.descripcion].filter(Boolean).join(" · ")}`,
     `Motivo: ${v.motivo || ""}`,
     `Fecha: ${valePassDate(v.fecha)}`,
-    `Retorno: ${v.salidaSinRegreso === true ? "Salida sin regreso" : valePassDate(v.fechaRetorno) || "Sin fecha indicada"}`,
+    `Retorno: ${valeActivoRetornoLabel(v)}`,
     "",
     "Abrir Vales de activo: https://meredeitor.github.io/control-acceso/?abrir=vales_activos"
   ].join("\n");

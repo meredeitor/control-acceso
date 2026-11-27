@@ -296,6 +296,9 @@
             <option>Mobiliario y equipo de oficina</option>
             <option>Herramientas</option>
             <option>Residuos</option>
+            <option>Caple</option>
+            <option>Muestra</option>
+            <option>Master</option>
             <option>Otro</option>
           </select>
         </div>
@@ -309,13 +312,18 @@
             <option>Venta</option>
             <option>Traspaso a otra planta</option>
             <option>Salida de Residuos</option>
+            <option>Muestra</option>
+            <option>Referencia</option>
             <option>Otro</option>
           </select>
         </div>
         <div style="grid-column:1/-1;"><label>Descripcion *</label><textarea id="aDescripcion" required></textarea></div>
         <div><label>No. serie</label><input id="aNoSerie"></div>
         <div><label>Codigo / Lote</label><input id="aCodigoLote"></div>
-        <div><label>Fecha de retorno</label><input id="aFechaRetorno" type="date"><label><input id="aSalidaSinRegreso" type="checkbox" style="width:auto" onchange="document.getElementById('aFechaRetorno').disabled = this.checked"> Salida sin regreso</label></div>
+        <div><label for="aModalidadRetorno">Retorno *</label><select id="aModalidadRetorno" required>
+          <option value="">Seleccione...</option><option value="sin_retorno">Sin retorno</option>
+          <option value="fecha_definida">Con fecha definida de retorno</option><option value="regresa_con_suajes">Regresa con suajes</option>
+        </select><div id="aFechaRetornoCampo" hidden><label for="aFechaRetorno">Fecha de retorno *</label><input id="aFechaRetorno" type="date" disabled></div></div>
         <div>
           <label>Autoriza *</label>
           <select id="aAutorizador" required>
@@ -526,7 +534,7 @@
       setText("passTipo", esPersonal ? tipo : (vale.motivo || "Salida de activo"));
       setText("passTipoEstado", "");
       setText("passFecha", fmtDate(vale.fecha));
-      setText("passFechaSub", esPersonal ? (vale.tiempoAutorizado || "") : (vale.salidaSinRegreso === true ? "Salida sin regreso" : (vale.fechaRetorno ? `Retorno: ${fmtDate(vale.fechaRetorno)}` : "")));
+      setText("passFechaSub", esPersonal ? (vale.tiempoAutorizado || "") : `Retorno: ${retornoActivoLabel(vale)}`);
       setText("passAutoriza", vale.autorizadorNombre || vale.autorizadorEmail || "");
       setText("passAutorizaSub", "");
       setText("passCodigo", String(payload).replace(/(.{4})/g, "$1 ").trim().toUpperCase());
@@ -645,7 +653,7 @@
           `Activo: ${[currentVale.tipoActivo, currentVale.descripcion].filter(Boolean).join(" · ")}`,
           `Motivo: ${currentVale.motivo || ""}`,
           `Fecha: ${fmtDate(currentVale.fecha)}`,
-          `Retorno: ${currentVale.salidaSinRegreso === true ? "Salida sin regreso" : fmtDate(currentVale.fechaRetorno) || "Sin fecha indicada"}`
+          `Retorno: ${retornoActivoLabel(currentVale)}`
         ]),
         `Departamento: ${currentVale.departamento || ""}`,
         "",
@@ -690,6 +698,21 @@
     document.getElementById("btnCompartirQR").addEventListener("click", compartirQR);
     document.getElementById("btnWhatsApp").addEventListener("click", enviarPorWhatsApp);
 
+    function retornoActivoLabel(vale){
+      if(vale.modalidadRetorno === "regresa_con_suajes") return "Regresa con suajes";
+      if(vale.salidaSinRegreso === true) return "Sin retorno";
+      return fmtDate(vale.fechaRetorno) || "Sin fecha indicada";
+    }
+
+    function syncRetornoActivo(){
+      const conFecha = value("aModalidadRetorno") === "fecha_definida";
+      const fecha = document.getElementById("aFechaRetorno");
+      document.getElementById("aFechaRetornoCampo").hidden = !conFecha;
+      fecha.disabled = !conFecha;
+      fecha.required = conFecha;
+    }
+    document.getElementById("aModalidadRetorno").addEventListener("change", syncRetornoActivo);
+
     formActivo.addEventListener("submit", async (e) => {
       e.preventDefault();
       const btn = document.getElementById("btnActivo");
@@ -702,6 +725,7 @@
           toast("Selecciona quien autoriza el vale.", "bad");
           return;
         }
+        const modalidadRetorno = value("aModalidadRetorno");
         const vale = await crearSolicitudValeActivo({
           folio: `KVA-${Date.now()}`,
           fecha: value("aFecha"),
@@ -713,8 +737,9 @@
           descripcion: value("aDescripcion"),
           noSerie: value("aNoSerie"),
           codigoLote: value("aCodigoLote"),
-          fechaRetorno: document.getElementById("aSalidaSinRegreso").checked ? "" : value("aFechaRetorno"),
-          salidaSinRegreso: document.getElementById("aSalidaSinRegreso").checked,
+          modalidadRetorno,
+          fechaRetorno: modalidadRetorno === "fecha_definida" ? value("aFechaRetorno") : "",
+          salidaSinRegreso: ["sin_retorno", "regresa_con_suajes"].includes(modalidadRetorno),
           autorizadorUid,
           autorizadorEmail: autorizadorOption?.dataset?.email || "",
           autorizadorNombre: autorizadorOption?.dataset?.nombre || "",
@@ -723,6 +748,7 @@
         });
         await renderSolicitud("VALE_ACTIVO", { ...vale, autorizadorTelefono: autorizadorOption?.dataset?.telefono || "" });
         formActivo.reset();
+        syncRetornoActivo();
         document.getElementById("aFecha").value = today;
         toast("Solicitud enviada. QR generado.", "ok");
       }catch(err){
